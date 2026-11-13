@@ -56,10 +56,21 @@ def private_area(s):
     return s['area_m2'] * share, share, tag
 
 
+def unit_effective(s, unit):
+    """보상 단가 = max(실적 단가, 사유지 공시지가 × 계수). 계수: 하한 1.0(토지보상법 §70①), 상한 1/현실화율. params.land_price_rule."""
+    cu = P['compensation_unit_krw_m2']; r = cu['land_price_rule']
+    lp = fnum(price.get(s['site_id']), 'land_price_krw_m2')
+    if lp is None:
+        return unit, '실적'
+    t = min(1.0, max(0.0, (unit - cu['low']) / (cu['high'] - cu['low'])))
+    factor = r['low_factor'] + (1 / r['realization_rate'] - r['low_factor']) * t
+    return (lp * factor, '공시지가') if lp * factor > unit else (unit, '실적')
+
+
 def compensation(s, unit):
-    """토지보상 = 사유지 면적 × 단가. 공시지가가 있으면 (공시지가 × 배율)로 전환 — 배율은 두 실적에서 역산해야 하므로 수령 전에는 실적 단가 사용."""
+    """토지보상 = 사유지 면적 × 단가(unit_effective)."""
     pa, _, _ = private_area(s)
-    return pa * unit
+    return pa * unit_effective(s, unit)[0]
 
 
 def construction(s, unit):
