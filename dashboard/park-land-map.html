@@ -216,7 +216,7 @@ function terrainLayer(){
   const m=demFor(); const k=terK(); const B=D.basemap||{};
   const tex = S.bg==='none'?null : S.view==='park' ? (B['s'+S.sel]&&'img/'+B['s'+S.sel].file) : 'img/'+((S.bg==='base'?B.cityBase:B.citySat)||{}).file;
   return new deck.TerrainLayer({id:'terrain-'+(S.view==='park'?S.sel:'city')+'-'+k+'-'+S.bg, elevationData:'dem/'+m.file, texture:tex, bounds:m.bounds,
-    elevationDecoder:{rScaler:256*k,gScaler:k,bScaler:k/256,offset:(-32768-m.min)*k}, meshMaxError:S.view==='park'?0.3:4, skirtHeight:0,
+    elevationDecoder:{rScaler:256*k,gScaler:k,bScaler:k/256,offset:(-32768-(S.view==='park'?(m.min+m.max)/2:m.min))*k}, meshMaxError:S.view==='park'?0.3:4, skirtHeight:0,
     color:C['--gu'], loaders:[loaders.TerrainLoader], loadOptions:{worker:false}, operation:'terrain+draw'});
 }
 function cityColor(p){
