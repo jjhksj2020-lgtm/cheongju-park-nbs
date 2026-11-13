@@ -1,0 +1,2 @@
+site_id,land_price_krw_m2,jimok_dae_m2,source
+1,,,"V-World 개별공시지가 API (api.vworld.kr, 매년 1.1 기준). jimok_dae_m2 = 지목 '대'인 사유지 면적"

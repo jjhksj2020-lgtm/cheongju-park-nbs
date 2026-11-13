@@ -1,0 +1,219 @@
+<title>청주 장기미집행 공원 문제정의서</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: single reading column (max 880px); numbered sections because the brief is a fixed sequence (문제→결정→기준→방법→질문→범위). */
+:root{
+  --bg:#f5f7f4; --paper:#ffffff; --fg:#1b241f; --muted:#5b6862; --line:#d9e0da;
+  --accent:#1f6b43; --accent-soft:#e3f0e7; --need:#1f6b43; --biz:#8a5a12; --biz-soft:#f6ecd9;
+  --warn:#b4412d; --warn-soft:#f8e4df; --ok-soft:#e3f0e7;
+  --display:"Pretendard","IBM Plex Sans KR","Noto Sans KR","Noto Sans CJK KR",system-ui,sans-serif;
+  --body:"Pretendard","Noto Sans KR","Noto Sans CJK KR",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#121816; --paper:#1a2320; --fg:#e8ede9; --muted:#9fada6; --line:#2c3833;
+  --accent:#6fc693; --accent-soft:#1f3328; --need:#6fc693; --biz:#e0a95a; --biz-soft:#3a2d17;
+  --warn:#f08a74; --warn-soft:#3d231e; --ok-soft:#1f3328; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#121816; --paper:#1a2320; --fg:#e8ede9; --muted:#9fada6; --line:#2c3833;
+  --accent:#6fc693; --accent-soft:#1f3328; --need:#6fc693; --biz:#e0a95a; --biz-soft:#3a2d17;
+  --warn:#f08a74; --warn-soft:#3d231e; --ok-soft:#1f3328; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.65;margin:0}
+.wrap{max-width:880px;margin:0 auto;padding-block:32px 72px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.3}
+h1{font-size:30px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:21px;font-weight:600;display:flex;align-items:center;gap:12px}
+h2 .n{font-size:13px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:2px 8px;letter-spacing:.04em}
+h3{font-size:15px;font-weight:600}
+p{margin:0}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.sub{color:var(--muted);margin-top:6px}
+header{border-bottom:1px solid var(--line);padding-bottom:22px;display:grid;gap:8px}
+section{margin-top:48px;display:grid;gap:18px}
+.lead{font-size:17px;line-height:1.7}
+.lead b{color:var(--accent)}
+
+/* key facts */
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+.fact{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.fact .v{font-family:var(--display);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent)}
+.fact .k{font-size:12.5px;color:var(--muted);margin-top:2px}
+
+/* pain list */
+.pain{display:grid;gap:10px}
+.pain .row{display:grid;grid-template-columns:1fr 220px;gap:14px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.pain .row .src{font-size:12.5px;color:var(--muted);border-left:1px solid var(--line);padding-left:14px}
+.pain .row .src b{color:var(--fg);font-weight:500}
+
+/* decision */
+.decision{background:var(--accent-soft);border-left:4px solid var(--accent);border-radius:10px;padding:18px 20px;display:grid;gap:10px}
+.decision .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.decision .cell .k{font-size:12px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.decision .cell .v{font-weight:600;margin-top:2px}
+.decision .one{font-size:15.5px;border-top:1px solid var(--line);padding-top:12px}
+
+/* criteria */
+.group{display:grid;gap:10px}
+.group-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.tag{font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;letter-spacing:.03em}
+.tag.need{background:var(--accent-soft);color:var(--need)}
+.tag.biz{background:var(--biz-soft);color:var(--biz)}
+.group-h .what{color:var(--muted);font-size:13.5px}
+.crit{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.crit.two{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:10px;align-content:start;min-width:0}
+.card.need{border-top:3px solid var(--need)}
+.card.biz{border-top:3px solid var(--biz)}
+.card .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card .w{font-family:var(--display);font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted)}
+.card .lbl{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.card ul{margin:0;padding-left:16px;font-size:13.5px;display:grid;gap:3px}
+.card .src{font-size:12.5px;color:var(--muted);line-height:1.5}
+.note{font-size:13px;color:var(--muted)}
+
+/* method flow */
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.step{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 13px;min-width:0;position:relative}
+.step .num{font-family:var(--display);font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.06em}
+.step h3{margin-top:2px}
+.step p{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
+.formula{font-family:var(--display);font-size:14px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 14px;overflow-x:auto;white-space:nowrap}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:500;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+.tbl{overflow-x:auto;border-radius:10px}
+.pill{display:inline-block;font-weight:600;padding:1px 8px;border-radius:6px;font-size:12.5px;white-space:nowrap}
+.pill.a{background:var(--ok-soft);color:var(--need)}
+.pill.b{background:var(--biz-soft);color:var(--biz)}
+.pill.c{background:var(--warn-soft);color:var(--warn)}
+.mc{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mc .card{gap:8px}
+.bands{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.band{border-radius:8px;padding:10px 12px;font-size:13px}
+.band b{display:block;font-family:var(--display);font-size:15px}
+.band.ok{background:var(--ok-soft)} .band.edge{background:var(--biz-soft)} .band.bad{background:var(--warn-soft)}
+
+/* RQ */
+.rq{display:grid;gap:8px}
+.rq .row{display:grid;grid-template-columns:48px 1fr 220px;gap:12px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:11px 14px;align-items:start}
+.rq .id{font-family:var(--display);font-weight:700;color:var(--accent)}
+.rq .how{font-size:12.5px;color:var(--muted);border-left:1px solid var(--line);padding-left:12px}
+
+/* scope */
+.scope{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.scope ol,.scope ul{margin:0;padding-left:18px;font-size:13.5px;display:grid;gap:4px}
+footer{margin-top:56px;border-top:1px solid var(--line);padding-top:14px;font-size:12.5px;color:var(--muted);line-height:1.6}
+
+@media (max-width:720px){
+  .facts,.decision .grid,.crit,.crit.two,.flow,.rules,.mc,.bands,.scope{grid-template-columns:1fr}
+  .pain .row,.rq .row{grid-template-columns:1fr}
+  .pain .row .src,.rq .how{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:8px}
+  .rq .row{grid-template-columns:48px 1fr} .rq .how{grid-column:2}
+  h1{font-size:24px}
+}
+@media (prefers-reduced-motion:no-preference){ a{transition:color .15s} }
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">제출물 1 · 문제정의서 · 2026-11-11</div>
+  <h1>청주시 장기미집행 공원 40개소, 무엇을 남기고 무엇을 먼저 할 것인가</h1>
+  <p class="sub">CCS자연기반해법(NbS)계획및설계 · 선진엔지니어링 트랙 「2040 청주시 공원녹지기본계획」 · 작성 정진형</p>
+  <div class="facts">
+    <div class="fact"><div class="v">40개소</div><div class="k">장기미집행 공원 (공고 제2026-2004호)</div></div>
+    <div class="fact"><div class="v">298만㎡</div><div class="k">합계 면적 2,981,700㎡</div></div>
+    <div class="fact"><div class="v">2개소</div><div class="k">3년 내 집행계획(1단계)에 든 공원</div></div>
+    <div class="fact"><div class="v">2029~32</div><div class="k">실효년도 집중 구간 (전체 2026~2040)</div></div>
+  </div>
+</header>
+
+<!-- 1 -->
+<section>
+  <h2><span class="n">01</span>문제</h2>
+  <p class="lead">청주시는 2040 공원녹지기본계획에서 장기미집행 공원 40개소를 <b>존치·조성 / 존치 / 보류</b>로 가르고 1·2단계 집행 순서를 정해야 한다. 평가 기준 5개(공원조성 가치·재정투입 효율성·개발압력·기존투자·이용성)는 공고돼 있지만, <b>기준별 지표·자료·배점·판정 규칙이 없다.</b> 이 과제는 5개 기준을 외부 공개자료로 계량하고, 판정 규칙과 시나리오 검증까지 한 화면에서 재현되게 만든다.</p>
+  <h3>기관 애로사항과 근거</h3>
+  <div class="pain">
+    <div class="row"><div>공원 40개소·녹지 63개소 중 3년 내 집행계획(1단계)은 공원 2개소(근린공원8 41,315㎡, 문화공원4 24,789㎡)뿐. 2단계(2029~2031 이후) 전에 공원 25·녹지 59개소가 실효 예정.</div><div class="src"><b>제안서 p.27</b> · 청주시 공고 제2026-2004호</div></div>
+    <div class="row"><div>평가 기준 5개는 명시됐으나 지표·배점·산정식이 없다. 도시자연공원구역에는 "항목별 1~5점, 중첩 합산, 1~3등급" 체크리스트 방식이 제시돼 있어, 공원도 같은 수준의 재현 가능한 산정이 요구된다.</div><div class="src"><b>제안서 p.27</b> 평가 기준 · <b>p.11</b> 체크리스트·종합점수</div></div>
+    <div class="row"><div>실효 규정: 결정 고시 후 20년 미집행 시 효력 상실(국토계획법 §48), 10년 내 공원조성계획 미고시 시 실효, 국공유지는 30년(공원녹지법 §17). 40개소 실효년도는 2026~2040에 걸치며 2029~2032에 집중.</div><div class="src"><b>제안서 p.14, p.27</b> · 국가법령정보센터 law.go.kr</div></div>
+            <div class="row"><div>재원: 2020년 실효 대응에 기금 500억+지방채 100억으로 11곳 매입, 2019년 시의회 매입비 475억 전액 삭감, 민간특례 8곳으로 약 4,400억 절감, 월명공원 1곳 보상 351억.</div><div class="src">뉴시스 2020.6.18 · 프레시안 2019.10.24 · 청주시 공원산림본부 2026.1.29 · twig24 2026.7.31 <b>(근거 대장 D1·D2·B7)</b></div></div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section>
+  <h2><span class="n">02</span>결정자와 결정 사항</h2>
+  <div class="decision">
+    <div class="grid">
+      <div class="cell"><div class="k">누가</div><div class="v">청주시 공원녹지과</div><div class="note">2040 공원녹지기본계획 입안 · 선진엔지니어링 작성</div></div>
+      <div class="cell"><div class="k">언제까지</div><div class="v">2027년 6월</div><div class="note">도시공원위원회 자문 전</div></div>
+      <div class="cell"><div class="k">무엇을</div><div class="v">40개소 각각의 판정</div><div class="note">존치·조성 / 존치 / 보류</div></div>
+      <div class="cell"><div class="k">그리고</div><div class="v">1·2단계 집행 배정</div><div class="note">1단계 2027~30 · 2단계 2031~35</div></div>
+    </div>
+    <p class="one"><b>한 문장:</b> 청주시 공원녹지과는 2027년 6월 도시공원위원회 자문 전까지 장기미집행 공원 40개소 각각에 대해 존치·조성 / 존치 / 보류 중 하나의 판정과 1·2단계 집행 배정을, 기준 5개의 점수와 근거를 붙여 결정한다.</p>
+  </div>
+</section>
+
+<!-- 3 -->
+<section>
+  <h2><span class="n">03</span>평가 기준 5개의 역할</h2>
+  <div class="crit two">
+    <div class="card need">
+      <div class="t"><h3>필요성 → 판정</h3><span class="tag need">존치·조성 / 존치 / 보류</span></div>
+      <ul><li>① 공원조성 가치</li><li>② 이용성</li><li>③ 개발압력</li></ul>
+      <p class="src">세 기준의 점수로 등급(상·중·하)을 매기고 등급이 판정을 정한다.</p>
+    </div>
+    <div class="card biz">
+      <div class="t"><h3>사업성 → 단계</h3><span class="tag biz">1단계 / 2단계</span></div>
+      <ul><li>④ 재정투입 효율성</li><li>⑤ 기존투자</li></ul>
+      <p class="src">시 부담액과 외부 재원 경로로 같은 판정 안의 집행 순서와 재원 구조를 정한다.</p>
+    </div>
+  </div>
+  <p class="note">필요성이 먼저고 사업성은 그 안에서 순서를 정한다. 지표·자료·산정 규칙·시나리오 민감도 설계는 제출물 2 §3(방법론층)에 적는다.</p>
+</section>
+
+<!-- 5 -->
+<section>
+  <h2><span class="n">04</span>연구질문 — 참·거짓으로 판정</h2>
+  <div class="rq">
+    <div class="row"><div class="id">RQ1</div><div>5기준을 필요성(①②③)·사업성(④⑤)으로 나눠 계량하면, 가중치 시나리오 3개(예시값·균등·AHP 결과)에서 같은 후보지가 상 등급이 된다.</div><div class="how">시나리오 3개 등급표 비교 · 상 등급 집합이 동일하면 참, 다르면 해당 후보지를 "경계"로 명시</div></div>
+    <div class="row"><div class="id">RQ2</div><div>40개소 중 외부 재원(특례·국비)으로 시 부담을 절반 이하로 줄일 수 있는 후보지는 10개소 이하다.</div><div class="how">시 부담 최소 ÷ 최대 ≤ 0.5인 후보지 수</div></div>
+    <div class="row"><div class="id">RQ3</div><div>시 부담 최대 상위 5개소가 40개소 합계의 80% 이상을 차지한다.</div><div class="how">금액 분포 계산</div></div>
+    <div class="row"><div class="id">RQ4</div><div>후보지 카드만 보고 제3자가 판정과 단계의 이유를 같은 결론으로 재현할 수 있다.</div><div class="how">필요성·사업성 파트 교차 검토 + 1개소 수기 재계산 일치</div></div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section>
+  <h2><span class="n">05</span>범위와 가정</h2>
+  <div class="scope">
+    <div class="card">
+      <h3>범위</h3>
+      <div><div class="lbl">안</div><ul><li>공고 제2026-2004호 공원 40개소</li><li>판정 3종 · 단계 2종</li></ul></div>
+      <div><div class="lbl">밖</div><ul><li>녹지 63개소 · 미조성 공원 168개소 · 도시자연공원구역 6개소</li><li>"해제" 판정</li><li>투자자 수익률 · 잉여전력 판매 · B/C</li></ul></div>
+    </div>
+    <div class="card">
+      <h3>가정</h3>
+      <ol>
+        <li>공고의 면적·지목·실효년도는 바꾸지 않는다 (행 합산 2,927,250㎡와 표 합계 2,981,700㎡의 차이는 원 공고로 확인).</li>
+        <li>토지소유·공시지가 원자료 전까지 국공유 비율은 지목으로, 지가는 읍면동 평균으로 추정하고 "가정"으로 표기.</li>
+        <li>보상·조성 단가는 청주 실적(월명·강내)에서 역산.</li>
+        <li>특례는 법 요건(5만㎡ 이상, 생태공원 제외)만으로 판단.</li>
+        <li>국비는 시 부담 "최소값" 시나리오로만 사용.</li>
+        <li>가중치는 AHP 전까지 예시값.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<footer>
+  근거 대장 키(A1 특례 요건, A2 실효, A3 도시숲 국비, A4a 생태축, A4b 반환사업, A8 매수청구, B7 월명·강내 단가, D1 특례 8곳, D2 의회 삭감, P1 청주시 5기준)는 프로젝트 프로파일 §10에 출처·URL·조사일이 적혀 있다. 제안서 쪽 번호는 선진엔지니어링 「2040 청주시 공원녹지기본계획 수립용역」 제안서(2026.10) 기준.
+</footer>
+</div>

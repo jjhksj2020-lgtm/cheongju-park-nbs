@@ -1,0 +1,35 @@
+# 사업성 파트 상수 — 코드에는 숫자를 쓰지 않고 이 파일만 읽는다. 모든 값에 출처.
+# 금액 단위: 원. 면적: ㎡.
+
+compensation_unit_krw_m2:        # 토지보상 단가 (사유지 ㎡당). 공시지가 수령 전 청주 실적 범위
+  low: 230000                    # 강내근린공원 35억 / 15,111㎡ ≈ 23.2만 (더팩트 2022.11.1, 근거 B7)
+  high: 340000                   # 월명공원 351억 / 102,487㎡ ≈ 34.2만 (twig24 2026.7.31, 근거 B7)
+  base: 285000                   # 중간값 (보고용 기준 시나리오; 판정에는 low/high 조합만 사용)
+
+construction_unit_krw_m2:        # 조성비 단가 (전체 면적 ㎡당). 생태공원은 실적 없음 → 미산정
+  low: 61000                     # 월명공원 63억 / 102,487㎡ ≈ 6.1만
+  high: 139000                   # 강내근린공원 (56억 − 35억) / 15,111㎡ ≈ 13.9만
+  base: 100000
+  excluded_types: [생태공원]
+
+private_share_default: 1.0       # 토지소유 자료 수령 전 사유지 비율 가정 (상한). 제안서 p.28: 미조성 공원 면적의 95.2%가 국유지 → 실제는 훨씬 낮을 수 있음
+
+special_project:                 # 민간공원특례 (공원녹지법 제21조의2, 근거 A1)
+  min_area_m2: 50000
+  excluded_types: [생태공원]
+
+national_subsidy:                # 국비 경로 (조성비에 대한 국비 비율; 최소값 시나리오에는 하한 사용)
+  urban_forest:    {share_low: 0.50, share_high: 0.50, source: "산림청 기후대응 도시숲 공모 (근거 A3)", requires: ["H1_high_or_industrial_downwind"]}
+  eco_axis:        {share_low: 0.56, share_high: 0.68, source: "환경부 도시생태축 복원사업 선정 사례 (근거 A4a)", requires: ["C1_near_or_river_adjacent"]}
+  eco_refund:      {share_low: 0.28, share_high: 0.28, source: "청주 강내근린공원 반환사업 18억 중 국비 5억 (뉴스서울 2023.2.7, 근거 A4b)", requires: ["refund_eligible"], note: "공고 원문 요건 미확인"}
+
+stage_rules:
+  stage1_end_year: 2030          # 1단계 2027~2030 (제안서 p.27 단계 구분)
+  stage1_expiry_max: 2030        # 실효년도 ≤ 2030 → 1단계 (국토계획법 §48; 2단계로 두면 실효)
+  stage1_budget_line_krw: 168000000000   # 1,680억 = 2020~25 공원 매입 실적 2,100억 ÷ 5년 × 4년 (뉴시스 2020.6.18, 근거 D1). 참고선이며 예산 결정은 시가 함
+
+buyout:                          # 매수청구 회피액 (국토계획법 §47, 근거 A8): 지목 '대'인 사유지
+  jimok: ["대"]
+
+validation:
+  wolmyeong: {area_m2: 102487, compensation_krw: 35100000000, construction_krw: 6300000000, tolerance: 0.01}

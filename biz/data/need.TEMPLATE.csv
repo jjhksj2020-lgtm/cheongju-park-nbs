@@ -1,0 +1,2 @@
+site_id,grade,verdict,H1_high,industrial_downwind,C1_near,river_adjacent,refund_eligible,source
+1,상,존치·조성,1,0,0,1,0,"필요성 파트 산출 (13주). grade 상/중/하, verdict 존치·조성/존치/보류, 요건 플래그 1/0"

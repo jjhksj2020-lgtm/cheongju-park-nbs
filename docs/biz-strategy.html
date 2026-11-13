@@ -1,0 +1,317 @@
+<title>청주 공원 사업성 대시보드 전략</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: single reading column; sections follow the assignment order (화면→데이터→규칙→한계→일정→프롬프트). Brown = 사업성, green = 필요성 (handed over, not recomputed). */
+:root{
+  --bg:#f7f6f3; --paper:#ffffff; --fg:#22201c; --muted:#6b655c; --line:#e0dcd4;
+  --accent:#8a5a12; --accent-soft:#f6ecd9; --need:#1f6b43; --need-soft:#e3f0e7;
+  --warn:#b4412d; --warn-soft:#f8e4df; --assume:#eeeae3;
+  --display:"Pretendard","IBM Plex Sans KR","Noto Sans KR","Noto Sans CJK KR",system-ui,sans-serif;
+  --body:"Pretendard","Noto Sans KR","Noto Sans CJK KR",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#171511; --paper:#201d18; --fg:#ece8e1; --muted:#a69f93; --line:#363028;
+  --accent:#e0a95a; --accent-soft:#3a2d17; --need:#6fc693; --need-soft:#1f3328;
+  --warn:#f08a74; --warn-soft:#3d231e; --assume:#2a2620; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#171511; --paper:#201d18; --fg:#ece8e1; --muted:#a69f93; --line:#363028;
+  --accent:#e0a95a; --accent-soft:#3a2d17; --need:#6fc693; --need-soft:#1f3328;
+  --warn:#f08a74; --warn-soft:#3d231e; --assume:#2a2620; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14.5px;line-height:1.6;margin:0}
+.wrap{max-width:920px;margin:0 auto;padding-block:32px 72px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.3}
+h1{font-size:28px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:20px;font-weight:600;display:flex;align-items:center;gap:12px}
+h2 .n{font-size:12.5px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:2px 8px;letter-spacing:.04em}
+h3{font-size:14.5px;font-weight:600}
+p{margin:0}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.sub{color:var(--muted);margin-top:6px}
+header{border-bottom:1px solid var(--line);padding-bottom:20px;display:grid;gap:8px}
+section{margin-top:44px;display:grid;gap:16px}
+.lead{font-size:16px;line-height:1.7}
+.lead b{color:var(--accent)}
+.note{font-size:13px;color:var(--muted)}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+.fact{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.fact .v{font-family:var(--display);font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent)}
+.fact .k{font-size:12.5px;color:var(--muted);margin-top:2px}
+.src{font-size:12.5px;color:var(--muted);line-height:1.5}
+.src b{color:var(--fg);font-weight:500}
+
+table{border-collapse:collapse;width:100%;font-size:13px;background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:500;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+td.assume{background:var(--assume)}
+.tbl{overflow-x:auto;border-radius:10px}
+.pill{display:inline-block;font-weight:600;padding:1px 8px;border-radius:6px;font-size:12px;white-space:nowrap}
+.pill.a{background:var(--need-soft);color:var(--need)}
+.pill.b{background:var(--accent-soft);color:var(--accent)}
+.pill.c{background:var(--warn-soft);color:var(--warn)}
+.pill.g{background:var(--assume);color:var(--muted)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:1px solid var(--line)}
+.legend .as::before{background:var(--assume)}
+.legend .ok::before{background:var(--paper)}
+
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.cards.four{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:13px 15px;display:grid;gap:8px;align-content:start;min-width:0}
+.card.biz{border-top:3px solid var(--accent)}
+.card.need{border-top:3px solid var(--need)}
+.card .lbl{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.card ul,.card ol{margin:0;padding-left:16px;font-size:13px;display:grid;gap:3px}
+.formula{font-family:var(--display);font-size:13.5px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 14px;overflow-x:auto;display:grid;gap:4px}
+.formula span{white-space:nowrap}
+
+/* mock screen */
+.screen{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.screen .bar{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);background:var(--bg);font-size:12.5px;color:var(--muted)}
+.screen .bar b{color:var(--fg);font-weight:600}
+.screen .bar .chip{margin-left:auto;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:1px 9px;font-weight:600}
+.screen table{border:0;border-radius:0}
+.screen .callout{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--line)}
+.screen .callout div{padding:10px 14px;font-size:12.5px;color:var(--muted);border-right:1px solid var(--line)}
+.screen .callout div:last-child{border-right:0}
+.screen .callout b{display:block;color:var(--accent);font-family:var(--display);font-size:12px;letter-spacing:.05em}
+.sitecard{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:10px}
+.sitecard .head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.sitecard .head h3{font-size:16px}
+.sitecard .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 14px;font-size:13px}
+.sitecard .kv div{min-width:0}
+.sitecard .kv .k{font-size:11.5px;color:var(--muted);letter-spacing:.04em}
+.sitecard .kv .v{font-variant-numeric:tabular-nums;font-weight:500}
+.sitecard .reason{font-size:13px;border-top:1px solid var(--line);padding-top:10px}
+
+.scn{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sched{display:grid;gap:8px}
+.sched .row{display:grid;grid-template-columns:90px 1fr 220px;gap:12px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 14px;align-items:start}
+.sched .wk{font-family:var(--display);font-weight:700;color:var(--accent)}
+.sched .wk small{display:block;font-weight:500;color:var(--muted);font-size:11.5px}
+.sched .done{font-size:12.5px;color:var(--muted);border-left:1px solid var(--line);padding-left:12px}
+pre{margin:0;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans KR",monospace}
+footer{margin-top:52px;border-top:1px solid var(--line);padding-top:14px;font-size:12.5px;color:var(--muted);line-height:1.6}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:760px){
+  .facts,.cards,.cards.four,.scn,.screen .callout,.sitecard .kv{grid-template-columns:1fr}
+  .sched .row{grid-template-columns:1fr}.sched .done{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:8px}
+  h1{font-size:23px}
+}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">제출물 2 · 대시보드 개발 전략 · 사업성 파트 · 2026-11-11</div>
+  <h1>청주시가 공원 40개소에 얼마를 넣어야 하는가 — 금액으로 단계를 정하는 화면</h1>
+  <p class="sub">CCS자연기반해법(NbS)계획및설계 · 선진엔지니어링 트랙 「2040 청주시 공원녹지기본계획」 · 사업성 파트 작성 정진형</p>
+  <div class="facts">
+    <div class="fact"><div class="v">④ 재정투입 효율성 · ⑤ 기존투자</div><div class="k">사업성 파트가 맡는 청주시 평가 기준 (제안서 p.27)</div></div>
+    <div class="fact"><div class="v">보상 + 조성</div><div class="k">시 부담 최대 = 두 금액의 합. 점수로 합치지 않는다</div></div>
+    <div class="fact"><div class="v">23~34만원/㎡</div><div class="k">청주 보상 실적 범위 (강내·월명공원, 근거 B7)</div></div>
+    <div class="fact"><div class="v">연 420억</div><div class="k">2020~25 공원 매입 실적 2,100억 ÷ 5년 (뉴시스 2020.6.18)</div></div>
+  </div>
+</header>
+
+<!-- 1 -->
+<section>
+  <h2><span class="n">01</span>판단 화면 (대응층)</h2>
+  <p class="lead">사용자는 청주시 공원녹지과 담당자와 선진 계획팀이다. 이들이 내리는 결정은 <b>"어느 후보지를 1단계에 넣고, 예산 요구서와 공모 신청서에 어떤 숫자를 쓸 것인가"</b>다. 화면은 그 질문에 바로 답하는 네 요소로 만들고(i-Tree의 입력→계산→화면 구조, 7주차 p.11), 사업성 점수를 따로 만들지 않고 금액과 플래그를 그대로 보인다.</p>
+
+  <div class="screen">
+    <div class="bar"><b>① 집행 순서표</b> 공원녹지과 보기 · 필요성 등급순 → 등급 안에서는 시 부담 최소 낮은 순 <span class="chip">예시 4행 · 토지소유 미수령 상태</span></div>
+    <div class="tbl"><table>
+      <tr><th>공원</th><th>면적 ㎡</th><th>실효</th><th>필요성 등급</th><th>판정</th><th>보상 추정 (억)</th><th>조성 추정 (억)</th><th>재원 경로</th><th>시 부담 최소 (억)</th><th>단계</th></tr>
+      <tr><td>근린공원165 (상당 용정동)</td><td class="num">105,864</td><td class="num">2030</td><td><span class="pill g">필요성 파트</span></td><td><span class="pill g">필요성 파트</span></td><td class="num assume">244 ~ 360</td><td class="num assume">65 ~ 147</td><td>특례 가능 (≥5만㎡)</td><td class="num">0 (특례 시)</td><td>실효 ≤ 2030 → 1단계</td></tr>
+      <tr><td>근린공원8 (상당 북문로1가)</td><td class="num">41,315</td><td class="num">2033</td><td><span class="pill g">필요성 파트</span></td><td><span class="pill g">필요성 파트</span></td><td class="num assume">95 ~ 141</td><td class="num assume">25 ~ 57</td><td>없음 (특례 미달)</td><td class="num assume">120 ~ 198</td><td>공고 1단계 유지</td></tr>
+      <tr><td>소공원23 (서원 현도면)</td><td class="num">1,869</td><td class="num">2026</td><td><span class="pill g">필요성 파트</span></td><td><span class="pill g">필요성 파트</span></td><td class="num assume">4.3 ~ 6.4</td><td class="num assume">1.1 ~ 2.6</td><td>반환사업 요건 검토</td><td class="num assume">5.4 ~ 9.0</td><td>실효 ≤ 2030 → 1단계</td></tr>
+      <tr><td>생태공원3 (청원 정상동)</td><td class="num">2,579,169</td><td class="num">2032</td><td><span class="pill g">필요성 파트</span></td><td><span class="pill g">필요성 파트</span></td><td class="num"><span class="pill c">미산정</span></td><td class="num"><span class="pill c">미산정</span></td><td>생태축 요건 검토</td><td class="num">—</td><td>토지소유 수령 후</td></tr>
+    </table></div>
+    <div class="callout">
+      <div><b>회색 칸</b>사유지 100% 가정값. 토지소유 자료가 오면 값만 바뀌고 열은 그대로</div>
+      <div><b>미산정</b>생태공원3은 사유지 100% 가정 시 보상 5,900~8,800억으로 비현실적. 미조성 공원 면적의 95.2%가 국유지(제안서 p.28)이므로 소유 자료 없이는 올리지 않음</div>
+      <div><b>필요성 파트 칸</b>등급·판정은 받아서 그대로 표시, 재계산하지 않음</div>
+      <div><b>단계 칸</b>규칙 적용 결과와 그 이유를 같이 적음 (§3)</div>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="sitecard">
+      <div class="head"><h3>② 후보지 카드 — 근린공원8</h3><span class="pill b">심의 설명용 한 장</span></div>
+      <div class="kv">
+        <div><div class="k">면적 · 실효</div><div class="v">41,315㎡ · 2033</div></div>
+        <div><div class="k">사유지 면적</div><div class="v">41,315㎡ <span class="pill g">가정 100%</span></div></div>
+        <div><div class="k">공시지가</div><div class="v"><span class="pill g">V-World 수집 전</span></div></div>
+        <div><div class="k">보상 추정</div><div class="v">95~141억 (23~34만원/㎡)</div></div>
+        <div><div class="k">조성 추정</div><div class="v">25~57억 (6.1~13.9만원/㎡)</div></div>
+        <div><div class="k">특례</div><div class="v">불가 — 5만㎡ 미만</div></div>
+        <div><div class="k">국비 요건</div><div class="v">도시숲 · 생태축 · 반환: 필요성 지표 수령 후 판정</div></div>
+        <div><div class="k">매수청구 회피액</div><div class="v">지목 '대' 면적 × 공시지가 — 수집 전</div></div>
+        <div><div class="k">기존투자</div><div class="v">공고 1단계 포함 · 조성계획 고시 확인 중</div></div>
+      </div>
+      <p class="reason"><b>근거문:</b> 청주시 공고 제2026-2004호에서 이미 1단계로 지정된 2개소 중 하나. 외부 재원 경로가 없어 시 부담 최소 = 최대(120~198억). 보상단가 23만→34만원/㎡ 사이에서 단계가 바뀌지 않으므로 <b>확정</b>. 출처: P1, B7, A1.</p>
+    </div>
+    <div class="card biz">
+      <div class="lbl">③ 시 부담 분포</div>
+      <p>40개소 시 부담 최소를 크기순 막대로 그리고, <b>연 420억 × 1단계 4년 = 1,680억</b> 실적선을 긋는다. 1단계로 배정된 후보지의 합이 이 선을 넘으면 등급 안 순서대로 2단계로 밀린다. 선은 예산 결정이 아니라 "지난 5년 속도로 가능한 범위"의 참고선이다.</p>
+      <div class="lbl">④ 필요성 순위 × 시 부담</div>
+      <p>가로축 필요성 순위(필요성 파트), 세로축 시 부담 최소. 오른쪽 위(필요한데 비싼 곳)가 심의에서 가장 먼저 논의할 후보지이고, 특례 가능 후보지는 테두리로 강조한다.</p>
+      <div class="lbl">화면 원칙</div>
+      <ul><li>모든 숫자 옆에 근거 대장 키</li><li>가정값은 회색, 출처 없는 값은 "미산정"</li><li>"해제"는 표시하지 않고 보류까지만</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section>
+  <h2><span class="n">02</span>실데이터 출처표</h2>
+  <div class="tbl"><table>
+    <tr><th>#</th><th>데이터</th><th>쓰이는 곳</th><th>출처</th><th>형식</th><th>확보 상태</th></tr>
+    <tr><td>1</td><td>장기미집행 공원 40개소 (면적·지목·실효년도·공고 단계)</td><td>전부</td><td>청주시 공고 제2026-2004호 (제안서 p.27 표)</td><td>표 → CSV</td><td><span class="pill a">확보</span> 행 합산 2,927,250㎡ vs 표 합계 2,981,700㎡ 차이 원 공고 확인 중</td></tr>
+    <tr><td>2</td><td>개별공시지가 (필지)</td><td>토지보상, 매수청구</td><td>V-World 오픈API (국토교통부), 매년 1월 1일 기준</td><td>JSON, 공공누리 1유형</td><td><span class="pill b">11주 API 키 신청</span></td></tr>
+    <tr><td>3</td><td>토지소유 구분 (국·공·사) · 지목</td><td>사유지 면적, 기존투자</td><td>국가공간정보포털 토지소유정보 또는 청주시 제공</td><td>SHP/CSV</td><td><span class="pill b">선진 통해 시 요청</span> 수령 전엔 사유지 100% 상한 (제안서 p.28: 미조성 공원 국유지 95.2%)</td></tr>
+    <tr><td>4</td><td>청주 보상·조성 실적 단가</td><td>보상 범위, 조성 범위</td><td>월명공원 보상 351억·조성 63억/102,487㎡ (twig24 2026.7.31) · 강내공원 보상 35억·총 56억/15,111㎡ (더팩트 2022.11.1)</td><td>보도 수치</td><td><span class="pill a">확보</span> 시 단가표 수령 시 교체</td></tr>
+    <tr><td>5</td><td>재원 제도 요건</td><td>특례 가능, 국비 경로</td><td>공원녹지법 §21조의2 (5만㎡↑, 70% 기부채납) · 국토계획법 §47 매수청구 · 산림청 기후대응 도시숲 공고(국비 50%) · 환경부 도시생태축(56~68%) · 생태계보전부담금 반환(청주 강내 18억 중 국비 5억 = 28%)</td><td>조문·공고 → 룰</td><td><span class="pill a">확보</span> 인용 전 law.go.kr 재대조</td></tr>
+    <tr><td>6</td><td>필요성 지표 (열환경·하천·녹지축 인접)</td><td>국비 요건 판정</td><td>필요성 파트 산출물</td><td>CSV</td><td><span class="pill b">13주 수령</span> 재계산하지 않음</td></tr>
+  </table></div>
+  <p class="note">2·3이 금액을 확정하는 핵심 자료다. 둘 다 오기 전까지 화면은 "범위"와 "가정" 표시로만 돌아가고, 오면 열은 그대로 두고 값만 바뀐다.</p>
+</section>
+
+<!-- 3 -->
+<section>
+  <h2><span class="n">03</span>지표 · 산정 규칙 · 민감도 (방법론층)</h2>
+
+  <h3>산정 규칙 — 모든 상수는 출처가 있는 것만 쓴다</h3>
+  <div class="tbl"><table>
+    <tr><th>지표</th><th>산정 규칙</th><th>근거</th></tr>
+    <tr><td>사유지 면적</td><td>면적 × (1 − 국공유지 비율). 비율 미수령 시 100%로 두고 회색 표시</td><td>데이터 1·3</td></tr>
+    <tr><td>토지보상 추정</td><td>사유지 면적 × 단가. 단가는 공시지가 수령 전 <b>청주 실적 23~34만원/㎡</b>(범위), 수령 후 "공시지가 × 배율"로 전환하되 배율은 두 실적에서 역산</td><td>B7 (강내 35억/15,111㎡, 월명 351억/102,487㎡)</td></tr>
+    <tr><td>조성비 추정</td><td>면적 × <b>6.1~13.9만원/㎡</b>. 생태공원은 청주 실적이 없어 미산정</td><td>B7 (월명 63억/102,487㎡, 강내 (56−35)억/15,111㎡)</td></tr>
+    <tr><td>특례 가능</td><td>면적 ≥ 50,000㎡ AND 유형 ≠ 생태공원</td><td>공원녹지법 §21조의2 (A1)</td></tr>
+    <tr><td>국비 경로</td><td>도시숲: 열환경 취약 또는 산단 풍하측 → 조성비 50% / 생태축: 하천·녹지축 인접 → 56~68% / 반환사업: 청주 선례 28%. 요건은 필요성 지표로 판정</td><td>A3 산림청, A4a 환경부, A4b 강내공원 선례</td></tr>
+    <tr><td>시 부담 최대</td><td>보상 + 조성</td><td>계산</td></tr>
+    <tr><td>시 부담 최소</td><td>특례 가능 → 0 / 국비 경로 → 최대 − 조성비 × 국비율(하한) / 그 외 최대</td><td>계산 (국비율은 범위 하한 사용)</td></tr>
+    <tr><td>매수청구 회피액</td><td>지목 '대'인 사유지 면적 × 공시지가 (상한)</td><td>국토계획법 §47 (A8)</td></tr>
+    <tr><td>기존투자</td><td>세 사실을 그대로 표시: 국공유지 비율 · 공원조성계획 고시 여부 · 공고 1단계 여부. 점수로 합치지 않음</td><td>데이터 1·3, 청주시 고시</td></tr>
+  </table></div>
+
+  <h3>단계 배정 규칙 — 필요성 판정은 받기만 하고, 사업성은 그 안의 순서를 정한다</h3>
+  <div class="cards">
+    <div class="card biz">
+      <div class="lbl">1단계(2027~30)에 넣는 조건 · 하나라도 충족</div>
+      <ol>
+        <li><b>실효년도 ≤ 2030</b> — 1단계 기간 안에 실효되므로 2단계로 두면 사라진다 (국토계획법 §48, 기본계획 승인 2027.12 제안서 p.6)</li>
+        <li><b>공고 1단계</b> — 시가 이미 집행계획에 넣은 2개소는 유지 (공고 제2026-2004호)</li>
+        <li><b>외부 재원 경로 ≥ 1</b> — 특례 가능 또는 국비 요건 충족. 시 부담 최소가 최대보다 작은 곳</li>
+      </ol>
+      <p class="note">판정이 "보류"면 단계를 주지 않는다. 특례 가능 → 민간 제안 대기 / 개발압력 높음(필요성 파트) → 실효 전 재검토 / 그 외 → 시 판단.</p>
+    </div>
+    <div class="card biz">
+      <div class="lbl">같은 등급·단계 안의 순서</div>
+      <ol>
+        <li><b>시 부담 최소 낮은 순</b> — 같은 필요성이면 적게 드는 곳부터 (비용효과 순, 예타 일반지침의 비용효과 분석 원칙)</li>
+        <li>동률이면 <b>국공유지 비율 높은 순</b> — 보상이 작고 즉시 착수 가능</li>
+      </ol>
+      <div class="lbl">1단계 합계 점검선</div>
+      <p>1단계 후보지의 시 부담 최소 합이 <b>1,680억</b>(연 420억 × 4년)을 넘으면 순서 뒤쪽을 2단계로 보낸다. 이 선은 2020~25 실적에서 온 참고선이고 예산 결정은 시가 한다.</p>
+    </div>
+  </div>
+
+  <h3>민감도 — 시나리오·전환값 분석 (예타 일반지침 KDI 제5판의 결정론적 방식)</h3>
+  <div class="scn">
+    <div class="card biz">
+      <div class="lbl">변수와 값 · 임의값 없음</div>
+      <div class="tbl"><table>
+        <tr><th>변수</th><th>하한</th><th>상한</th><th>근거</th></tr>
+        <tr><td>보상단가</td><td class="num">23만원/㎡</td><td class="num">34만원/㎡</td><td>강내 · 월명 실적</td></tr>
+        <tr><td>조성단가</td><td class="num">6.1만원/㎡</td><td class="num">13.9만원/㎡</td><td>월명 · 강내 실적</td></tr>
+        <tr><td>국비 선정</td><td>미선정</td><td>선정</td><td>둘 다 계산, 확률 없음</td></tr>
+        <tr><td>국공유지 비율</td><td colspan="2">시나리오 제외</td><td>자료 수령 시 변동 없음</td></tr>
+      </table></div>
+      <p class="note">실적이 없는 항목이 생기면 예타 보고서 관행인 ±10%·±20%를 쓰고 그렇게 표기한다.</p>
+    </div>
+    <div class="card biz">
+      <div class="lbl">절차와 판정</div>
+      <ol>
+        <li>2 × 2 × 2 = <b>8개 조합</b>마다 시 부담 최소와 단계를 다시 계산</li>
+        <li>8개 모두 단계가 같으면 <span class="pill a">확정</span>, 하나라도 다르면 <span class="pill c">경계</span> — 문턱값 없음</li>
+        <li>경계 후보지는 <b>전환값</b>을 카드에 적는다. 예: "보상단가 29만원/㎡ 이상이면 1단계 합계 점검선을 넘어 2단계" → 담당자가 확인할 자료(감정평가·토지소유)가 바로 드러남</li>
+        <li>결과는 40행 × 8열 표 한 장과 경계 후보지 목록으로 보고</li>
+      </ol>
+      <p class="note">몬테카를로는 쓰지 않는다. 확률분포를 가정할 근거가 없고, 결과를 손으로 재현할 수 없어 심의 자료로 부적합하다.</p>
+    </div>
+  </div>
+
+  <h3>이론과의 연결 (7주차 강의자료 쪽)</h3>
+  <div class="tbl"><table>
+    <tr><th>이론</th><th>사업성 파트에서 쓰는 방식</th></tr>
+    <tr><td>문제구조화 (Rosenhead 1996, p.8)</td><td>"사업성"을 수익성이 아니라 "시가 감당할 수 있는가"로 재정의해, 비구조적 문제를 금액 두 개와 플래그로 바꾼다</td></tr>
+    <tr><td>가치중심사고 (Keeney 1996, p.9)</td><td>대안(어느 공모에 낼까)이 아니라 가치(시 재정 부담 최소화)에서 지표를 고른다</td></tr>
+    <tr><td>지식의 3조건 (Cash et al. 2003, p.9)</td><td>현저성 = 예산 요구서·공모 신청서에 바로 쓰는 숫자 / 신뢰성 = 출처 키·실적 단가 / 정당성 = 해제 미판정, 가정 공개</td></tr>
+    <tr><td>PSS 실행 격차 (Vonk 2005; Jiang 2020, p.10)</td><td>도구보다 사용자 먼저: 화면 요소를 담당자의 질문에서 역산. 담당자 접촉이 없으므로 필요성·사업성 파트 교차 검토로 대신</td></tr>
+    <tr><td>플랫폼 3종 (p.11) · 검증 3지점 (p.21)</td><td>i-Tree의 입력→계산→화면 구조, 단 가중합 대신 금액 나열 · 엔드포인트·패키지·수치 검증 (§6)</td></tr>
+  </table></div>
+</section>
+
+<!-- 4 -->
+<section>
+  <h2><span class="n">04</span>한계 (한계층)</h2>
+  <div class="tbl"><table>
+    <tr><th>한계</th><th>영향받는 수치</th><th>화면에서 다루는 방식</th></tr>
+    <tr><td>토지소유·공시지가 수령 전에는 사유지 100% 가정</td><td>보상액이 최대 수십 배 과대 (생태공원3 사례). 미조성 공원 면적의 95.2%가 국유지(제안서 p.28)</td><td>회색 "가정", 대형·생태공원은 "미산정". 수령 시 값만 교체</td></tr>
+    <tr><td>실적 단가가 두 건(강내·월명)뿐</td><td>보상 23~34만, 조성 6.1~13.9만원/㎡ 범위가 넓음</td><td>범위로 표시, 시 단가표 수령 시 교체. 공시지가 수령 후 배율로 전환</td></tr>
+    <tr><td>특례 "가능"은 법 요건만. 사업자 수요 미반영</td><td>영운공원처럼 사업자 포기 시 시 부담 최소 0이 무효</td><td>"법 요건 충족"으로만 표기, 최소값은 "특례 시"로 조건부</td></tr>
+    <tr><td>국비는 선정 불확실, 반환사업 요건 공고 원문 미확인</td><td>시 부담 최소가 시나리오값</td><td>단계 판정은 두 경우 모두 계산(§3), 요건은 공고 확인 후 룰 수정</td></tr>
+    <tr><td>필요성 지표 수령 전 국비 요건 판정 불가</td><td>국비 경로 열 공란</td><td>13주 수령 후 채움, 그 전엔 "검토"로 표기</td></tr>
+  </table></div>
+</section>
+
+<!-- 5 -->
+<section>
+  <h2><span class="n">05</span>11~15주차 개발 일정</h2>
+  <div class="sched">
+    <div class="row"><div class="wk">11주<small>~11.16 · 사다리 2 데이터</small></div><div>마스터 테이블에 사업성 열 12개 추가 · 룰 5개를 rules.md로 문서화 · V-World API 키 신청 · 선진 통해 토지소유·단가표·조성계획 고시 요청</div><div class="done">표 골격, 룰 문서, 요청 발송 기록</div></div>
+    <div class="row"><div class="wk">12주<small>~11.23 · 2 데이터</small></div><div>공시지가 40개소 수집 · 토지소유 수령(미수령 시 100% 가정 유지) · 두 실적에서 보상배율 역산 · 필요성 파트와 열 이름 맞춤</div><div class="done">보상·조성 열 채움, 출처 키 부착</div></div>
+    <div class="row"><div class="wk">13주<small>~11.30 · 3 계산</small></div><div>시 부담 최대·최소, 매수청구, 기존투자 계산 · 단계 배정 · 8개 시나리오와 전환값 · 후보지 카드 40장</div><div class="done">40×8 시나리오표, 경계 후보지 목록, 카드 40장</div></div>
+    <div class="row"><div class="wk">14주<small>~12.7 · 4 화면 · 5 검증</small></div><div>대시보드 사업성 패널 실데이터 교체 · 시 부담 분포 화면 추가 · 필요성 파트와 결합 · §6 검증 5건</div><div class="done">배포 URL, 검증 로그</div></div>
+    <div class="row"><div class="wk">15주<small>~12.14 · 6 평가</small></div><div>최종 피치: 질문 → 카드 → 단계 한 장면 · 스프린트 로그 제출</div><div class="done">—</div></div>
+  </div>
+  <p class="note">자료가 제때 안 오면 §2의 대체값(가정 표시)으로 진행하고 멈추지 않는다.</p>
+</section>
+
+<!-- 6 -->
+<section>
+  <h2><span class="n">06</span>바이브코딩 프롬프트와 검증</h2>
+  <p class="note">도구는 Claude Code(수집·룰 엔진·화면)와 QGIS MCP(필지 공간조인). 프롬프트는 "어디서 어떤 값을 가져와 어떻게 계산하고 무엇을 표시하라"를 한 번에 담고 출처 키를 강제한다.</p>
+  <div class="cards">
+    <div class="card biz">
+      <div class="lbl">프롬프트 1 · 공시지가 수집</div>
+<pre>sites.csv(site_id, dong, jibun, area_m2) 40행에 대해 V-World 개별공시지가 API(api.vworld.kr, 키는 환경변수 VWORLD_KEY)로 지번별 ㎡당 공시지가를 가져와 land_price_krw_m2 열에 넣고, 응답 원본을 raw/vworld_{site_id}.json에 저장해라. 실패한 행은 값을 비우고 note 열에 사유를 적어라. 다른 도메인은 호출하지 말고 패키지는 requests와 pandas만 써라.</pre>
+    </div>
+    <div class="card biz">
+      <div class="lbl">프롬프트 2 · 재원 룰 엔진 + 시나리오</div>
+<pre>rules.md의 룰 5개(특례·도시숲·생태축·반환·매수청구)를 함수로 만들어 sites.csv 각 행에 적용하고 city_cost_max, city_cost_min, funding_routes, buyout_cap, stage, source_keys 열을 추가해라. 단가는 params.yaml(보상 23만/34만, 조성 6.1만/13.9만원/㎡, 국비율 하한)에서만 읽고 코드에 숫자를 쓰지 마라. 보상×조성×국비 8개 조합으로 stage를 다시 계산해 scenario_{1..8} 열과 stage_stable(8개 동일 여부), switch_value 열을 만들어라. 마지막에 월명공원(102,487㎡, 사유지 100%)을 넣어 상한 단가에서 보상 351억·조성 63억이 나오는지 출력해라.</pre>
+    </div>
+  </div>
+  <h3>결과 검증 (검증 3지점 + 2)</h3>
+  <div class="tbl"><table>
+    <tr><th>지점</th><th>무엇을 확인하나</th><th>통과 기준</th></tr>
+    <tr><td>엔드포인트</td><td>호출 도메인이 api.vworld.kr · law.go.kr · apis.data.go.kr 등록분인가, raw/에 응답 원본이 있는가</td><td>미등록 도메인 0건, 응답 파일 40건</td></tr>
+    <tr><td>패키지</td><td>requirements.txt의 패키지가 PyPI에 존재하고 설치되는가</td><td>pip install 성공</td></tr>
+    <tr><td>수치</td><td>표의 모든 단가·비율에 근거 대장 키가 있는가, 법령 조문이 law.go.kr과 맞는가</td><td>키 없는 수치 0건</td></tr>
+    <tr><td>실적 재현</td><td>월명공원 면적을 상한 단가로 계산하면 보상 351억·조성 63억이 나오는가 (단가가 거기서 왔으므로 코드가 맞으면 일치해야 함)</td><td>반올림 오차 1% 이내 일치</td></tr>
+    <tr><td>수기 검산 · 교차 검토</td><td>대형 1·소형 1·지목 '대' 1개소를 손으로 재계산, 필요성 파트가 카드만 보고 단계 이유를 같은 결론으로 재현</td><td>표와 일치, 결론 일치 (문제정의서 RQ4)</td></tr>
+  </table></div>
+  <p class="note">AI가 만든 수치는 없다. 출처 없는 수치는 화면에 올리지 않고 "미산정"으로 표시한다. 검증 기록은 스프린트 로그에 커밋한다.</p>
+</section>
+
+<footer>
+  근거 대장 키: A1 민간공원특례 요건(공원녹지법 §21조의2) · A3 산림청 기후대응 도시숲 국비 50% · A4a 환경부 도시생태축 56~68% · A4b 생태계보전부담금 반환사업(청주 강내근린공원 18억/국비 5억, 뉴스서울 2023.2.7) · A8 매수청구(국토계획법 §47) · B7 월명공원 보상 351억·조성 63억/102,487㎡(twig24 2026.7.31), 강내공원 보상 35억·총 56억/15,111㎡(더팩트 2022.11.1) · D1 청주시 공원산림본부 2026.1.29 · P1 청주시 평가 기준 5개(제안서 p.27). 2020~25 매입 실적 2,100억: 뉴시스 2020.6.18. 예타 민감도 분석 방식: KDI 「예비타당성조사 수행을 위한 일반지침」 제5판. 출처 URL·조사일은 프로젝트 프로파일 §10.
+</footer>
+</div>

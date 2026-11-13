@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+biz/out/
+need/out/
+data/raw/*.json
+data/raw/*.zip
+.DS_Store
