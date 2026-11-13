@@ -320,7 +320,7 @@ function card(){
     <dt>보상 / 조성 (상한)</dt><dd>${eok(p.comp)} / ${eok(p.cons)}억</dd></dl>
     ${bar}
     ${under}
-    <div class="note">${p.reasons?'단계 근거: '+p.reasons+'. ':''}${!p.poly?'V-World에서 공원 경계를 찾지 못해 사유지 100%로 가정한 값이다.':p.id===40?'필지는 사유지와 2만㎡ 이상 국유 필지만 그렸다(전체 342필지).':`경계 안 ${b.n}필지, 소유 기록이 없는 필지는 사유지로 계산.`}</div>
+    <div class="note">${p.reasons?'단계 근거: '+p.reasons+'. ':''}${!p.poly?'V-World에서 공원 경계를 찾지 못해 사유지 100%로 가정한 값이다.':p.id===40?'필지는 사유지와 2만㎡ 이상 국유 필지만 그렸다(전체 342필지).':`경계 안 ${b.n}필지. 소유는 토지소유정보·토지임야목록, 공시지가·용도지역·이용상황은 2026 토지특성 기준.`}</div>
     ${S.view==='city'&&p.poly?'<button class="seg" id="goPark" style="margin-top:8px;padding:5px 10px;font:inherit;font-size:12px;font-weight:600;color:var(--ink);cursor:pointer">필지 보기 →</button>':''}`;
   const g=$('goPark'); if(g) g.onclick=()=>setView('park');
 }
