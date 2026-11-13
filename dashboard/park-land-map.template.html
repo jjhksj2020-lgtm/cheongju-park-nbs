@@ -128,7 +128,7 @@ footer{font-size:11.5px;color:var(--muted)}
     <div id="chartrows"></div>
   </div>
 
-  <footer>출처: V-World 도시계획시설(lt_c_uq162) 공원 경계 · 연속지적도(lp_pa_cbnd_bubun) 필지·개별공시지가 · 토지소유정보(getPossessionAttr) 소유구분, 2026-11-13 조회. 시 부담은 biz_engine.py 산출(청주 실적 단가 상한). 생태공원3 필지는 사유·대형 필지만 표시.</footer>
+  <footer>출처: V-World 도시계획시설(lt_c_uq162) 공원 경계 · 연속지적도(lp_pa_cbnd_bubun) 필지·개별공시지가 · 토지소유정보(getPossessionAttr)·토지임야목록(ladfrlList) 소유구분 · 토지특성(getLandCharacteristics) 2026 공시지가·용도지역·이용상황, 2026-11-13 조회. 시 부담은 biz_engine.py 산출(청주 실적 단가 상한). 생태공원3 필지는 사유·대형 필지만 표시.</footer>
 </div>
 
 <script src="https://unpkg.com/deck.gl@8.9.36/dist.min.js"></script>
@@ -141,7 +141,13 @@ const ownCat = o => o==='국유지'?'국유':/^(군유지|시도유지)(\|(군�
 const JIMOK = ['임야','전','답','대','도로','하천','구거','공원','기타'];
 const JCOL = {'임야':'--own-loc','전':'--seq1','답':'--seq2','대':'--own-org','도로':'--own-unk','하천':'--own-nat','구거':'--own-nat','공원':'--own-loc','기타':'--muted'};
 const jmCat = j => ({'임':'임야','제방':'하천','유지':'하천'})[j] || (JIMOK.includes(j)?j:'기타');
-D.parcels.forEach(p=>{p.cat=ownCat(p.own);p.jc=jmCat(p.jm)});
+const URB=['단독','연립','주거기타','주거나지','주상기타','주상나지','상업용','업무용','공업용'];
+const useCat = u => URB.includes(u)?'건물·시가지':/^(전|답|과수원|전기타|답기타)$/.test(u)?'농지':/^(자연림|임야기타|토지임야)$/.test(u)?'산림':/^(하천등|도로등)$/.test(u)?'하천·도로':'공원 등';
+const UCOL = {'건물·시가지':'--own-org','농지':'--seq1','산림':'--own-loc','하천·도로':'--own-nat','공원 등':'--own-unk'};
+const zoneCat = (z,gb) => gb||z==='개발제한구역'?'개발제한구역':/주거/.test(z)?'주거지역':/상업/.test(z)?'상업지역':/녹지/.test(z)?'녹지지역':'관리·농림지역';
+const ZCOL = {'주거지역':'--own-ind','상업지역':'--own-org','녹지지역':'--own-loc','관리·농림지역':'--seq1','개발제한구역':'--own-nat'};
+const UNIT_MAX = 340000; // 청주 실적 보상단가 상한(원/㎡) — biz/params.yaml
+D.parcels.forEach(p=>{p.cat=ownCat(p.own);p.jc=jmCat(p.jm);p.uc=useCat(p.use);p.zc=zoneCat(p.zone,p.gb)});
 const byId = Object.fromEntries(D.parks.map(p=>[p.id,p]));
 const eok = v => v==null?'미산정':(v/1e8).toLocaleString('ko-KR',{maximumFractionDigits:v<1e9?1:0});
 const m2 = v => v==null?'—':Math.round(v).toLocaleString('ko-KR')+'㎡';
@@ -161,8 +167,8 @@ function pubColor(p){ if(p==null) return C['--own-unk']; return lerp(C['--own-in
 // --- 상태 ---
 const S = {view:'city', d3:false, sel:null, colorCity:'pub', heightCity:'cost', colorPark:'own', heightPark:'jiga'};
 const OPTS = {
-  city:{color:[['pub','국공유지 비율'],['stage','집행 단계(기준 시나리오)'],['boundary','경계 일치도']], height:[['cost','시 부담 최대(억)'],['priv','사유지 면적'],['none','없음']]},
-  park:{color:[['own','소유 구분'],['jimok','지목'],['jiga','개별공시지가']], height:[['jiga','개별공시지가'],['none','없음']]}
+  city:{color:[['pub','국공유지 비율'],['stage','집행 단계(기준 시나리오)'],['boundary','경계 일치도'],['urban','건물·시가지 사유지']], height:[['cost','시 부담 최대(억)'],['priv','사유지 면적'],['none','없음']]},
+  park:{color:[['own','소유 구분'],['use','이용상황(건물 여부)'],['zone','용도지역'],['jimok','지목'],['jiga','개별공시지가 2026']], height:[['jiga','개별공시지가'],['none','없음']]}
 };
 
 // --- deck ---
@@ -175,7 +181,7 @@ const ttStyle = () => ({backgroundColor:`rgb(${C['--panel']})`, color:`rgb(${C['
 function tip({object, layer}){
   if(!object || !layer) return null;
   if(layer.id.startsWith('park-')){ const p=object.p||object; return {html:`<div class="tt"><b>${p.name}</b> · ${p.loc}<br>면적 ${m2(p.area)} · 국공유 ${pct(p.pub)}<br>시 부담 최대 ${eok(p.maxH)}억 · ${p.stage}</div>`, style:ttStyle()}; }
-  if(layer.id==='parcels'){ const q=object; return {html:`<div class="tt"><b>${q.jb}</b> · ${q.own}<br>지목 ${q.jm} · 공원 안 ${m2(q.in)}<br>공시지가 ${q.jiga?q.jiga.toLocaleString('ko-KR')+'원/㎡':'—'}</div>`, style:ttStyle()}; }
+  if(layer.id==='parcels'){ const q=object; return {html:`<div class="tt"><b>${q.jb}</b> · ${q.own}<br>지목 ${q.jm} · 공원 안 ${m2(q.in)}<br>이용상황 ${q.use} · ${q.zone}${q.gb?' · 개발제한구역':''}<br>2026 공시지가 ${q.jiga?q.jiga.toLocaleString('ko-KR')+'원/㎡':'—'}</div>`, style:ttStyle()}; }
   if(layer.id==='gu') return {html:`<div class="tt">${object.name}</div>`, style:ttStyle()};
   return null;
 }
@@ -187,6 +193,7 @@ const guLabels = () => new deck.TextLayer({id:'gu-label', data:D.gu.map(g=>{cons
 function cityColor(p){
   if(S.colorCity==='pub') return pubColor(p.pub);
   if(S.colorCity==='stage') return p.stage==='1단계'?C['--stage1']:C['--stage2'];
+  if(S.colorCity==='urban') return p.urban>0?C['--own-org']:p.pub==null?C['--own-unk']:C['--own-loc'];
   return p.boundary==='일치'?C['--own-loc']:p.boundary==='근사'?C['--own-ind']:C['--own-org'];
 }
 const maxCost = Math.max(...D.parks.map(p=>p.maxH||0));
@@ -215,6 +222,8 @@ function cityLayers(){
 function parcelColor(q, jmax){
   if(S.colorPark==='own') return C[OWN[q.cat]];
   if(S.colorPark==='jimok') return C[JCOL[q.jc]]||C['--muted'];
+  if(S.colorPark==='use') return C[UCOL[q.uc]];
+  if(S.colorPark==='zone') return C[ZCOL[q.zc]];
   return q.jiga?seq(q.jiga/jmax):C['--own-unk'];
 }
 function parkLayers(){
@@ -256,14 +265,17 @@ function legend(){
   if(S.view==='city'){
     if(S.colorCity==='pub') h=`<div class="t">국공유지 비율</div><div class="ramp" style="background:linear-gradient(90deg,var(--own-ind),var(--own-nat))"></div><div class="ramp-l"><span>0% 사유</span><span>100% 국공유</span></div><div class="row" style="margin-top:4px"><span class="k">${sw('--own-unk')}경계 미확인(가정)</span></div>`;
     else if(S.colorCity==='stage') h=`<div class="t">집행 단계</div><div class="row"><span class="k">${sw('--stage1')}1단계</span><span class="k">${sw('--stage2')}2단계</span></div>`;
+    else if(S.colorCity==='urban') h=`<div class="t">경계 안 사유지의 이용상황</div><div class="row"><span class="k">${sw('--own-org')}주택·상가 등 건물 있음</span><span class="k">${sw('--own-loc')}없음</span></div>`;
     else h=`<div class="t">공고 면적 대비 V-World 경계</div><div class="row"><span class="k">${sw('--own-loc')}일치 ±2%</span><span class="k">${sw('--own-ind')}근사 ±15%</span><span class="k">${sw('--own-org')}불일치</span></div>`;
     if(S.d3&&S.heightCity!=='none') h+=`<div class="meta" style="margin-top:5px">기둥 높이 = ${S.heightCity==='cost'?`시 부담 최대 (최고 ${eok(maxCost)}억)`:`사유지 면적 (최고 ${m2(maxPriv)})`}</div>`;
     else h+=`<div class="meta" style="margin-top:5px">원 크기 = 공원 면적</div>`;
   } else {
     if(S.colorPark==='own') h=`<div class="t">소유 구분</div><div class="row">${Object.entries(OWN).map(([k,v])=>`<span class="k">${sw(v)}${k}</span>`).join('')}</div>`;
+    else if(S.colorPark==='use') h=`<div class="t">이용상황 (토지특성 2026)</div><div class="row">${Object.entries(UCOL).map(([k,v])=>`<span class="k">${sw(v)}${k}</span>`).join('')}</div>`;
+    else if(S.colorPark==='zone') h=`<div class="t">용도지역</div><div class="row">${Object.entries(ZCOL).map(([k,v])=>`<span class="k">${sw(v)}${k}</span>`).join('')}</div>`;
     else if(S.colorPark==='jimok') h=`<div class="t">지목</div><div class="row">${['임야','전','답','대','도로','하천','기타'].map(k=>`<span class="k">${sw(JCOL[k])}${k}</span>`).join('')}</div>`;
     else { const qs=D.parcels.filter(q=>q.s===S.sel); const jm=Math.max(0,...qs.map(q=>q.jiga||0));
-      h=`<div class="t">개별공시지가 (원/㎡)</div><div class="ramp" style="background:linear-gradient(90deg,var(--seq0),var(--seq1),var(--seq2),var(--seq3))"></div><div class="ramp-l"><span>0</span><span>${jm.toLocaleString('ko-KR')}</span></div>`; }
+      h=`<div class="t">개별공시지가 2026 (원/㎡)</div><div class="ramp" style="background:linear-gradient(90deg,var(--seq0),var(--seq1),var(--seq2),var(--seq3))"></div><div class="ramp-l"><span>0</span><span>${jm.toLocaleString('ko-KR')}</span></div>`; }
     h+=`<div class="meta" style="margin-top:5px">점선 = 공원 경계${S.d3&&S.heightPark!=='none'?' · 높이 = 공시지가(이 공원 최고값 기준)':''}</div>`;
   }
   $('legend').innerHTML=h;
@@ -283,21 +295,31 @@ function card(){
       <dl class="kv"><dt>실자료 반영</dt><dd>${pubAll.length}개소 / 40</dd><dt>국공유지 (면적가중)</dt><dd>${pct(P/A)}</dd>
       <dt>시 부담 최대 합계</dt><dd>${eok(sumMax)}억</dd><dt>시 부담 최소 합계</dt><dd>${eok(sumMin)}억</dd>
       <dt>1단계</dt><dd>${D.parks.filter(x=>x.stage==='1단계').length}개소</dd></dl>
+      <div class="t" style="font-weight:600;font-size:12.5px;margin-top:12px">아직 확정 못 한 것</div>
+      <dl class="kv" style="margin-top:4px"><dt>공원 경계 못 찾음</dt><dd>1 (어린이공원152)</dd>
+      <dt>경계 면적 불일치 (×0.68)</dt><dd>1 (근린공원151)</dd><dt>경계 근사 (±15%)</dt><dd>3</dd>
+      <dt>소유 기록 없는 필지</dt><dd>0 (7필지 보완)</dd>
+      <dt>공시지가 &gt; 실적 단가 상한</dt><dd>${D.parks.filter(x=>x.price>UNIT_MAX).length}개소</dd>
+      <dt>필요성 지표(국비 요건)</dt><dd>미수령</dd></dl>
       <div class="note">생태공원3(2.58㎢)이 면적의 대부분을 차지하고 99.7%가 국유 하천·제방이다. 시 부담 합계에는 생태공원 조성비(미산정)가 빠져 있다.</div>`;
     return;
   }
   const b=ownBreak(p.id); const order=['국유','시·도유','개인','법인·종중 등','미확인'];
   const bar = b.tot? `<div class="bar" aria-label="소유 구분 면적 비율">${order.filter(k=>b.t[k]).map(k=>`<span title="${k} ${m2(b.t[k])}" style="width:${b.t[k]/b.tot*100}%;background:var(${OWN[k]})"></span>`).join('')}</div>
     <div class="legend" style="position:static;border:0;padding:4px 0 0"><div class="row">${order.filter(k=>b.t[k]).map(k=>`<span class="k">${sw(OWN[k])}${k} ${(b.t[k]/b.tot*100).toFixed(0)}%</span>`).join('')}</div></div>`:'';
-  const warn = p.boundary!=='일치' ? `<span class="pill warn">경계 ${p.boundary}${p.ratio?` ×${p.ratio}`:''}</span>`:'';
+  let warn = p.boundary!=='일치' ? `<span class="pill warn">경계 ${p.boundary}${p.ratio?` ×${p.ratio}`:''}</span>`:'';
+  if(p.urban>0) warn+=`<span class="pill warn" style="color:var(--own-org)">건물·시가지 ${m2(p.urban)}</span>`;
+  const under = p.price>UNIT_MAX ? `<div class="note" style="color:var(--own-org)">사유지 공시지가(${p.price.toLocaleString('ko-KR')}원/㎡)가 실적 보상단가 상한 34만원/㎡보다 높다. 지금 보상비는 낮게 잡혀 있다.</div>`:'';
   $('card').innerHTML=`<h2>${p.name} <span class="pill ${p.stage==='1단계'?'s1':'s2'}">${p.stage}</span>${warn}</h2>
     <div class="meta">${p.loc} · ${p.type} · 실효 ${p.expiry} · 공고 ${p.notice}</div>
     <dl class="kv"><dt>공고 면적</dt><dd>${m2(p.area)}</dd><dt>국공유지 비율</dt><dd>${pct(p.pub)}</dd>
     <dt>사유지 면적</dt><dd>${m2(p.pub==null?p.area:p.area*(1-p.pub))}</dd>
-    <dt>사유지 공시지가(가중)</dt><dd>${p.price?p.price.toLocaleString('ko-KR')+'원/㎡':'—'}</dd>
+    <dt>건물·시가지 사유지</dt><dd>${m2(p.urban)}</dd><dt>개발제한구역 면적</dt><dd>${m2(p.gb)}</dd>
+    <dt>사유지 공시지가 2026(가중)</dt><dd>${p.price?p.price.toLocaleString('ko-KR')+'원/㎡':'—'}</dd>
     <dt>시 부담 최대</dt><dd>${eok(p.maxL)}~${eok(p.maxH)}억</dd><dt>시 부담 최소</dt><dd>${eok(p.minL)}~${eok(p.minH)}억</dd>
     <dt>보상 / 조성 (상한)</dt><dd>${eok(p.comp)} / ${eok(p.cons)}억</dd></dl>
     ${bar}
+    ${under}
     <div class="note">${p.reasons?'단계 근거: '+p.reasons+'. ':''}${!p.poly?'V-World에서 공원 경계를 찾지 못해 사유지 100%로 가정한 값이다.':p.id===40?'필지는 사유지와 2만㎡ 이상 국유 필지만 그렸다(전체 342필지).':`경계 안 ${b.n}필지, 소유 기록이 없는 필지는 사유지로 계산.`}</div>
     ${S.view==='city'&&p.poly?'<button class="seg" id="goPark" style="margin-top:8px;padding:5px 10px;font:inherit;font-size:12px;font-weight:600;color:var(--ink);cursor:pointer">필지 보기 →</button>':''}`;
   const g=$('goPark'); if(g) g.onclick=()=>setView('park');

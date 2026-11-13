@@ -33,12 +33,14 @@ for sid, m in mb.items():
         'pub': f(o.get('public_share')), 'tag': m['private_share_tag'], 'boundary': o.get('boundary') or '미확인', 'ratio': f(o.get('boundary_ratio')),
         'maxH': f(m['city_max_high_krw']), 'maxL': f(m['city_max_low_krw']), 'minH': f(m['city_min_high_krw']), 'minL': f(m['city_min_low_krw']),
         'comp': f(m['comp_high_krw']), 'cons': f(m['cons_high_krw']), 'special': m['special_ok'] == '1',
-        'price': f(p.get('land_price_krw_m2')), 'dae': f(p.get('jimok_dae_m2')),
+        'price': f(p.get('land_price_krw_m2')), 'dae': f(p.get('jimok_dae_m2')), 'urban': f(p.get('urban_private_m2')), 'gb': f(p.get('greenbelt_m2')),
         'poly': poly, 'c': cen(poly) if poly else None})
 parcels = []
-for l in open(f'{R}/data/geo/parcels.txt', encoding='utf-8').read().split('\n'):
-    if not l: continue
+attr = [l.split('~') for l in open(f'{R}/data/geo/parcel_attr.txt', encoding='utf-8').read().split('\n') if l]
+for l, a in zip([l for l in open(f'{R}/data/geo/parcels.txt', encoding='utf-8').read().split('\n') if l], attr):
     sid, jb, inm, ow, jm, jg, g = l.split('~')
-    parcels.append({'s': int(sid), 'jb': jb, 'in': int(inm), 'own': ow, 'jm': jm, 'jiga': int(jg) if jg else None, 'poly': dec(g)})
+    assert a[0] == sid and a[1] == jb, (a, sid, jb)
+    parcels.append({'s': int(sid), 'jb': jb, 'in': int(inm), 'own': a[2], 'jm': jm, 'jiga': int(a[3]) if a[3] else None,
+                    'zone': a[4], 'gb': a[5] == '1', 'use': a[6], 'poly': dec(g)})
 json.dump({'gu': gu, 'parks': parks, 'parcels': parcels, 'asof': '2026-11-13'}, open(f'{R}/dashboard/mapdata.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 print(len(parks), len(parcels), os.path.getsize(f'{R}/dashboard/mapdata.json'))
