@@ -60,5 +60,6 @@ P = yaml.safe_load(open(f'{R}/biz/params.yaml', encoding='utf-8'))
 cu = P['compensation_unit_krw_m2']; ku = P['construction_unit_krw_m2']
 rule = {'low': cu['low'], 'high': cu['high'], 'rr': cu['land_price_rule']['realization_rate'], 'klow': ku['low'], 'khigh': ku['high']}
 bm = json.load(open(f'{R}/dashboard/img/manifest.json', encoding='utf-8')) if os.path.exists(f'{R}/dashboard/img/manifest.json') else {}
-json.dump({'rule': rule, 'basemap': bm, 'gu': gu, 'parks': parks, 'parcels': parcels, 'asof': '2026-11-13'}, open(f'{R}/dashboard/mapdata.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+dem = json.load(open(f'{R}/dashboard/dem/manifest.json', encoding='utf-8')) if os.path.exists(f'{R}/dashboard/dem/manifest.json') else {}
+json.dump({'dem': dem, 'rule': rule, 'basemap': bm, 'gu': gu, 'parks': parks, 'parcels': parcels, 'asof': '2026-11-13'}, open(f'{R}/dashboard/mapdata.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 print(len(parks), len(parcels), os.path.getsize(f'{R}/dashboard/mapdata.json'))

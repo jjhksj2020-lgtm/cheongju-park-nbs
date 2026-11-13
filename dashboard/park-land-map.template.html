@@ -113,6 +113,7 @@ footer{font-size:11.5px;color:var(--muted)}
         <div class="seg" role="group" aria-label="2D 3D"><button id="d2" aria-pressed="true">2D</button><button id="d3" aria-pressed="false">3D</button></div>
         <label for="colorBy">색<select id="colorBy"></select></label>
         <label for="heightBy">높이<select id="heightBy"></select></label>
+        <label for="terSel" id="terWrap">지형<select id="terSel"><option value="0">평면</option><option value="1">실제 높이 ×1</option><option value="3" selected>강조 ×3</option></select></label>
         <div class="seg" role="group" aria-label="건물"><button id="bldBtn" aria-pressed="true">건물</button></div>
         <div class="seg" role="group" aria-label="배경 지도" id="bgseg"><button id="bg-none" aria-pressed="true">배경 없음</button><button id="bg-base" aria-pressed="false">일반지도</button><button id="bg-sat" aria-pressed="false">항공사진</button></div>
       </div>
@@ -135,10 +136,11 @@ footer{font-size:11.5px;color:var(--muted)}
     <div id="chartrows"></div>
   </div>
 
-  <footer>출처: V-World 도시계획시설(lt_c_uq162) 공원 경계 · 연속지적도(lp_pa_cbnd_bubun) 필지·개별공시지가 · 토지소유정보(getPossessionAttr)·토지임야목록(ladfrlList) 소유구분 · 토지특성(getLandCharacteristics) 2026 공시지가·용도지역·이용상황, 2026-11-13 조회. 배경 위성사진·일반지도 © V-World(국토교통부) WMTS. 시 부담은 biz_engine.py 산출(청주 실적 단가 상한). 생태공원3 필지는 사유·대형 필지만 표시.</footer>
+  <footer>출처: V-World 도시계획시설(lt_c_uq162) 공원 경계 · 연속지적도(lp_pa_cbnd_bubun) 필지·개별공시지가 · 토지소유정보(getPossessionAttr)·토지임야목록(ladfrlList) 소유구분 · 토지특성(getLandCharacteristics) 2026 공시지가·용도지역·이용상황, 2026-11-13 조회. 배경 위성사진·일반지도 © V-World(국토교통부) WMTS. 지형: Terrarium 표고 타일(AWS Open Data, Mapzen; 한국은 SRTM 30m급)이라 소공원 규모의 작은 굴곡은 나타나지 않는다. 시 부담은 biz_engine.py 산출(청주 실적 단가 상한). 생태공원3 필지는 사유·대형 필지만 표시.</footer>
 </div>
 
 <script src="https://unpkg.com/deck.gl@8.9.36/dist.min.js"></script>
+<script src="https://unpkg.com/@loaders.gl/terrain@3.4.15/dist/dist.min.js"></script>
 <script>
 const D = __DATA__;
 document.getElementById('asof').textContent = D.asof;
@@ -172,7 +174,7 @@ function seq(t){ t=Math.max(0,Math.min(1,t)); const s=[C['--seq0'],C['--seq1'],C
 function pubColor(p){ if(p==null) return C['--own-unk']; return lerp(C['--own-ind'], C['--own-nat'], p); }
 
 // --- 상태 ---
-const S = {showBld:true, bg:'none', view:'city', d3:false, sel:null, colorCity:'pub', heightCity:'cost', colorPark:'own', heightPark:'none'};
+const S = {ter:3, showBld:true, bg:'none', view:'city', d3:false, sel:null, colorCity:'pub', heightCity:'cost', colorPark:'own', heightPark:'none'};
 const OPTS = {
   city:{color:[['pub','국공유지 비율'],['stage','집행 단계(기준 시나리오)'],['boundary','경계 일치도'],['urban','건물·시가지 사유지']], height:[['cost','시 부담 최대(억)'],['priv','사유지 면적'],['none','없음']]},
   park:{color:[['own','소유 구분'],['use','이용상황(건물 여부)'],['zone','용도지역'],['jimok','지목'],['jiga','개별공시지가 2026']], height:[['none','없음 (실제 건물만 세움)'],['jiga','개별공시지가']]}
@@ -203,6 +205,15 @@ function bgLayer(){
   const m = S.view==='park' ? (B['s'+S.sel] || (S.bg==='base'?B.cityBase:B.citySat)) : (S.bg==='base'?B.cityBase:B.citySat);
   if(!m) return null;
   return new deck.BitmapLayer({id:'bg-'+(m.file), image:'img/'+m.file, bounds:m.bounds, opacity:S.view==='park'?0.95:0.9});
+}
+function demFor(){ const M=D.dem||{}; return S.view==='park'?M['s'+S.sel]:M.city; }
+function terrainOn(){ return S.d3 && S.ter>0 && !!demFor() && typeof loaders!=='undefined'; }
+function terrainLayer(){
+  const m=demFor(); const k=S.ter; const B=D.basemap||{};
+  const tex = S.bg==='none'?null : S.view==='park' ? (B['s'+S.sel]&&'img/'+B['s'+S.sel].file) : 'img/'+((S.bg==='base'?B.cityBase:B.citySat)||{}).file;
+  return new deck.TerrainLayer({id:'terrain-'+(S.view==='park'?S.sel:'city')+'-'+k+'-'+S.bg, elevationData:'dem/'+m.file, texture:tex, bounds:m.bounds,
+    elevationDecoder:{rScaler:256*k,gScaler:k,bScaler:k/256,offset:(-32768-m.min)*k}, meshMaxError:S.view==='park'?0.3:4, skirtHeight:0,
+    color:C['--gu'], loaders:[loaders.TerrainLoader], loadOptions:{worker:false}, operation:'terrain+draw'});
 }
 function cityColor(p){
   if(S.colorCity==='pub') return pubColor(p.pub);
@@ -261,7 +272,9 @@ function extentM(poly){ const b=bb(poly); return Math.max((b[2]-b[0])*89000,(b[3
 function bb(poly){ let a=[1e9,1e9,-1e9,-1e9]; poly.forEach(pg=>pg[0].forEach(([x,y])=>{a[0]=Math.min(a[0],x);a[1]=Math.min(a[1],y);a[2]=Math.max(a[2],x);a[3]=Math.max(a[3],y)})); return a; }
 
 function render(){
-  deckgl.setProps({layers: (S.view==='park'?parkLayers():cityLayers()).filter(Boolean)});
+  let L=(S.view==='park'?parkLayers():cityLayers()).filter(Boolean);
+  if(terrainOn()){ const TE=new deck._TerrainExtension(); L=[terrainLayer(), ...L.filter(l=>!l.id.startsWith('bg-')).map(l=>l.clone({extensions:[TE]}))]; }
+  deckgl.setProps({layers:L});
   legend(); card();
 }
 function fly(vs){ deckgl.setProps({initialViewState:{...vs, transitionDuration:900, transitionInterpolator:new deck.FlyToInterpolator()}}); }
@@ -383,7 +396,7 @@ function fillSelects(){
   const k=S.view==='park'?'park':'city'; const o=OPTS[k];
   $('colorBy').innerHTML=o.color.map(([v,t])=>`<option value="${v}">${t}</option>`).join(''); $('colorBy').value=k==='park'?S.colorPark:S.colorCity;
   $('heightBy').innerHTML=o.height.map(([v,t])=>`<option value="${v}">${t}</option>`).join(''); $('heightBy').value=k==='park'?S.heightPark:S.heightCity;
-  $('heightBy').parentElement.hidden=!S.d3;
+  $('heightBy').parentElement.hidden=!S.d3; if(D.dem&&Object.keys(D.dem).length) $('terWrap').hidden=!S.d3;
 }
 $('colorBy').onchange=e=>{ S.view==='park'?S.colorPark=e.target.value:S.colorCity=e.target.value; render(); };
 $('heightBy').onchange=e=>{ S.view==='park'?S.heightPark=e.target.value:S.heightCity=e.target.value; render(); };
@@ -391,6 +404,8 @@ function set3D(on){ S.d3=on; $('d2').setAttribute('aria-pressed',!on); $('d3').s
 ['none','base','sat'].forEach(k=>$('bg-'+k).onclick=()=>{S.bg=k;['none','base','sat'].forEach(j=>$('bg-'+j).setAttribute('aria-pressed',j===k));render();});
 if(!D.basemap||!Object.keys(D.basemap).length) $('bgseg').hidden=true;
 else { S.bg='sat'; ['none','base','sat'].forEach(j=>$('bg-'+j).setAttribute('aria-pressed',j==='sat')); }
+$('terSel').onchange=e=>{S.ter=+e.target.value;render();};
+if(!D.dem||!Object.keys(D.dem).length) $('terWrap').hidden=true;
 $('bldBtn').onclick=()=>{S.showBld=!S.showBld;$('bldBtn').setAttribute('aria-pressed',S.showBld);render();};
 if(!D.bld||!Object.keys(D.bld).length) $('bldBtn').parentElement.hidden=true;
 $('d2').onclick=()=>set3D(false); $('d3').onclick=()=>set3D(true);
