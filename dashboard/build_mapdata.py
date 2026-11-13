@@ -43,9 +43,22 @@ for l, a in zip([l for l in open(f'{R}/data/geo/parcels.txt', encoding='utf-8').
     parcels.append({'s': int(sid), 'jb': jb, 'in': int(inm), 'own': a[2], 'jm': jm, 'jiga': int(a[3]) if a[3] else None,
                     'zone': a[4], 'gb': a[5] == '1', 'use': a[6], 'poly': dec(g)})
 import yaml
+# 건물(V-World 건물통합정보 lt_c_bldginfo): 'id@ox,oy' 머리줄 + '높이m~공원안1/0~링(첫 점은 원점 기준, 이후 차분, ×1e5)'
+bld = {}
+if os.path.exists(f'{R}/data/geo/buildings.txt'):
+    cur = None; o = None
+    for l in open(f'{R}/data/geo/buildings.txt', encoding='utf-8').read().split('\n'):
+        if not l: continue
+        if '@' in l:
+            cur, oo = l.split('@'); o = list(map(int, oo.split(','))); bld[cur] = []; continue
+        h, ip, ring = l.split('~'); v = list(map(int, ring.split(',')))
+        x, y = o[0] + v[0], o[1] + v[1]; pts = [[x/1e5, y/1e5]]
+        for i in range(2, len(v), 2):
+            x += v[i]; y += v[i+1]; pts.append([x/1e5, y/1e5])
+        pts.append(pts[0]); bld[cur].append({'h': int(h), 'in': ip == '1', 'poly': pts})
 P = yaml.safe_load(open(f'{R}/biz/params.yaml', encoding='utf-8'))
 cu = P['compensation_unit_krw_m2']; ku = P['construction_unit_krw_m2']
 rule = {'low': cu['low'], 'high': cu['high'], 'rr': cu['land_price_rule']['realization_rate'], 'klow': ku['low'], 'khigh': ku['high']}
 bm = json.load(open(f'{R}/dashboard/img/manifest.json', encoding='utf-8')) if os.path.exists(f'{R}/dashboard/img/manifest.json') else {}
-json.dump({'rule': rule, 'basemap': bm, 'gu': gu, 'parks': parks, 'parcels': parcels, 'asof': '2026-11-13'}, open(f'{R}/dashboard/mapdata.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+json.dump({'bld': bld, 'rule': rule, 'basemap': bm, 'gu': gu, 'parks': parks, 'parcels': parcels, 'asof': '2026-11-13'}, open(f'{R}/dashboard/mapdata.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 print(len(parks), len(parcels), os.path.getsize(f'{R}/dashboard/mapdata.json'))

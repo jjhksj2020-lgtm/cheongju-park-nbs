@@ -113,6 +113,7 @@ footer{font-size:11.5px;color:var(--muted)}
         <div class="seg" role="group" aria-label="2D 3D"><button id="d2" aria-pressed="true">2D</button><button id="d3" aria-pressed="false">3D</button></div>
         <label for="colorBy">색<select id="colorBy"></select></label>
         <label for="heightBy">높이<select id="heightBy"></select></label>
+        <div class="seg" role="group" aria-label="건물"><button id="bldBtn" aria-pressed="true">건물</button></div>
         <div class="seg" role="group" aria-label="배경 지도" id="bgseg"><button id="bg-none" aria-pressed="true">배경 없음</button><button id="bg-base" aria-pressed="false">일반지도</button><button id="bg-sat" aria-pressed="false">항공사진</button></div>
       </div>
       <div class="legend" id="legend"></div>
@@ -134,7 +135,7 @@ footer{font-size:11.5px;color:var(--muted)}
     <div id="chartrows"></div>
   </div>
 
-  <footer>출처: V-World 도시계획시설(lt_c_uq162) 공원 경계 · 연속지적도(lp_pa_cbnd_bubun) 필지·개별공시지가 · 토지소유정보(getPossessionAttr)·토지임야목록(ladfrlList) 소유구분 · 토지특성(getLandCharacteristics) 2026 공시지가·용도지역·이용상황, 2026-11-13 조회. 배경지도 © V-World(국토교통부). 시 부담은 biz_engine.py 산출(청주 실적 단가 상한). 생태공원3 필지는 사유·대형 필지만 표시.</footer>
+  <footer>출처: V-World 도시계획시설(lt_c_uq162) 공원 경계 · 연속지적도(lp_pa_cbnd_bubun) 필지·개별공시지가 · 토지소유정보(getPossessionAttr)·토지임야목록(ladfrlList) 소유구분 · 토지특성(getLandCharacteristics) 2026 공시지가·용도지역·이용상황, 2026-11-13 조회. 건물 높이: V-World 건물통합정보(lt_c_bldginfo). 배경지도 © V-World(국토교통부). 시 부담은 biz_engine.py 산출(청주 실적 단가 상한). 생태공원3 필지는 사유·대형 필지만 표시.</footer>
 </div>
 
 <script src="https://unpkg.com/deck.gl@8.9.36/dist.min.js"></script>
@@ -171,7 +172,7 @@ function seq(t){ t=Math.max(0,Math.min(1,t)); const s=[C['--seq0'],C['--seq1'],C
 function pubColor(p){ if(p==null) return C['--own-unk']; return lerp(C['--own-ind'], C['--own-nat'], p); }
 
 // --- 상태 ---
-const S = {bg:'none', view:'city', d3:false, sel:null, colorCity:'pub', heightCity:'cost', colorPark:'own', heightPark:'jiga'};
+const S = {showBld:true, bg:'none', view:'city', d3:false, sel:null, colorCity:'pub', heightCity:'cost', colorPark:'own', heightPark:'jiga'};
 const OPTS = {
   city:{color:[['pub','국공유지 비율'],['stage','집행 단계(기준 시나리오)'],['boundary','경계 일치도'],['urban','건물·시가지 사유지']], height:[['cost','시 부담 최대(억)'],['priv','사유지 면적'],['none','없음']]},
   park:{color:[['own','소유 구분'],['use','이용상황(건물 여부)'],['zone','용도지역'],['jimok','지목'],['jiga','개별공시지가 2026']], height:[['jiga','개별공시지가'],['none','없음']]}
@@ -188,6 +189,7 @@ function tip({object, layer}){
   if(!object || !layer) return null;
   if(layer.id.startsWith('park-')){ const p=object.p||object; return {html:`<div class="tt"><b>${p.name}</b> · ${p.loc}<br>면적 ${m2(p.area)} · 국공유 ${pct(p.pub)}<br>시 부담 최대 ${eok(p.maxH)}억 · ${p.stage}</div>`, style:ttStyle()}; }
   if(layer.id==='parcels'){ const q=object; return {html:`<div class="tt"><b>${q.jb}</b> · ${q.own}<br>지목 ${q.jm} · 공원 안 ${m2(q.in)}<br>이용상황 ${q.use} · ${q.zone}${q.gb?' · 개발제한구역':''}<br>2026 공시지가 ${q.jiga?q.jiga.toLocaleString('ko-KR')+'원/㎡':'—'}</div>`, style:ttStyle()}; }
+  if(layer.id==='bld') return {html:`<div class="tt"><b>건물</b> · 높이 ${object.h}m${object.in?' · 공원 경계 안':''}<br>V-World 건물통합정보</div>`, style:ttStyle()};
   if(layer.id==='gu') return {html:`<div class="tt">${object.name}</div>`, style:ttStyle()};
   return null;
 }
@@ -248,6 +250,9 @@ function parkLayers(){
       extruded:S.d3 && S.heightPark!=='none', getElevation:d=>d.jiga?d.jiga/jmax*ext*0.3:0, wireframe:true,
       getFillColor:d=>[...parcelColor(d,jmax), S.d3?235:(S.bg==='none'?200:150)], getLineColor:[...C['--panel'],255], lineWidthMinPixels:1, pickable:true,
       material:{ambient:.6,diffuse:.55}, updateTriggers:{getFillColor:[S.colorPark,C['--own-nat']], getElevation:[S.heightPark]}, transitions:{getElevation:450}}),
+    (D.bld&&D.bld[p.id]&&S.showBld)?new deck.PolygonLayer({id:'bld', data:D.bld[p.id], getPolygon:d=>d.poly, extruded:S.d3, getElevation:d=>d.h, wireframe:false,
+      getFillColor:d=>d.in?[...C['--own-org'],S.d3?245:220]:[...C['--muted'],S.d3?200:120], getLineColor:[...C['--panel'],255], lineWidthMinPixels:0.5, stroked:!S.d3, pickable:true,
+      material:{ambient:.55,diffuse:.6}, updateTriggers:{getFillColor:[S.d3,C['--own-org']],extruded:S.d3}}):null,
     new deck.PolygonLayer({id:'park-outline', data:p.poly, getPolygon:d=>d, filled:false, stroked:true, getLineColor:[...C['--ink'],255], lineWidthMinPixels:2.2,
       pickable:false, updateTriggers:{getLineColor:C['--ink']}})];
   return L;
@@ -288,6 +293,7 @@ function legend(){
     else if(S.colorPark==='jimok') h=`<div class="t">지목</div><div class="row">${['임야','전','답','대','도로','하천','기타'].map(k=>`<span class="k">${sw(JCOL[k])}${k}</span>`).join('')}</div>`;
     else { const qs=D.parcels.filter(q=>q.s===S.sel); const jm=Math.max(0,...qs.map(q=>q.jiga||0));
       h=`<div class="t">개별공시지가 2026 (원/㎡)</div><div class="ramp" style="background:linear-gradient(90deg,var(--seq0),var(--seq1),var(--seq2),var(--seq3))"></div><div class="ramp-l"><span>0</span><span>${jm.toLocaleString('ko-KR')}</span></div>`; }
+    if(D.bld&&D.bld[S.sel]) h+=`<div class="row" style="margin-top:4px"><span class="k">${sw('--own-org')}공원 안 건물</span><span class="k">${sw('--muted')}주변 건물${S.d3?' (높이 = 실제 m)':''}</span></div>`;
     h+=`<div class="meta" style="margin-top:5px">점선 = 공원 경계${S.d3&&S.heightPark!=='none'?' · 높이 = 공시지가(이 공원 최고값 기준)':''}</div>`;
   }
   $('legend').innerHTML=h;
@@ -384,6 +390,8 @@ $('heightBy').onchange=e=>{ S.view==='park'?S.heightPark=e.target.value:S.height
 function set3D(on){ S.d3=on; $('d2').setAttribute('aria-pressed',!on); $('d3').setAttribute('aria-pressed',on); fillSelects(); render(); S.view==='park'?viewPark():viewCity(); }
 ['none','base','sat'].forEach(k=>$('bg-'+k).onclick=()=>{S.bg=k;['none','base','sat'].forEach(j=>$('bg-'+j).setAttribute('aria-pressed',j===k));render();});
 if(!D.basemap||!Object.keys(D.basemap).length) $('bgseg').hidden=true;
+$('bldBtn').onclick=()=>{S.showBld=!S.showBld;$('bldBtn').setAttribute('aria-pressed',S.showBld);render();};
+if(!D.bld||!Object.keys(D.bld).length) $('bldBtn').parentElement.hidden=true;
 $('d2').onclick=()=>set3D(false); $('d3').onclick=()=>set3D(true);
 function setView(v){
   if(v==='park' && !(byId[S.sel]&&byId[S.sel].poly)) S.sel=1;
