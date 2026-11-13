@@ -27,7 +27,7 @@ RAW = os.path.join(HERE, '..', 'data', 'raw', 'vworld'); os.makedirs(RAW, exist_
 KEY = os.environ.get('VWORLD_KEY')
 if not KEY:
     sys.exit('환경변수 VWORLD_KEY 가 없습니다. 발급받은 인증키를 넣고 다시 실행하세요.')
-DOMAIN = 'localhost'
+DOMAIN = os.environ.get('VWORLD_DOMAIN', 'localhost')   # 인증키 발급 때 적은 서비스URL과 같아야 함
 ADDR_URL = 'https://api.vworld.kr/req/address'
 DATA_URL = 'https://api.vworld.kr/req/data'
 POSS_URL = 'https://api.vworld.kr/ned/data/getPossessionAttr'
@@ -57,11 +57,22 @@ def get(url, params, timeout=60):
 
 
 def geocode(address):
-    j = get(ADDR_URL, {'service': 'address', 'request': 'getcoord', 'version': '2.0', 'crs': 'epsg:4326',
-                       'address': address, 'type': 'parcel', 'format': 'json'}, 30)
-    if j['response']['status'] != 'OK':
-        return None
-    p = j['response']['result']['point']; return float(p['x']), float(p['y'])
+    """지번 주소 → (x, y). 실패하면 (None, 이유). 표기 차이에 대비해 주소 3가지, 유형 2가지를 차례로 시도."""
+    tries, last = [], ''
+    base = address.replace('충청북도 ', '')
+    for a in (address, base, address.replace('청주시 ', '청주시')):
+        for t in ('parcel', 'road'):
+            tries.append((a, t))
+    for a, t in tries:
+        j = get(ADDR_URL, {'service': 'address', 'request': 'getcoord', 'version': '2.0', 'crs': 'epsg:4326',
+                           'address': a, 'type': t, 'format': 'json', 'refine': 'true', 'simple': 'false'}, 30)
+        r = j.get('response', {})
+        if r.get('status') == 'OK':
+            p = r['result']['point']; return (float(p['x']), float(p['y'])), f'{t}:{a}'
+        last = f"{r.get('status')} {(r.get('error') or {}).get('code','')} {(r.get('error') or {}).get('text','')}".strip()
+        if 'KEY' in last.upper() or 'DOMAIN' in last.upper() or 'INCORRECT' in last.upper():
+            break   # 키·도메인 문제면 주소를 바꿔도 소용없음
+    return None, last
 
 
 def features(layer, box, attr=None, max_pages=100):
@@ -105,9 +116,15 @@ def run(site):
     jb = site['jibun'].split('외')[0].strip()                       # "산 23 외 5필지" → "산 23"
     jb = ' '.join(t for t in jb.split() if t[0].isdigit() or t.startswith('산'))   # '241-2 임' → '241-2', '산29-3 임' → '산29-3'
     address = f'충청북도 {gu} {dong} {jb}'
-    pt = cached(f'{sid:02d}_geocode.json', lambda: {'address': address, 'xy': geocode(address)})['xy']
+    gp = os.path.join(RAW, f'{sid:02d}_geocode.json')
+    g = json.load(open(gp, encoding='utf-8')) if os.path.exists(gp) else None
+    if not g or not g.get('xy'):
+        xy, why = geocode(address)
+        g = {'address': address, 'xy': xy, 'how': why}
+        if xy: json.dump(g, open(gp, 'w', encoding='utf-8'), ensure_ascii=False)   # 성공만 캐시
+    pt = g['xy']
     if not pt:
-        return dict(site_id=sid, status='지오코딩 실패', address=address)
+        return dict(site_id=sid, status=f"지오코딩 실패 ({g['how']})", address=address)
     x, y = pt
     # 2. 공원 폴리곤
     parks = cached(f'{sid:02d}_parks.json', lambda: features(PARK_LAYER, box_around(x, y, area, 2.5), max_pages=20))
@@ -161,7 +178,7 @@ def main():
         except Exception as e:  # noqa
             r = dict(site_id=s['site_id'], status=f'오류: {e}')
         parcels += r.pop('_rows', []); results.append(r)
-        print(f"[{r['site_id']}] {s['name']}: {r['status']} 필지 {r.get('n_parcels','')} 국공유 {r.get('public_share','')} 면적비 {r.get('area_ratio','')}")
+        print(f"[{r['site_id']}] {s['name']} ({r.get('address','')}): {r['status']} 필지 {r.get('n_parcels','')} 국공유 {r.get('public_share','')} 면적비 {r.get('area_ratio','')}")
     D = os.path.join(HERE, 'data')
     with open(os.path.join(D, 'land_collect_log.csv'), 'w', newline='', encoding='utf-8-sig') as f:
         keys = ['site_id', 'status', 'address', 'poly_m2', 'notice_m2', 'area_ratio', 'n_parcels', 'parcel_m2', 'public_share', 'priv_price_krw_m2', 'jimok_dae_m2', 'park_attr']
