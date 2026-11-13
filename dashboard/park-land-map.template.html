@@ -390,6 +390,7 @@ $('heightBy').onchange=e=>{ S.view==='park'?S.heightPark=e.target.value:S.height
 function set3D(on){ S.d3=on; $('d2').setAttribute('aria-pressed',!on); $('d3').setAttribute('aria-pressed',on); fillSelects(); render(); S.view==='park'?viewPark():viewCity(); }
 ['none','base','sat'].forEach(k=>$('bg-'+k).onclick=()=>{S.bg=k;['none','base','sat'].forEach(j=>$('bg-'+j).setAttribute('aria-pressed',j===k));render();});
 if(!D.basemap||!Object.keys(D.basemap).length) $('bgseg').hidden=true;
+else { S.bg='sat'; ['none','base','sat'].forEach(j=>$('bg-'+j).setAttribute('aria-pressed',j==='sat')); }
 $('bldBtn').onclick=()=>{S.showBld=!S.showBld;$('bldBtn').setAttribute('aria-pressed',S.showBld);render();};
 if(!D.bld||!Object.keys(D.bld).length) $('bldBtn').parentElement.hidden=true;
 $('d2').onclick=()=>set3D(false); $('d3').onclick=()=>set3D(true);
