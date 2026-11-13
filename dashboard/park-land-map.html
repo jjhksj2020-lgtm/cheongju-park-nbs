@@ -279,13 +279,14 @@ function render(){
 }
 function fly(vs){ deckgl.setProps({initialViewState:{...vs, transitionDuration:900, transitionInterpolator:new deck.FlyToInterpolator()}}); }
 function curVS(){ const v=deckgl.viewManager&&deckgl.viewManager.getViewState? deckgl.viewManager.getViewState('default-view'):null; return v||{}; }
-function viewCity(){ fly({longitude:127.47,latitude:36.625,zoom:10.4,pitch:S.d3?50:0,bearing:S.d3?-15:0}); }
+function viewCity(){ fly({longitude:127.47,latitude:36.625,zoom:10.4,pitch:S.d3?50:0,bearing:S.d3?-15:0,position:[0,0,0]}); }
 function viewPark(){
   const p=byId[S.sel]; if(!p||!p.poly) return;
   const b=bb(p.poly); const el=$('deck');
   const vp=new deck.WebMercatorViewport({width:el.clientWidth||600,height:el.clientHeight||500});
   const f=vp.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:Math.min(80,(el.clientWidth||600)/6)});
-  fly({longitude:f.longitude,latitude:f.latitude,zoom:Math.min(f.zoom,19),pitch:S.d3?55:0,bearing:S.d3?-20:0});
+  const dm=terrainOn()?demFor():null; const lift=dm?(dm.max-dm.min)*S.ter*0.5:0;
+  fly({longitude:f.longitude,latitude:f.latitude,zoom:Math.min(f.zoom,19)-(dm?0.6:0),pitch:S.d3?55:0,bearing:S.d3?-20:0,position:[0,0,lift]});
 }
 
 // --- 범례 ---
@@ -404,7 +405,7 @@ function set3D(on){ S.d3=on; $('d2').setAttribute('aria-pressed',!on); $('d3').s
 ['none','base','sat'].forEach(k=>$('bg-'+k).onclick=()=>{S.bg=k;['none','base','sat'].forEach(j=>$('bg-'+j).setAttribute('aria-pressed',j===k));render();});
 if(!D.basemap||!Object.keys(D.basemap).length) $('bgseg').hidden=true;
 else { S.bg='sat'; ['none','base','sat'].forEach(j=>$('bg-'+j).setAttribute('aria-pressed',j==='sat')); }
-$('terSel').onchange=e=>{S.ter=+e.target.value;render();};
+$('terSel').onchange=e=>{S.ter=+e.target.value;render();S.view==='park'?viewPark():viewCity();};
 if(!D.dem||!Object.keys(D.dem).length) $('terWrap').hidden=true;
 $('bldBtn').onclick=()=>{S.showBld=!S.showBld;$('bldBtn').setAttribute('aria-pressed',S.showBld);render();};
 if(!D.bld||!Object.keys(D.bld).length) $('bldBtn').parentElement.hidden=true;
