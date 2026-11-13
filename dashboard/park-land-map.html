@@ -172,10 +172,10 @@ function seq(t){ t=Math.max(0,Math.min(1,t)); const s=[C['--seq0'],C['--seq1'],C
 function pubColor(p){ if(p==null) return C['--own-unk']; return lerp(C['--own-ind'], C['--own-nat'], p); }
 
 // --- 상태 ---
-const S = {showBld:true, bg:'none', view:'city', d3:false, sel:null, colorCity:'pub', heightCity:'cost', colorPark:'own', heightPark:'jiga'};
+const S = {showBld:true, bg:'none', view:'city', d3:false, sel:null, colorCity:'pub', heightCity:'cost', colorPark:'own', heightPark:'none'};
 const OPTS = {
   city:{color:[['pub','국공유지 비율'],['stage','집행 단계(기준 시나리오)'],['boundary','경계 일치도'],['urban','건물·시가지 사유지']], height:[['cost','시 부담 최대(억)'],['priv','사유지 면적'],['none','없음']]},
-  park:{color:[['own','소유 구분'],['use','이용상황(건물 여부)'],['zone','용도지역'],['jimok','지목'],['jiga','개별공시지가 2026']], height:[['jiga','개별공시지가'],['none','없음']]}
+  park:{color:[['own','소유 구분'],['use','이용상황(건물 여부)'],['zone','용도지역'],['jimok','지목'],['jiga','개별공시지가 2026']], height:[['none','없음 (실제 건물만 세움)'],['jiga','개별공시지가']]}
 };
 
 // --- deck ---
