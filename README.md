@@ -17,12 +17,16 @@
 docs/        제출물 1·2 (PDF·Word), 공통 정의서, 웹 페이지판
 biz/         사업성 룰 엔진 (python biz_engine.py) — params.yaml에 모든 상수와 출처
 need/        필요성 파트 작업 폴더 (지표 계산 · 점수 · need.csv 산출)
-dashboard/   대시보드 (단일 HTML, 현재 예시값)
+dashboard/   땅 주인 지도 park-land-map.html (위성사진·지형·필지 소유)
+data/geo/    공원 경계·필지 (V-World 수집분)
+tools/       vworld_collect.js — V-World 브라우저 수집기
 evidence/    근거 대장 (제도·단가·피해·청주 현안, 출처 URL·조사일)
 data/raw/    원자료 응답 원본 (API JSON, 다운로드 파일) — 커밋 전 용량 확인
 ```
 
 ## 실행
+
+**처음이면 [실행방법.md](실행방법.md) 를 보세요** (V-World 수집 → 계산 → 지도 순서, 인증키 포함).
 
 ```bash
 pip install pyyaml
