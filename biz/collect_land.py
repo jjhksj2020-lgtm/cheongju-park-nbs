@@ -103,7 +103,7 @@ def run(site):
     gu = next((GU[g] for g in GU if g in site['location']), '청주시')
     dong = site['location'].replace('상당구', '').replace('서원구', '').replace('흥덕구', '').replace('청원구', '').strip()
     jb = site['jibun'].split('외')[0].strip()                       # "산 23 외 5필지" → "산 23"
-    jb = ' '.join(t for t in jb.split() if t[0].isdigit() or t == '산')
+    jb = ' '.join(t for t in jb.split() if t[0].isdigit() or t.startswith('산'))   # '241-2 임' → '241-2', '산29-3 임' → '산29-3'
     address = f'충청북도 {gu} {dong} {jb}'
     pt = cached(f'{sid:02d}_geocode.json', lambda: {'address': address, 'xy': geocode(address)})['xy']
     if not pt:
