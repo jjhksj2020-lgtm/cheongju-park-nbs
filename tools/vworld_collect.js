@@ -117,7 +117,7 @@ const clipG = (g, b) => ({ type: 'MultiPolygon', coordinates: rings(g).map(poly 
 
 // ---------- 분류 (land_own / land_price 집계 규칙) ----------
 const isPub = o => o && o.split('|').every(x => /국유지|도유지|군유지|시유지/.test(x));   // 국유·시도유·군유(청주시) = 국공유
-const URB = new Set(['단독', '연립', '주거기타', '주거나지', '주상기타', '주상나지', '상업용', '업무용', '공업용']);  // 건물·시가지 이용상황
+const URB = new Set(['단독', '연립', '다세대', '아파트', '주거기타', '주거나지', '주상기타', '주상나지', '상업용', '업무용', '공업용']);  // 건물·시가지 이용상황
 
 function download(name, text) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
