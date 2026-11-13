@@ -24,3 +24,18 @@
 - 월명공원 재현: 상한 단가로 보상 351억·조성 63억 ±1% → summary.md에 통과/실패
 - 코드에 숫자 상수 없음 (params.yaml만)
 - 수기 검산: 근린공원8 = 41,315 × 23만 = 95.0억 … master_biz.csv와 대조
+
+## 토지소유·공시지가 수집 (collect_land.py)
+
+로컬 PC에서 실행한다(이 클라우드 작업환경에서는 api.vworld.kr 접속이 막혀 있음).
+
+```bash
+pip install requests shapely pandas
+export VWORLD_KEY=발급받은키        # Windows PowerShell: $env:VWORLD_KEY="발급받은키"
+python biz/collect_land.py --site 3  # 근린공원8 한 곳으로 점검
+python biz/collect_land.py           # 40개소 전체 (응답 원본은 data/raw/vworld/ 에 저장, 재실행 시 재사용)
+```
+
+끝나면 `biz/data/land_own.csv`, `land_price.csv`, `parcels.csv`, `land_collect_log.csv` 가 생긴다.
+로그의 `area_ratio`(폴리곤 면적 ÷ 공고 면적)가 0.7~1.3 밖이면 다른 폴리곤을 잡은 것이니 `data/raw/vworld/NN_parks.json` 을 열어 확인한다.
+키는 저장소에 올리지 않는다(.gitignore 의 .env 참고).
