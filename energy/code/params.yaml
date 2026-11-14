@@ -1,0 +1,59 @@
+# 에너지(열저감) 파트 상수 — 코드에는 숫자를 쓰지 않고 이 파일만 읽는다. 근거 번호 = evidence/evidence_E_energy.md
+# 질문: 공원을 조성하면(현재 상태 대비) 공원과 주변이 얼마나 시원해지고, 주변 건물 전력을 얼마나 줄이나?
+# 비교 기준은 "조성 vs 지금 그대로". 개발 압력·비용은 다루지 않는다(필요성·사업성 파트 몫).
+
+gee:                               # GEE 스크립트(make_gee_script.py가 만듦)에 들어가는 설정
+  project: cheongju-grpi           # 비상업(학술) 등록 Cloud 프로젝트
+  aoi: [127.38, 36.56, 127.56, 36.70]   # 청주 시가지 사각형 (E1 특례 분석과 같은 범위)
+  months: [6, 9]                   # 여름 6~9월
+  landsat: {start: "2021-01-01", end: "2025-12-31", max_cloud: 40}   # 녹지-온도 관계식용 (최근 5년)
+  sentinel2: {start: "2024-01-01", end: "2025-12-31", max_cloud: 30, scl_bad: [3, 8, 9, 10]}  # 공원별 녹지 수준 (10m). SCL 3 그림자·8·9 구름·10 권운
+  worldcover: {water: 80, tree: 10, grass: 30, built: 50}   # ESA WorldCover v200 분류 번호
+  ghsl_year: "2020"                # GHSL 인구·건물부피 기준연도
+  rings_m: [120, 300]              # 주변 고리 두 가지를 모두 뽑아 둔다 (E3)
+  scale_m: {landsat: 30, s2: 10, s2_city: 20, ghsl: 100, scene_mean: 300}
+  landsat_scale: {sr_mult: 0.0000275, sr_add: -0.2, st_mult: 0.00341802, st_add: 149.0, kelvin: 273.15}   # USGS C2 L2 환산식
+  landsat_qa_bits: [1, 3, 4, 5]    # QA_PIXEL: 1 팽창 구름, 3 구름, 4 그림자, 5 눈
+
+landuse_class:                     # 필지 이용상황(parcel_attr.txt) → 땅 상태 묶음
+  숲: [자연림, 토지임야, 임야기타]
+  농지: [전, 답, 전기타, 답기타, 과수원]
+  시가지: [단독, 연립, 주상기타, 주거나지, 주거기타, 업무용, 상업용, 공업용, 주상나지]
+  기반시설: [도로등, 하천등]
+  공원: [공원등]
+park_kind_rule:                    # 공원 성격 = 가장 넓은 묶음 기준
+  보전형: [숲, 공원]                # 이미 녹지 → 조성해도 더 시원해질 여지 작음
+  조성형: [농지, 시가지, 기반시설]  # 녹지를 새로 만듦
+
+target_ndvi:                       # 조성 후 녹지 수준 (Sentinel-2 여름 NDVI, 청주 시가지 안 같은 땅덮개의 중앙값을 GEE에서 산출)
+  low: grass                       # 하한 = 잔디·초지 수준 (WorldCover 30)
+  high: tree                       # 상한 = 수목 수준 (WorldCover 10)
+ndvi_gain_floor: 0                 # 현재가 목표보다 녹지가 많으면 개선 0
+
+lst_coef:                          # NDVI 1 증가당 지표온도 변화(°C). GEE 회귀 두 가지를 상·하한으로 (E1과 같은 Landsat·편차 방식)
+  low: controlled                  # 시가화율·표고를 함께 넣은 회귀
+  high: simple                     # NDVI만 넣은 회귀
+
+spillover:                         # 공원 안 지표온도 변화 중 주변 고리로 퍼지는 비율 (E1 실측: 주변 300m ÷ 공원 안)
+  source_file: tukrye_before_after.json
+  sites: [잠두봉, 매봉]            # 위치 검증이 "양호"인 두 곳의 값을 하한·상한으로
+
+ring_rule:                         # 냉기가 미치는 고리 폭 (E3)
+  small_area_m2: 10000             # 1ha 미만 = 소형
+  small_ring_m: 120
+  large_ring_m: 300
+
+air_per_surface: {low: 0.08, high: 0.6}   # 지표온도 1°C 변화당 기온 변화 (E2)
+
+electricity:
+  peak_w_per_c_person: {low: 10.6, high: 31.4}   # 기온 1°C당 1인 최대전력 (E4, 21 ± 10.4 W)
+  total_pct_per_c: {low: 0.005, high: 0.085}      # 기온 1°C당 총전력 증가율 (E4)
+  eui_kwh_m2_yr: 136               # 2024 공동주택 중부 원단위 (E5)
+  summer_share: 0.3333             # 가정: 6~9월 4개월 ÷ 12 (E5)
+  storey_height_m: 3.0             # 가정: 건물부피 → 연면적 (E5)
+
+grade:                             # 등급 = 시나리오마다 연간 전력 절감 순위로 나눔 (공원 수 기준 상위 비율)
+  top_share: 0.25                  # 상 = 상위 25%
+  mid_share: 0.5                   # 중 = 상위 50%까지, 나머지 하
+units: {kwh_per_mwh: 1000, w_per_kw: 1000, m2_per_ha: 10000}
+coord_scale: 100000                # biz/data/vworld/*.txt 좌표 = 경위도 × 1e5 정수 (biz/code/build_mapdata.py 형식)
