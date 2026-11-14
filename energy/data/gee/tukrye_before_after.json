@@ -1,0 +1,89 @@
+{
+ "about": "청주 민간공원 특례사업지 개발 전후 지표온도 비교 (GEE, 2026-11-13 1회 실행). 개발 효과 = dLST(숲->개발) - dLST(숲 유지). evidence E1",
+ "script": "// 청주 민간공원 특례사업지 — 개발 전후 지표온도 비교 (1회 실행용, 지도 레이어 없음)\n// 개발 구역: 개발 전 숲(NDVI>=0.55) -> 개발 후 NDVI 0.25 이상 하락 / 유지 구역: 두 시기 모두 숲\n// 효과 = dLST(개발) - dLST(숲 유지). LST는 장면별 청주 시가지 평균 대비 편차.\nvar aoi = ee.Geometry.Rectangle([127.38, 36.56, 127.56, 36.70]);\nvar SITES = [\n  {name: '잠두봉', lon: 127.4785, lat: 36.6150, r: 500},\n  {name: '매봉',   lon: 127.4739, lat: 36.6216, r: 500},\n  {name: '구룡',   lon: 127.4640, lat: 36.6182, r: 700},\n  {name: '원봉',   lon: 127.5175, lat: 36.6092, r: 600},\n  {name: '월명',   lon: 127.4550, lat: 36.6450, r: 700},\n  {name: '새적굴', lon: 127.4930, lat: 36.6560, r: 700}\n];\nvar BEFORE = ['2013-04-01', '2016-10-01'], AFTER = ['2023-04-01', '2025-10-01'];\nvar FOREST = 0.55, DROP = 0.25;\nfunction isNull(v) { return ee.Algorithms.IsEqual(v, null); }\nfunction diff(a, b) { return ee.Algorithms.If(isNull(a), null, ee.Algorithms.If(isNull(b), null, ee.Number(a).subtract(ee.Number(b)))); }\nfunction fmt(v) { return ee.Algorithms.If(isNull(v), 'NA', ee.Number(v).format('%.2f')); }\nfunction prep(img) {\n  var qa = img.select('QA_PIXEL');\n  var clear = qa.bitwiseAnd(1 << 1).eq(0).and(qa.bitwiseAnd(1 << 3).eq(0)).and(qa.bitwiseAnd(1 << 4).eq(0)).and(qa.bitwiseAnd(1 << 5).eq(0));\n  var sr = img.select(['SR_B4', 'SR_B5']).multiply(0.0000275).add(-0.2);\n  var ndvi = sr.normalizedDifference(['SR_B5', 'SR_B4']).rename('NDVI');\n  var st = img.select('ST_B10');\n  var lst = st.multiply(0.00341802).add(149.0).subtract(273.15).rename('LST');\n  return ndvi.addBands(lst).toFloat().updateMask(clear.and(st.gt(0))).copyProperties(img, ['system:time_start']);\n}\nfunction composite(range) {\n  var col = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2').merge(ee.ImageCollection('LANDSAT/LC09/C02/T1_L2'))\n    .filterBounds(aoi).filterDate(range[0], range[1]).filter(ee.Filter.calendarRange(6, 9, 'month'))\n    .filter(ee.Filter.lt('CLOUD_COVER', 40)).map(prep)\n    .map(function (img) { return img.set('m', img.select('LST').reduceRegion({reducer: ee.Reducer.mean(), geometry: aoi, scale: 300, maxPixels: 1e9}).get('LST')); })\n    .filter(ee.Filter.notNull(['m']))\n    .map(function (img) { return img.addBands(img.select('LST').subtract(ee.Number(img.get('m'))).rename('LSTa').toFloat()); });\n  return {n: col.size(), img: col.select(['NDVI', 'LSTa']).median()};\n}\nvar B = composite(BEFORE), A = composite(AFTER);\nvar ndviB = B.img.select('NDVI'), ndviA = A.img.select('NDVI');\nvar dLST = A.img.select('LSTa').subtract(B.img.select('LSTa')).rename('dLST');\nvar notWater = ee.ImageCollection('ESA/WorldCover/v200').first().neq(80);\nvar cleared = ndviB.gte(FOREST).and(ndviB.subtract(ndviA).gte(DROP)).and(notWater).rename('c');\nvar stable = ndviB.gte(FOREST).and(ndviA.gte(FOREST)).and(notWater).rename('s');\nfunction meanOf(mask, geom) {\n  return dLST.updateMask(mask).reduceRegion({reducer: ee.Reducer.mean().combine(ee.Reducer.count(), null, true), geometry: geom, scale: 30, maxPixels: 1e10, tileScale: 4});\n}\nvar cityC = meanOf(cleared, aoi), cityS = meanOf(stable, aoi);\nvar rows = ee.FeatureCollection(SITES.map(function (s) {\n  var g = ee.Geometry.Point([s.lon, s.lat]).buffer(s.r);\n  var near = cleared.clip(g).unmask(0).focalMax({radius: 300, units: 'meters'}).and(cleared.not());\n  var c = meanOf(cleared, g), st = meanOf(stable, g), nr = meanOf(near, g.buffer(300));\n  var areaHa = ee.Number(cleared.multiply(ee.Image.pixelArea()).reduceRegion({reducer: ee.Reducer.sum(), geometry: g, scale: 30, maxPixels: 1e9}).get('c')).divide(1e4);\n  return ee.Feature(null, {name: s.name, ha: areaHa, nC: c.get('dLST_count'), dC: c.get('dLST_mean'), dS: st.get('dLST_mean'),\n    eff: diff(c.get('dLST_mean'), st.get('dLST_mean')), nb: diff(nr.get('dLST_mean'), st.get('dLST_mean'))});\n}));\nvar siteTxt = rows.iterate(function (f, acc) {\n  f = ee.Feature(f);\n  return ee.String(acc).cat(f.get('name')).cat(', ').cat(fmt(f.get('ha'))).cat(', ').cat(fmt(f.get('dC'))).cat(', ')\n    .cat(fmt(f.get('dS'))).cat(', ').cat(fmt(f.get('eff'))).cat(', ').cat(fmt(f.get('nb'))).cat(' | ');\n}, 'name, 개발ha, dLST개발, dLST숲유지, 개발효과, 주변영향 | ');\nvar out = ee.Dictionary({\n  scenes_before: B.n, scenes_after: A.n,\n  city_dLST_cleared: fmt(cityC.get('dLST_mean')), city_n_cleared: cityC.get('dLST_count'),\n  city_dLST_stable: fmt(cityS.get('dLST_mean')), city_n_stable: cityS.get('dLST_count'),\n  city_effect: fmt(diff(cityC.get('dLST_mean'), cityS.get('dLST_mean'))),\n  sites: siteTxt\n});\nout.evaluate(function (r, err) { print(err ? ('ERROR: ' + err) : ('RESULT_JSON ' + JSON.stringify(r))); });\n",
+ "sites": [
+  {
+   "site": "잠두봉",
+   "status": "2020 완료",
+   "cleared_ha": 3.46,
+   "known_apt_ha": 5.2,
+   "dLST_cleared": 1.53,
+   "dLST_stable": -0.7,
+   "effect": 2.23,
+   "neighbor_300m": 0.94,
+   "reliability": "양호",
+   "note": "자동 판별 면적이 실제 아파트 부지와 비슷"
+  },
+  {
+   "site": "매봉",
+   "status": "완공",
+   "cleared_ha": 14.58,
+   "known_apt_ha": 12.4,
+   "dLST_cleared": 2.26,
+   "dLST_stable": -0.17,
+   "effect": 2.43,
+   "neighbor_300m": 0.58,
+   "reliability": "양호",
+   "note": "부지 41.5ha의 30%와 비슷"
+  },
+  {
+   "site": "구룡",
+   "status": "완공",
+   "cleared_ha": 11.28,
+   "known_apt_ha": null,
+   "dLST_cleared": 1.68,
+   "dLST_stable": -0.77,
+   "effect": 2.45,
+   "neighbor_300m": 0.93,
+   "reliability": "중간",
+   "note": "반경이 매봉과 겹침"
+  },
+  {
+   "site": "원봉",
+   "status": "공사 중(2026.9 예정)",
+   "cleared_ha": 26.63,
+   "known_apt_ha": 7.1,
+   "dLST_cleared": 2.95,
+   "dLST_stable": -0.23,
+   "effect": 3.18,
+   "neighbor_300m": 0.87,
+   "reliability": "낮음",
+   "note": "동남지구 개발이 섞이고 공사 단계"
+  },
+  {
+   "site": "월명",
+   "status": "2026 준공(2023 착공)",
+   "cleared_ha": 3.6,
+   "known_apt_ha": null,
+   "dLST_cleared": 0.25,
+   "dLST_stable": -0.01,
+   "effect": 0.26,
+   "neighbor_300m": 0.35,
+   "reliability": "낮음",
+   "note": "위치 근사, 개발 후 기간이 공사 중"
+  },
+  {
+   "site": "새적굴",
+   "status": "2020 완료",
+   "cleared_ha": 0.53,
+   "known_apt_ha": null,
+   "dLST_cleared": 1.26,
+   "dLST_stable": -0.76,
+   "effect": 2.02,
+   "neighbor_300m": 2.24,
+   "reliability": "낮음",
+   "note": "위치 추정이 틀린 듯(개발 면적 0.5ha)"
+  }
+ ],
+ "city": {
+  "area": "청주 시가지(127.38–127.56E, 36.56–36.70N)",
+  "scenes_before": 38,
+  "scenes_after": 65,
+  "px_cleared": 15591,
+  "cleared_ha": 1403.0,
+  "px_stable": 208539,
+  "dLST_cleared": 2.82,
+  "dLST_stable": -0.67,
+  "effect": 3.48
+ }
+}

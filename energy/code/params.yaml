@@ -21,14 +21,14 @@ landuse_class:                     # 필지 이용상황(parcel_attr.txt) → �
   시가지: [단독, 연립, 주상기타, 주거나지, 주거기타, 업무용, 상업용, 공업용, 주상나지]
   기반시설: [도로등, 하천등]
   공원: [공원등]
-park_kind_rule:                    # 공원 성격 = 가장 넓은 묶음 기준
-  보전형: [숲, 공원]                # 이미 녹지 → 조성해도 더 시원해질 여지 작음
-  조성형: [농지, 시가지, 기반시설]  # 녹지를 새로 만듦
-
+park_kind: "보전형 = 지금 NDVI가 조성 목표 하한(잔디·초지 수준) 이상 → 이미 녹지라 더 시원해질 여지 작음 / 조성형 = 그 미만 → 녹지를 새로 만듦"
 target_ndvi:                       # 조성 후 녹지 수준 (Sentinel-2 여름 NDVI, 청주 시가지 안 같은 땅덮개의 중앙값을 GEE에서 산출)
   low: grass                       # 하한 = 잔디·초지 수준 (WorldCover 30)
   high: tree                       # 상한 = 수목 수준 (WorldCover 10)
 ndvi_gain_floor: 0                 # 현재가 목표보다 녹지가 많으면 개선 0
+boundary_ok: [일치]                  # biz/data/vworld/land_own.csv 경계 매칭이 이 값이 아니면 비고에 표시
+excluded_types: [생태공원]         # 사업성 파트와 같은 제외 (생태공원3 = 하천·제방 75%, 수면은 녹지 전환 대상이 아님)
+excluded_note: "생태공원(하천·제방 위주) — 수면이 NDVI를 낮춰 녹지 증가가 과대 계산되므로 미산정"
 
 lst_coef:                          # NDVI 1 증가당 지표온도 변화(°C). GEE 회귀 두 가지를 상·하한으로 (E1과 같은 Landsat·편차 방식)
   low: controlled                  # 시가화율·표고를 함께 넣은 회귀
@@ -45,12 +45,11 @@ ring_rule:                         # 냉기가 미치는 고리 폭 (E3)
 
 air_per_surface: {low: 0.08, high: 0.6}   # 지표온도 1°C 변화당 기온 변화 (E2)
 
-electricity:
-  peak_w_per_c_person: {low: 10.6, high: 31.4}   # 기온 1°C당 1인 최대전력 (E4, 21 ± 10.4 W)
-  total_pct_per_c: {low: 0.005, high: 0.085}      # 기온 1°C당 총전력 증가율 (E4)
-  eui_kwh_m2_yr: 136               # 2024 공동주택 중부 원단위 (E5)
-  summer_share: 0.3333             # 가정: 6~9월 4개월 ÷ 12 (E5)
-  storey_height_m: 3.0             # 가정: 건물부피 → 연면적 (E5)
+electricity:                       # 주변 고리 인구 기준 (GHSL 2020 인구)
+  peak_w_per_c_person: {low: 10.6, high: 31.4}   # 기온 1°C당 1인 최대전력 증가 (E4, 21 ± 10.4 W)
+  pct_per_c: {low: 0.005, high: 0.085}            # 기온 1°C당 전력 증가율 (E4, 총전력 기준 → 냉방전력에 적용하면 보수적)
+  cooling_kwh_per_person_yr: 191.5               # 1인당 냉방 전력 소비량 2022 (한국전력, E5)
+base_rule: "보고용 기준 시나리오 = 각 계수의 상·하한 중간값. 등급·확정 판정에는 상·하한 64개 조합만 쓴다"
 
 grade:                             # 등급 = 시나리오마다 연간 전력 절감 순위로 나눔 (공원 수 기준 상위 비율)
   top_share: 0.25                  # 상 = 상위 25%

@@ -16,6 +16,7 @@
 |---|---|---|---|---|
 | **필요성** | ① 공원조성 가치 · ② 이용성 · ③ 개발압력 | 순위·등급 → **판정** (존치·조성/존치/보류) | `need/` | [need/README.md](need/README.md) |
 | **사업성** | ④ 재정투입 효율성 · ⑤ 기존투자 | 시 부담 금액 → **단계·재원** (1·2단계, 특례·국비) | `biz/` | [biz/README.md](biz/README.md) |
+| **에너지** | (시 기준 밖, 독립 참고) | 조성 시 열저감·주변 냉방전력 절감 → 참고 지도·표 (판정·단계에 반영 안 함) | `energy/` | [energy/README.md](energy/README.md) |
 
 필요성이 먼저 판정하고, 사업성은 그 안에서 집행 순서를 정한다. "해제"는 모형이 내지 않는다.
 
@@ -36,6 +37,11 @@ biz/             ← 사업성 파트
   data/vworld/    V-World에서 받은 토지 자료 (소유·공시지가·경계·필지)
   data/map/       지도 배경 원본 (위성사진·지형)
   out/            계산 결과 (실행하면 생김, 저장소에는 안 올림)
+energy/          ← 에너지(열저감) 파트 (독립 참고)
+  에너지_지도.html  최종본 (한 파일)
+  code/           계산 엔진 · 기준값(params.yaml) · GEE 스크립트
+  data/gee/       GEE 출력 원본 · 특례사업지 전후 실측
+  out/            계산 결과 (미업로드)
 ```
 
 ## 3. 파트끼리 주고받는 파일
@@ -45,6 +51,8 @@ biz/             ← 사업성 파트
 | 필요성 | `need/out/need.csv` | `biz/data/input/need.csv` 로 복사 | `site_id, grade(상/중/하), verdict, H1_high, industrial_downwind, C1_near, river_adjacent, refund_eligible` (양식: `biz/data/input/need.TEMPLATE.csv`) |
 | 사업성 | `biz/out/master_biz.csv` | 보고서·발표 | 공원별 시 부담 범위, 단계와 이유, 특례·국비 |
 | 사업성 | `biz/사업성_지도.html` | 보고서·발표 | 땅 주인·공시지가·시 부담 지도 (위성사진·3D 지형) |
+| 사업성 → 에너지 | `biz/data/input/sites.csv`, `biz/data/vworld/{parks,gu,parcels,parcel_attr}.txt`, `land_own.csv` | `energy/` 가 읽기만 | 공원 목록·경계·필지 이용상황 |
+| 에너지 | `energy/에너지_지도.html`, `energy/out/master_energy.csv` | 보고서·발표 | 공원별 열저감·냉방전력 절감 (참고) |
 
 - 모든 파일의 마스터 키는 `site_id` (1~40, `biz/data/input/sites.csv` 순서 = 공고 표 순서).
 - 같은 원자료를 두 파트에 중복으로 넣지 않는다 (공시지가 **변동률** → 필요성, 공시지가 **수준** → 사업성).
@@ -68,3 +76,4 @@ biz/             ← 사업성 파트
 |---|---|
 | 사업성 | 39개소 V-World 실자료 반영, 계산·지도 완료. 시 부담 최대 853억 / 최소 349억, 1단계 22개소, 월명공원 실적 재현 통과. **필요성 결과(need.csv) 받으면 국비 요건 판정까지 완료** |
 | 필요성 | 진행 중 (`need/`) |
+| 에너지 | 38개소 산정(2곳 미산정). GEE 1회 실행(cheongju-grpi). 기준 시나리오 연간 냉방전력 약 66MWh·최대전력 약 160kW 절감, 99%가 조성형. 독립 참고 결과 |

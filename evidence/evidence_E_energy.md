@@ -18,10 +18,10 @@
 - 총전력: 1°C당 0.5% ~ 8.5% 증가(15개 연구 종합).
 - 출처: Santamouris et al. 2015, Energy and Buildings 98:119–124, doi:10.1016/j.enbuild.2014.09.052 (https://dias.library.tuc.gr/view/56310?locale=en).
 
-## E5. 건물 에너지 원단위 (한국)
-- 2024 공동주택 중부지역 136 kWh/㎡, 업무시설 중부 159 kWh/㎡ — 국토교통부 용도별 원단위 첫 공개(국가승인통계, 뉴스서울 2025.7.30 https://newsseoul.co.kr/news/view/1065567616973781). 청주는 중부지역. 주거가 대부분이라 공동주택 값 사용.
-- 연면적: GHSL 건물부피(JRC/GHSL/P2023A/GHS_BUILT_V, 2020, 100m) ÷ 층고 3m (가정).
-- 여름 비중: 6~9월 4개월 ÷ 12 (가정 — 월별 원단위 미공개).
+## E5. 1인당 냉방 전력
+- 한국 1인당 냉방 전력 소비량 191.5 kWh (2022, 한국전력 집계 — 이코노미스트 2026.7.29 https://economist.co.kr/article/view/ecn202607290031).
+- 연간 냉방전력 절감 = 주변 고리 인구(GHSL 2020) × 191.5 kWh × E4 증가율(%/°C) × 기온 저감. 증가율은 총전력 기준이라 냉방전력에 쓰면 보수적(과소).
+- 참고(미사용): 2024 공동주택 중부 원단위 136 kWh/㎡(국토부, 뉴스서울 2025.7.30 https://newsseoul.co.kr/news/view/1065567616973781) — 난방·급탕 포함 총에너지라 여름 전력 계산에 쓰지 않음.
 
 ## E6. 원자료 (GEE)
 - Landsat 8·9 Collection 2 Level-2 (USGS), Sentinel-2 L2A harmonized (ESA), ESA WorldCover v200 (2021), GHSL P2023A 인구(GHS_POP)·건물부피(GHS_BUILT_V) 2020 (EC JRC).
