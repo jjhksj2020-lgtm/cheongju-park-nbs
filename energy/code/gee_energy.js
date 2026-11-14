@@ -78,9 +78,13 @@ var rows = fc.map(function (f) {
 var table = rows.map(function (f) { return ee.Feature(null, f.toDictionary()); });   // 경계는 빼고 값만
 var city = ee.Dictionary({b_simple: bSimple, b_controlled: bControlled, ndvi_grass: cityMedian(WC.grass), ndvi_tree: cityMedian(WC.tree),
   ls_scenes: ls.size(), s2_scenes: s2.size()});
-ee.Dictionary({city: city, table: table}).evaluate(function (r, err) {
-  if (err) { print('ERROR| ' + err); return; }
-  print('CITY|' + JSON.stringify(r.city));
-  r.table.features.forEach(function (ft) { print('PARK|' + JSON.stringify(ft.properties)); });
-  print('DONE|' + r.table.features.length);
+// 결과는 두 번에 나눠 받는다 (도시 계수 / 공원별 표). 콜백 안 오류도 콘솔에 남긴다.
+city.evaluate(function (r, err) { print(err ? 'ERROR|city ' + err : 'CITY|' + JSON.stringify(r)); });
+table.evaluate(function (fc, err) {
+  if (err) { print('ERROR|table ' + err); return; }
+  try {
+    var fs = fc.features || [];
+    fs.forEach(function (ft) { print('PARK|' + JSON.stringify(ft.properties)); });
+    print('DONE|' + fs.length);
+  } catch (e) { print('ERROR|print ' + e); }
 });

@@ -1,0 +1,2 @@
+# GEE 콘솔 출력 (energy/code/gee_energy.js, 프로젝트 cheongju-grpi, 2026-11-14 실행)
+CITY|{"b_controlled":-10.135566866790468,"b_simple":-16.907352603623313,"ls_scenes":82,"ndvi_grass":0.5351310833344469,"ndvi_tree":0.8634304663711843,"s2_scenes":14}
