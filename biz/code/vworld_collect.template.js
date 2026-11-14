@@ -1,7 +1,7 @@
 /* ============================================================================
  * 청주 장기미집행 공원 — V-World 토지 자료 수집기 (브라우저 콘솔용)
  *
- * 실행 방법은 저장소 맨 위 「실행방법.md」 참고. 요약:
+ * 실행 방법은 biz/README.md 참고. 요약:
  *   1) 크롬/엣지 주소창에 https://api.vworld.kr/req/search 를 연다 (오류 글자가 떠도 정상. 이 주소 안에서만 V-World가 응답한다)
  *   2) F12 → Console 탭에 이 파일 전체를 붙여 넣고 Enter
  *   3) 아래 KEY 줄에 인증키를 넣고 실행:  await collectAll()
@@ -10,19 +10,19 @@
  *   (선택) await collectDem()      → 지형 표고 (cheongju_dem.json)
  *
  * 하는 일 (2026-11-13 수집과 같은 방법):
- *   공원 경계(data/geo/parks.txt, V-World 도시계획시설 lt_c_uq162에서 매칭해 둔 것)
+ *   공원 경계(biz/data/vworld/parks.txt, V-World 도시계획시설 lt_c_uq162에서 매칭해 둔 것)
  *   ∩ 연속지적도(lp_pa_cbnd_bubun) 필지 → 공원 안 격자 표본점으로 필지별 공원 안 면적 배분
  *   → 필지별 소유구분(getPossessionAttr, 없으면 ladfrlList 토지임야목록)
  *   → 필지별 토지특성(getLandCharacteristics: 개별공시지가·용도지역·이용상황, 기준연도 YEAR)
  *   → 공원별 집계 (국공유 비율, 사유지 공시지가 면적가중, 지목 '대' 사유지, 건물·시가지 사유지, 개발제한구역)
  * ========================================================================== */
 
-const KEY  = window.VWORLD_KEY || '여기에_인증키';   // 실행방법.md 의 키
+const KEY  = window.VWORLD_KEY || '여기에_인증키';   // biz/README.md 의 키
 const YEAR = '2026';                                   // 토지특성(공시지가) 기준연도
-// 아래 세 값은 tools/make_collector.py 가 저장소 파일에서 채운다 (저장소가 비공개여도 이 파일만 있으면 실행됨)
-const PARKS_TXT = `__PARKS__`;            // data/geo/parks.txt
-const AREA = __AREA__;                    // biz/data/sites.csv 공고 면적
-const IMG_BOUNDS = __IMG__;               // dashboard/img/manifest.json 경계 (지형을 위성사진과 같은 범위로)
+// 아래 세 값은 biz/code/make_collector.py 가 저장소 파일에서 채운다 (저장소가 비공개여도 이 파일만 있으면 실행됨)
+const PARKS_TXT = `__PARKS__`;            // biz/data/vworld/parks.txt
+const AREA = __AREA__;                    // biz/data/input/sites.csv 공고 면적
+const IMG_BOUNDS = __IMG__;               // biz/data/map/img/manifest.json 경계 (지형을 위성사진과 같은 범위로)
 
 // ---------- V-World 호출 ----------
 async function q(path, params) {
@@ -63,7 +63,7 @@ const dp = (pts, eps) => { if (pts.length < 4) return pts; let dm = 0, idx = 0; 
     const d = Math.abs(dy * p[0] - dx * p[1] + b[0] * a[1] - b[1] * a[0]) / L; if (d > dm) { dm = d; idx = i; } }
   return dm > eps ? dp(pts.slice(0, idx + 1), eps).slice(0, -1).concat(dp(pts.slice(idx), eps)) : [a, b]; };
 const dpr = (r, eps) => { if (eps <= 0 || r.length < 8) return r; const m = Math.floor(r.length / 2); return dp(r.slice(0, m + 1), eps).slice(0, -1).concat(dp(r.slice(m), eps)); };
-// 압축 좌표: 정수(경위도×1e5) 누적차분, 링 '|', 다각형 ';'  (dashboard/build_mapdata.py가 읽는 형식)
+// 압축 좌표: 정수(경위도×1e5) 누적차분, 링 '|', 다각형 ';'  (biz/code/build_mapdata.py가 읽는 형식)
 const enc = (g, eps) => rings(g).map(poly => poly.map(r => { const s = dpr(r, eps); if (s.length < 4) return null; let px = 0, py = 0; const a = [];
   for (const p of s) { const x = Math.round(p[0] * 1e5), y = Math.round(p[1] * 1e5); a.push(x - px, y - py); px = x; py = y; } return a.join(','); })
   .filter(Boolean).join('|')).filter(Boolean).join(';');
@@ -151,11 +151,11 @@ async function collectAll() {
     }
   }
   own.push([5, '', '', '', '', '', '', '', '미확인', '공원 경계 미확인(lt_c_uq162 매칭 실패) → 사유지 100% 가정 유지']);
-  download('land_own.csv', csv(own));            // → biz/data/land_own.csv
-  download('land_price.csv', csv(price));        // → biz/data/land_price.csv
-  download('parcels.txt', pTxt.join('\n') + '\n');       // → data/geo/parcels.txt
-  download('parcel_attr.txt', aTxt.join('\n') + '\n');   // → data/geo/parcel_attr.txt
-  log('끝. 다운로드 폴더의 4개 파일을 저장소 같은 위치에 덮어쓰고 실행방법.md 3단계를 진행하세요.');
+  download('land_own.csv', csv(own));            // → biz/data/vworld/land_own.csv
+  download('land_price.csv', csv(price));        // → biz/data/vworld/land_price.csv
+  download('parcels.txt', pTxt.join('\n') + '\n');       // → biz/data/vworld/parcels.txt
+  download('parcel_attr.txt', aTxt.join('\n') + '\n');   // → biz/data/vworld/parcel_attr.txt
+  log('끝. 다운로드 폴더의 4개 파일을 저장소 같은 위치에 덮어쓰고 biz/README.md 3단계를 진행하세요.');
 }
 
 // ---------- 배경지도 (선택) ----------
@@ -181,7 +181,7 @@ async function collectBasemap() {
   for (const p of parks) { const b = bbOf(p.geom), w = Math.max(b[2] - b[0], b[3] - b[1]) * 0.35 + 0.0004;
     OUT['s' + p.id] = await mosaic([b[0] - w, b[1] - w, b[2] + w, b[3] + w], 'Satellite', 900, 19, 0.62); console.log('위성', p.id); }
   OUT.cityBase = await mosaic(CITY_BOX, 'Base', 1800, 13); OUT.citySat = await mosaic(CITY_BOX, 'Satellite', 1800, 13, 0.6);
-  download('cheongju_basemap_vworld.json', JSON.stringify(OUT));   // → python dashboard/extract_basemap.py <파일>
+  download('cheongju_basemap_vworld.json', JSON.stringify(OUT));   // → python biz/code/extract_basemap.py <파일>
   window.__BASEMAP = OUT;
 }
 // ---------- 지형 (선택, collectBasemap 다음에 실행: 같은 경계를 쓴다) ----------
@@ -202,6 +202,6 @@ async function collectDem() {
   const OUT = {};
   for (const [k, m] of Object.entries(B)) { if (k === 'cityBase') continue; const city = k === 'citySat';
     OUT[city ? 'city' : k] = { bounds: m.bounds, ...await demTile(m.bounds, city ? 12 : 15, city ? 512 : 256) }; }
-  download('cheongju_dem.json', JSON.stringify(OUT));   // → python dashboard/extract_dem.py <파일>
+  download('cheongju_dem.json', JSON.stringify(OUT));   // → python biz/code/extract_dem.py <파일>
 }
 console.log('%c준비됨: await collectAll()  /  await collectBasemap()  /  await collectDem()', 'font-weight:bold');

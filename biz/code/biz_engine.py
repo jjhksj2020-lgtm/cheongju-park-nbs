@@ -1,13 +1,13 @@
 """청주 장기미집행 공원 40개소 — 사업성 룰 엔진 (재정투입 효율성 · 기존투자)
 
 입력
-  data/sites.csv            공고 제2026-2004호 전사 (site_id, type, name, expiry, area_m2, jimok, notice_stage)
+  data/input/sites.csv            공고 제2026-2004호 전사 (site_id, type, name, expiry, area_m2, jimok, notice_stage)
   params.yaml               모든 상수 (출처 포함)
-  data/land_own.csv  [선택] site_id, public_share (국공유지 비율 0~1), plan_notice (조성계획 고시 1/0)   ← 토지소유 자료
-  data/land_price.csv[선택] site_id, land_price_krw_m2 (개별공시지가 ㎡당), jimok_dae_m2 (지목 '대' 사유지 면적)  ← V-World
-  data/need.csv      [선택] site_id, grade (상/중/하), verdict, H1_high (1/0), industrial_downwind (1/0), C1_near (1/0), river_adjacent (1/0)  ← 필요성 파트
+  data/vworld/land_own.csv  [선택] site_id, public_share (국공유지 비율 0~1), plan_notice (조성계획 고시 1/0)   ← 토지소유 자료
+  data/vworld/land_price.csv[선택] site_id, land_price_krw_m2 (개별공시지가 ㎡당), jimok_dae_m2 (지목 '대' 사유지 면적)  ← V-World
+  data/input/need.csv      [선택] site_id, grade (상/중/하), verdict, H1_high (1/0), industrial_downwind (1/0), C1_near (1/0), river_adjacent (1/0)  ← 필요성 파트
 
-출력 (out/)
+출력 (biz/out/)
   master_biz.csv     40행 × 사업성 열 (기준 시나리오 + 범위)
   scenarios.csv      40행 × 8개 시나리오 단계 + stage_stable + switch_value
   cards/<site>.md    후보지 카드 40장 (사업성 블록)
@@ -20,11 +20,13 @@ import csv, os, sys, itertools, yaml
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 P = yaml.safe_load(open(os.path.join(HERE, 'params.yaml'), encoding='utf-8'))
-OUT = os.path.join(HERE, 'out'); os.makedirs(os.path.join(OUT, 'cards'), exist_ok=True)
+BIZ = os.path.dirname(HERE)   # biz/
+DATA_DIR = {'sites.csv': 'input', 'need.csv': 'input', 'land_own.csv': 'vworld', 'land_price.csv': 'vworld'}
+OUT = os.path.join(BIZ, 'out'); os.makedirs(os.path.join(OUT, 'cards'), exist_ok=True)
 
 
 def read_csv(name, key='site_id'):
-    path = os.path.join(HERE, 'data', name)
+    path = os.path.join(BIZ, 'data', DATA_DIR.get(name, 'input'), name)
     if not os.path.exists(path):
         return {}
     with open(path, encoding='utf-8-sig') as f:

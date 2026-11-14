@@ -1,7 +1,7 @@
-"""브라우저에서 받은 cheongju_basemap_vworld.json(V-World WMTS 타일 모자이크) → dashboard/img/*.jpg|png + manifest.json
-사용: python dashboard/extract_basemap.py <json 경로>"""
+"""브라우저에서 받은 cheongju_basemap_vworld.json(V-World WMTS 타일 모자이크) → biz/data/map/img/*.jpg|png + manifest.json
+사용: python biz/code/extract_basemap.py <json 경로>"""
 import base64, json, os, sys
-R = os.path.dirname(os.path.abspath(__file__))
+R = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'map')
 src = json.load(open(sys.argv[1], encoding='utf-8'))
 os.makedirs(f'{R}/img', exist_ok=True); man = {}
 for k, v in src.items():

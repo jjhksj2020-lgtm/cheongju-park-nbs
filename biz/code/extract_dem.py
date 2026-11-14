@@ -1,8 +1,8 @@
-"""브라우저에서 받은 cheongju_dem_terrarium.json → dashboard/dem/*.png + manifest.json
-Terrarium 인코딩(표고 = R*256 + G + B/256 − 32768 m). 범위는 배경 위성사진(img/manifest.json)과 같은 경계.
-사용: python dashboard/extract_dem.py <json 경로>"""
+"""브라우저에서 받은 cheongju_dem_terrarium.json → biz/data/map/dem/*.png + manifest.json
+Terrarium 인코딩(표고 = R*256 + G + B/256 − 32768 m). 범위는 배경 위성사진(biz/data/map/img/manifest.json)과 같은 경계.
+사용: python biz/code/extract_dem.py <json 경로>"""
 import base64, json, os, sys
-R = os.path.dirname(os.path.abspath(__file__))
+R = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'map')
 src = json.load(open(sys.argv[1], encoding='utf-8'))
 os.makedirs(f'{R}/dem', exist_ok=True); man = {}
 for k, v in src.items():
