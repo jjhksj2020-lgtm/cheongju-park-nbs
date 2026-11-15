@@ -98,7 +98,8 @@ footer{font-size:11.5px;color:var(--muted)}
 .cbar .rg{position:absolute;top:5px;height:2px;background:var(--ink);opacity:.55}
 .flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin:2px 0 0}
 .fstep{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12px}
-.fstep b{font-size:12.5px} .fstep .f{font-family:var(--f-mono);font-size:11.5px;color:var(--ink);margin:2px 0}
+.fstep b{font-size:12.5px} .fstep .f{font-size:12px;font-weight:600;color:var(--accent);margin:2px 0}
+details.flowbox>summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px}
 .fstep .s{color:var(--muted);font-size:11.5px}
 .kv dd.big{font-weight:600;color:var(--ink)}
 </style>
@@ -116,7 +117,7 @@ footer{font-size:11.5px;color:var(--muted)}
     </div>
   </header>
 
-  <div class="flow" id="flow"></div>
+  <details class="flowbox" open><summary>계산 4단계 (모두 청주 위성 실측)</summary><div class="flow" id="flow"></div></details>
 
   <div class="main" id="mapmain">
     <div class="mapbox">
