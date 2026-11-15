@@ -21,3 +21,9 @@
 - 사업성은 biz/ 하나로: code/(엔진·params·지도·수집기), data/input/(공고·필요성 결과), data/vworld/(V-World 토지 자료), data/map/(위성사진·지형), out/(결과, 미업로드).
 - 최종본은 biz/사업성_지도.html 한 파일(사진·지형 내장). 웹판·틀·중간 파일 제거. 옛 dashboard/, tools/, data/geo/, 실행방법.md 삭제(biz/README.md로 통합).
 - 검증: 경로 변경 후 재실행 — 시 부담 최대 853억/최소 349억, 1단계 22개소, 월명 재현 통과(이전과 동일).
+
+## 2026-11-15 E·D·C 1차 계산 (need/edc, edc 브랜치)
+- 자료: WorldPop 2020 100m constrained 인구, OSM(2026-11-15) 공원·하천·산림 → 모두 tag 대체자료/가정. 공원 경계는 biz/data/vworld/parks.txt 읽기 전용.
+- 결과: need/out/indicators_edc.csv(320행 = 40개소 × 8지표), edc_wide.csv. 산정 39/40(5번 경계 없음).
+- 검증: WorldPop 청주 합계 90.2만(주민등록 89.0만, 약 1%), site_id 1~40 전부, D1 0~1 범위, r(D1,E1) −0.41(<0.7 → 둘 다 사용).
+- E2 미산정: WorldPop 연령 비율이 공원 간 동일(0.285) → SGIS/행안부 연령별 인구 필요.
