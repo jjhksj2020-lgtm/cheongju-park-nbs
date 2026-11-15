@@ -1,6 +1,6 @@
 # 에너지(열저감) 파트 — 실행 방법
 
-**최종본: [`에너지_지도.html`](에너지_지도.html)** — 내려받아 더블클릭하면 열립니다(인터넷 없이 됨).
+**최종본: [`에너지_지도.html`](에너지_지도.html)** — 사업성 지도와 같은 형식(2D/3D·지형·항공사진·공원 상세·비교 막대). 내려받아 더블클릭하면 열립니다. 위성사진·지형은 파일 안에 들어 있고, 지도 엔진(deck.gl)만 인터넷에서 불러옵니다.
 GitHub 웹에서는 코드만 보이니 **Download raw file** 로 받아서 여세요.
 
 **독립 참고 결과**입니다. 판정(필요성)·단계(사업성)에는 넣지 않고, 공원별 열저감 효과를 따로 보여 줍니다.
@@ -37,7 +37,8 @@ energy/
     make_gee_script.py      틀 + params + 공원 경계 → gee_energy.js · gee_change.js
     gee_energy.js · gee_change.js   GEE Code Editor에 붙여넣는 완성본
     energy_engine.py        계산 엔진 (8개 시나리오, 등급)
-    page_template.html · build_page.py   지도 화면 틀 · 최종본 만들기
+    build_mapdata.py        결과 + biz 경계·필지·위성사진·지형 → out/mapdata.json
+    page_template.html · build_page.py   지도 화면 틀(사업성 지도 틀 기반) · 최종본 만들기
   data/gee/
     gee_output.txt          1차 GEE 출력 원본 (2026-11-14)
     gee_change_output.txt   2차 GEE 출력 원본 (2026-11-15)
@@ -51,16 +52,18 @@ energy/
 | `biz/data/vworld/parks.txt` · `gu.txt` | 공원·구 경계 |
 | `biz/data/vworld/parcels.txt` · `parcel_attr.txt` | 필지별 지금 이용상황 (숲·농지·시가지 비율) |
 | `biz/data/vworld/land_own.csv` | 경계 매칭 상태 (근사·불일치 표시) |
+| `biz/data/map/img`·`dem` | 항공사진·일반지도·지형 (지도 배경) |
 
 ## 실행 (저장소 맨 위 폴더에서)
 
 ```bash
 pip install pyyaml                     # 처음 한 번
 python energy/code/energy_engine.py    # 계산 → energy/out/ (master_energy.csv, summary.md, energydata.json)
+python energy/code/build_mapdata.py    # 지도 데이터 → energy/out/mapdata.json
 python energy/code/build_page.py       # 최종 지도 → energy/에너지_지도.html
 ```
 
-계수만 바꿀 때는 `code/params.yaml` 을 고치고 위 두 줄을 다시 실행합니다. GEE는 다시 돌릴 필요 없습니다.
+계수만 바꿀 때는 `code/params.yaml` 을 고치고 위 세 줄을 다시 실행합니다. GEE는 다시 돌릴 필요 없습니다.
 
 ## GEE 다시 돌리기 (공원 경계·기간·위성 설정을 바꿀 때만)
 
@@ -79,7 +82,7 @@ python energy/code/build_page.py       # 최종 지도 → energy/에너지_지�
 |---|---|
 | `out/summary.md` | 청주 계수, 합계, 보전형·조성형 비교, 상위 10, 미산정, 검증 |
 | `out/master_energy.csv` | 40행: 땅 상태 비율, 성격, 지금 NDVI, 단계별 기준·하한·상한, 냉각량, 주변 인구(참고), 등급·확정 |
-| `에너지_지도.html` | 4단계 계산 흐름 · 지도(원 크기 = 냉각량) · 공원별 계산 과정 · 순위 · 전체 표 · 근거 |
+| `에너지_지도.html` | 계산 4단계 · **도시 전체**(색: 성격·냉각량·공원 일대 저감·지금 NDVI·등급 / 3D 기둥: 냉각량·저감 / 주변 300m 고리 / 지형·항공사진) · **공원 상세**(필지별 지금 땅 상태·지목, 계산 과정 카드, 숫자의 근거) · **비교 막대**(기준과 범위) |
 
 ## 한계
 
