@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>청주 미집행공원 이용성 지도</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f6f4; --surface: #fcfcfb; --surface-2: #f0efec; --border: #e2e1dc;
+  --text: #0b0b0b; --text-2: #52514e; --muted: #85837d;
+  --accent: #1c5cab;
+  --s1: #cde2fb; --s2: #86b6ef; --s3: #3987e5; --s4: #1c5cab; --s5: #0d366b;
+  --c-dense: #2a78d6; --c-res: #eb6834; --c-ind: #6250d6; --c-etc: #a3a29b;
+  --water: #1baf7a; --forest: #008300; --served: #eda100; --sel: #e34948;
+  --tag-real: #0f7a3a; --tag-sub: #8a5a00; --tag-asm: #6b4fb0; --tag-na: #85837d;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121211; --surface: #1a1a19; --surface-2: #232321; --border: #33332f;
+    --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8d85; --accent: #6da7ec;
+    --s1: #184f95; --s2: #256abf; --s3: #3987e5; --s4: #86b6ef; --s5: #cde2fb;
+    --c-dense: #3987e5; --c-res: #d95926; --c-ind: #9085e9; --c-etc: #6e6d67;
+    --water: #199e70; --forest: #0ca30c; --served: #c98500; --sel: #e66767;
+    --tag-real: #5fc98a; --tag-sub: #e0a93a; --tag-asm: #b4a6f0;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121211; --surface: #1a1a19; --surface-2: #232321; --border: #33332f;
+  --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8d85; --accent: #6da7ec;
+  --s1: #184f95; --s2: #256abf; --s3: #3987e5; --s4: #86b6ef; --s5: #cde2fb;
+  --c-dense: #3987e5; --c-res: #d95926; --c-ind: #9085e9; --c-etc: #6e6d67;
+  --water: #199e70; --forest: #0ca30c; --served: #c98500; --sel: #e66767;
+  --tag-real: #5fc98a; --tag-sub: #e0a93a; --tag-asm: #b4a6f0;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 "Pretendard", "Noto Sans KR", system-ui, sans-serif; }
+header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); background: var(--surface); }
+h1 { margin: 0; font-size: 19px; font-weight: 700; }
+header p { margin: 4px 0 0; color: var(--text-2); font-size: 13px; }
+.wrap { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; padding: 16px 20px; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+#map { height: 640px; border-radius: 10px; }
+.controls { padding: 14px 16px; border-bottom: 1px solid var(--border); display: grid; gap: 10px; }
+.controls label.row { display: grid; gap: 4px; font-size: 12px; color: var(--text-2); }
+select { font: inherit; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font-size: 12px; cursor: pointer; user-select: none; }
+.chip[aria-pressed="false"] { opacity: .45; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.layers { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-size: 12px; color: var(--text-2); }
+.layers label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.sw { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
+.legend { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); flex-wrap: wrap; }
+.ramp { display: inline-flex; }
+.ramp span { width: 22px; height: 10px; }
+.ramp span:first-child { border-radius: 2px 0 0 2px; } .ramp span:last-child { border-radius: 0 2px 2px 0; }
+#card { padding: 14px 16px; }
+#card h2 { margin: 0; font-size: 17px; }
+#card .sub { color: var(--text-2); font-size: 12px; margin: 2px 0 10px; }
+#card .story { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; font-size: 13px; line-height: 1.6; margin-bottom: 12px; }
+#card .story b { font-weight: 700; }
+.kv { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 10px; align-items: baseline; font-size: 13px; }
+.kv .k { color: var(--text-2); }
+.kv .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.tag { font-size: 10px; padding: 1px 6px; border-radius: 4px; border: 1px solid currentColor; white-space: nowrap; }
+.tag.실자료 { color: var(--tag-real); } .tag.대체자료 { color: var(--tag-sub); } .tag.가정 { color: var(--tag-asm); } .tag.미산정 { color: var(--tag-na); }
+.empty { color: var(--muted); font-size: 13px; padding: 24px 0; text-align: center; }
+.tablewrap { margin: 0 20px 20px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+th:nth-child(-n+4), td:nth-child(-n+4) { text-align: left; }
+th { position: sticky; top: 0; background: var(--surface-2); color: var(--text-2); font-weight: 600; cursor: pointer; }
+th[aria-sort]::after { content: " ▾"; } th[aria-sort="ascending"]::after { content: " ▴"; }
+tbody tr { cursor: pointer; } tbody tr:hover { background: var(--surface-2); } tbody tr.sel { background: color-mix(in srgb, var(--sel) 14%, transparent); }
+.bar { display: inline-block; height: 6px; border-radius: 0 3px 3px 0; background: var(--s3); vertical-align: middle; margin-right: 6px; }
+footer { padding: 0 20px 24px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.leaflet-container { background: var(--surface-2); font: inherit; }
+.tip { font-size: 12px; }
+@media (max-width: 900px) {
+  .wrap { grid-template-columns: 1fr; padding: 12px 16px; }
+  #map { height: 420px; }
+  .tablewrap { margin: 0 16px 16px; }
+  header, footer { padding-left: 16px; padding-right: 16px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>청주 장기미집행 공원 40개소 · 인구·토지·생활권(E·D·C)</h1>
+  <p>공원이 생기면 누가 쓰는지(E 이용성), 지금 공원이 얼마나 부족한지(D 결핍), 녹지·수변축과 얼마나 가까운지(C 연결)를 공원별로 보여줍니다. 공원을 누르면 오른쪽에 근거가 나옵니다.</p>
+</header>
+
+<div class="wrap">
+  <div class="panel"><div id="map" role="application" aria-label="공원 지도"></div></div>
+  <aside class="panel">
+    <div class="controls">
+      <label class="row">지도 색으로 볼 지표
+        <select id="metric"></select>
+      </label>
+      <div class="legend" id="legend"></div>
+      <div>
+        <div style="font-size:12px;color:var(--text-2);margin-bottom:4px">지역 유형 (버퍼 기준, 점수에 넣지 않음)</div>
+        <div class="chips" id="typeChips"></div>
+      </div>
+      <label class="row">생활권
+        <select id="zone"><option value="">전체</option></select>
+      </label>
+      <div class="layers" id="layers"></div>
+    </div>
+    <div id="card"><div class="empty">지도나 표에서 공원을 고르세요.</div></div>
+  </aside>
+</div>
+
+<div class="tablewrap panel">
+  <table id="tbl"><thead></thead><tbody></tbody></table>
+</div>
+
+<footer id="foot"></footer>
+
+<script>
+const D = __DATA__;
+const $ = s => document.querySelector(s);
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt = (v, d = 0) => v == null || v === '' ? '–' : Number(v).toLocaleString('ko-KR', { maximumFractionDigits: d, minimumFractionDigits: d });
+const pct = v => v == null || v === '' ? '–' : (Number(v) * 100).toFixed(0) + '%';
+
+// 지표 정의 — tag는 indicators_edc.csv와 같은 규칙
+const M = [
+  { k: 'E1_pop', label: 'E1 버퍼 인구', unit: '명', f: v => fmt(v), tag: '대체자료', src: 'WorldPop 2020', hi: '많을수록 이용자 많음' },
+  { k: 'E2_vulnerable', label: 'E2 아동·고령 비율', unit: '', f: pct, tag: '실자료', src: '행안부 주민등록 2026.10', hi: '높을수록 취약' },
+  { k: 'D1_unserved', label: 'D1 서비스권 밖 비율', unit: '', f: pct, tag: '대체자료', src: 'WorldPop + OSM 기존 공원', hi: '높을수록 공원 부족' },
+  { k: 'new_served_pop', label: '신규 수혜 인구', unit: '명', f: v => fmt(v), tag: '대체자료', src: 'E1 × D1', hi: '조성 시 새로 혜택' },
+  { k: 'D2_built_m2_per_cap', label: 'D2 생활권 1인당 조성면적', unit: '㎡/인', f: v => fmt(v, 1), tag: '실자료', src: '2030 공원녹지기본계획 표 11-2', hi: '낮을수록 부족', invert: true },
+  { k: 'C1_m', label: 'C1 녹지·수변축 거리', unit: 'm', f: v => fmt(v), tag: '대체자료', src: 'OSM 하천·300ha 산림', hi: '가까울수록 연결', invert: true },
+];
+const TYPES = [
+  { k: '밀집', c: '--c-dense' }, { k: '주거', c: '--c-res' }, { k: '산업', c: '--c-ind' }, { k: '기타', c: '--c-etc' },
+];
+const rows = D.sites.filter(s => s.E1_pop !== undefined && s.E1_pop !== '');
+const allRows = D.sites;
+let metric = M[3], selected = null, typeOn = new Set(TYPES.map(t => t.k)), zoneOn = '';
+
+// ---------- 지도 ----------
+const map = L.map('map', { preferCanvas: true, zoomControl: true }).setView([36.64, 127.47], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+const ll = ring => ring.map(c => [c[1], c[0]]);
+const polys = g => g.map(p => p.map(ll));
+const lines = g => g.map(ll);
+
+const layer = {};
+const cellSize = 0.000833;
+function cellsLayer() {
+  const vals = D.cells.map(c => c[2]).sort((a, b) => a - b);
+  const q = [0.2, 0.4, 0.6, 0.8].map(p => vals[Math.floor(p * (vals.length - 1))]);
+  const steps = ['--s1', '--s2', '--s3', '--s4', '--s5'].map(css);
+  const g = L.layerGroup();
+  D.cells.forEach(([x, y, v, r]) => {
+    const i = q.filter(t => v > t).length;
+    L.rectangle([[y - cellSize / 2, x - cellSize / 2], [y + cellSize / 2, x + cellSize / 2]],
+      { stroke: false, fillColor: steps[i], fillOpacity: 0.55, interactive: false }).addTo(g);
+  });
+  return g;
+}
+layer.cells = { name: '인구 격자 (100m)', sw: '--s3', on: false, make: cellsLayer };
+layer.served = { name: '기존 공원 서비스권', sw: '--served', on: true,
+  make: () => L.polygon(polys(D.served), { color: css('--served'), weight: 0, fillOpacity: 0.18, interactive: false }) };
+layer.existing = { name: '기존 공원 (OSM)', sw: '--forest', on: false,
+  make: () => L.polygon(polys(D.existing), { color: css('--forest'), weight: 1, fillOpacity: 0.35, interactive: false }) };
+layer.buffer = { name: '유치거리 버퍼', sw: '--accent', on: true,
+  make: () => L.layerGroup(Object.entries(D.geo).map(([id, g]) => L.polygon(polys(g.buffer), { color: css('--accent'), weight: 1, dashArray: '4 3', fill: false, interactive: false }))) };
+layer.water = { name: '수변생태축 하천', sw: '--water', on: true,
+  make: () => L.polyline(lines(D.water), { color: css('--water'), weight: 2.5, opacity: 0.9, interactive: false }) };
+layer.forest = { name: `녹지축 (산림 ${D.params.axis_forest_min_ha}ha↑)`, sw: '--forest', on: false,
+  make: () => L.polygon(polys(D.forest), { color: css('--forest'), weight: 0, fillOpacity: 0.16, interactive: false }) };
+layer.gu = { name: '구 경계', sw: '--muted', on: true,
+  make: () => L.layerGroup(Object.values(D.gu).map(g => L.polygon(polys(g), { color: css('--muted'), weight: 1, fill: false, interactive: false }))) };
+
+Object.entries(layer).forEach(([k, o]) => {
+  const id = 'ly_' + k;
+  $('#layers').insertAdjacentHTML('beforeend',
+    `<label><input type="checkbox" id="${id}" ${o.on ? 'checked' : ''}><span class="sw" style="background:var(${o.sw})"></span>${o.name}</label>`);
+  const sync = () => { if ($('#' + id).checked) { o.l = o.l || o.make(); o.l.addTo(map); } else if (o.l) map.removeLayer(o.l); };
+  $('#' + id).addEventListener('change', sync); sync();
+});
+
+// 공원 표시: 경계 + 중심점 원 (작은 공원도 보이게)
+const parkLayer = L.layerGroup().addTo(map);
+const centroid = g => { const pts = g.park.flat(2); return [pts.reduce((a, c) => a + c[1], 0) / pts.length, pts.reduce((a, c) => a + c[0], 0) / pts.length]; };
+
+function breaks(m) {
+  const v = rows.map(r => +r[m.k]).filter(x => !isNaN(x)).sort((a, b) => a - b);
+  return [0.2, 0.4, 0.6, 0.8].map(p => v[Math.floor(p * (v.length - 1))]);
+}
+function colorOf(m, v, br) {
+  if (v == null || v === '' || isNaN(+v)) return css('--muted');
+  let i = br.filter(t => +v > t).length; if (m.invert) i = 4 - i;
+  return css(['--s1', '--s2', '--s3', '--s4', '--s5'][i]);
+}
+const visible = r => typeOn.size === TYPES.length && !zoneOn ? true :
+  (r.area_type && r.area_type.split('+').some(t => typeOn.has(t))) && (!zoneOn || r.living_zone === zoneOn);
+
+function drawParks() {
+  parkLayer.clearLayers();
+  const br = breaks(metric);
+  rows.forEach(r => {
+    if (!visible(r)) return;
+    const g = D.geo[r.site_id]; if (!g) return;
+    const col = colorOf(metric, r[metric.k], br), isSel = selected === r.site_id;
+    L.polygon(polys(g.park), { color: isSel ? css('--sel') : col, weight: isSel ? 3 : 1.5, fillColor: col, fillOpacity: 0.6 })
+      .on('click', () => select(r.site_id)).addTo(parkLayer);
+    L.circleMarker(centroid(g), { radius: isSel ? 9 : 7, color: isSel ? css('--sel') : css('--surface'), weight: 2, fillColor: col, fillOpacity: 1 })
+      .bindTooltip(`<div class="tip"><b>${r.name}</b><br>${metric.label}: ${metric.f(r[metric.k])}${metric.unit && metric.f !== pct ? ' ' + metric.unit : ''}</div>`, { direction: 'top', offset: [0, -6] })
+      .on('click', () => select(r.site_id)).addTo(parkLayer);
+  });
+  // 범례
+  const labels = br.map(b => metric.f(b));
+  const ramp = ['--s1', '--s2', '--s3', '--s4', '--s5'].map(v => `<span style="background:var(${v})"></span>`);
+  if (metric.invert) ramp.reverse();
+  $('#legend').innerHTML = `<span>${metric.invert ? '높음' : '낮음'}</span><span class="ramp">${ramp.join('')}</span><span>${metric.invert ? '낮음' : '높음'}</span>
+    <span style="color:var(--muted)">· 5분위 (${labels.join(' / ')}) · ${metric.hi}</span>`;
+}
+
+// ---------- 컨트롤 ----------
+M.forEach((m, i) => $('#metric').insertAdjacentHTML('beforeend', `<option value="${i}" ${m === metric ? 'selected' : ''}>${m.label}</option>`));
+$('#metric').addEventListener('change', e => { metric = M[+e.target.value]; drawParks(); });
+TYPES.forEach(t => {
+  const n = rows.filter(r => (r.area_type || '').split('+').includes(t.k)).length;
+  $('#typeChips').insertAdjacentHTML('beforeend', `<button class="chip" aria-pressed="true" data-t="${t.k}"><span class="dot" style="background:var(${t.c})"></span>${t.k} ${n}</button>`);
+});
+$('#typeChips').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const t = b.dataset.t, on = b.getAttribute('aria-pressed') === 'true';
+  b.setAttribute('aria-pressed', String(!on)); on ? typeOn.delete(t) : typeOn.add(t); refresh();
+});
+Object.keys(D.zones.per_cap_built).forEach(z => $('#zone').insertAdjacentHTML('beforeend', `<option>${z}</option>`));
+$('#zone').addEventListener('change', e => { zoneOn = e.target.value; refresh(); });
+
+// ---------- 카드 ----------
+function typeChip(t) {
+  return (t || '').split('+').map(x => { const T = TYPES.find(y => y.k === x); return T ? `<span class="chip" style="cursor:default"><span class="dot" style="background:var(${T.c})"></span>${x}</span>` : ''; }).join(' ');
+}
+function select(id) {
+  selected = id; const r = allRows.find(x => x.site_id === id);
+  if (!r.E1_pop && r.E1_pop !== 0) {
+    $('#card').innerHTML = `<h2>${r.name}</h2><div class="sub">${r.note || ''}</div><div class="empty">공원 경계가 없어 모든 지표가 미산정입니다.</div>`;
+  } else {
+    const city = D.zones.per_cap_built;
+    const e2 = Math.round(r.E2_vulnerable * 100), d1 = Math.round(r.D1_unserved * 100);
+    const story = +r.E1_pop === 0
+      ? `반경 ${r.buffer_m}m 안에 사는 사람이 거의 없습니다(WorldPop 기준). 소속 ${r.dong}의 아동·고령 비율은 <b>${e2}%</b>입니다.`
+      : `반경 ${r.buffer_m}m 안에 <b>${fmt(r.E1_pop)}명</b>이 살고, 이 중 <b>${e2}%</b>가 아동(0~9세)·고령(65세 이상)입니다.
+         이 가운데 <b>${d1}%(${fmt(r.new_served_pop)}명)</b>는 지금 어떤 공원 유치거리에도 들지 않아, 조성하면 처음으로 공원 서비스를 받습니다.`;
+    const story2 = ` 이 공원이 속한 <b>${r.living_zone}</b>의 1인당 조성 공원면적은 <b>${fmt(r.D2_built_m2_per_cap, 1)}㎡</b>입니다(5개 생활권 ${Math.min(...Object.values(city))}~${Math.max(...Object.values(city))}㎡).
+      가장 가까운 녹지·수변축까지 <b>${fmt(r.C1_m)}m</b>${+r.river_adjacent ? ', 하천과 100m 이내로 붙어 있습니다' : ''}.`;
+    const line = (m) => `<span class="k">${m.label}</span><span class="v">${m.f(r[m.k])}${m.unit && m.f !== pct ? ' <span style="font-weight:400;color:var(--text-2)">' + m.unit + '</span>' : ''}</span><span class="tag ${m.tag}" title="${m.src}">${m.tag}</span>`;
+    $('#card').innerHTML = `<h2>${r.name}</h2>
+      <div class="sub">${r.type} · ${r.dong} · ${r.living_zone} · 버퍼 ${r.buffer_m}m &nbsp;${typeChip(r.area_type)}</div>
+      <div class="story">${story}${story2}</div>
+      <div class="kv">${M.map(line).join('')}
+        <span class="k">인구밀도 (버퍼)</span><span class="v">${fmt(r.pop_density_km2)} <span style="font-weight:400;color:var(--text-2)">명/㎢</span></span><span class="tag 대체자료">대체자료</span>
+        <span class="k">C1_near (≤${D.params.c1_near_m}m)</span><span class="v">${+r.C1_near ? '예' : '아니오'}</span><span class="tag 가정">가정</span>
+        <span class="k">하천 인접 (≤${D.params.river_adjacent_m}m)</span><span class="v">${+r.river_adjacent ? '예' : '아니오'}</span><span class="tag 가정">가정</span>
+      </div>`;
+    const g = D.geo[id]; if (g) map.fitBounds(L.polygon(polys(g.buffer)).getBounds(), { maxZoom: 16, padding: [30, 30] });
+  }
+  drawParks(); drawTable();
+}
+
+// ---------- 표 ----------
+const COLS = [
+  { k: 'site_id', l: 'ID', f: v => v, n: true }, { k: 'name', l: '공원' }, { k: 'living_zone', l: '생활권' }, { k: 'area_type', l: '지역 유형' },
+  ...M.map(m => ({ k: m.k, l: m.label.replace(/^[A-Z]\d /, ''), f: m.f, n: true, bar: true, m })),
+];
+let sortK = 'new_served_pop', sortDir = -1;
+function drawTable() {
+  $('#tbl thead').innerHTML = '<tr>' + COLS.map(c => `<th data-k="${c.k}" ${c.k === sortK ? `aria-sort="${sortDir > 0 ? 'ascending' : 'descending'}"` : ''}>${c.l}</th>`).join('') + '</tr>';
+  const max = {}; COLS.filter(c => c.bar).forEach(c => max[c.k] = Math.max(...rows.map(r => +r[c.k] || 0)));
+  const list = allRows.filter(r => r.E1_pop === undefined || r.E1_pop === '' ? typeOn.size === TYPES.length && !zoneOn : visible(r)).slice().sort((a, b) => {
+    const c = COLS.find(x => x.k === sortK), A = a[sortK], B = b[sortK];
+    if (A === undefined || A === '') return 1; if (B === undefined || B === '') return -1;
+    return (c.n ? (+A - +B) : String(A).localeCompare(String(B), 'ko')) * sortDir;
+  });
+  $('#tbl tbody').innerHTML = list.map(r => `<tr data-id="${r.site_id}" class="${r.site_id === selected ? 'sel' : ''}">` + COLS.map(c => {
+    const v = r[c.k];
+    if (v === undefined || v === '') return `<td style="color:var(--muted)">${c.k === 'name' ? r.name : '미산정'}</td>`;
+    const txt = c.f ? c.f(v) : v;
+    const bar = c.bar && max[c.k] ? `<span class="bar" style="width:${Math.round(40 * (+v) / max[c.k])}px"></span>` : '';
+    return `<td>${bar}${txt}</td>`;
+  }).join('') + '</tr>').join('');
+}
+$('#tbl thead').addEventListener('click', e => { const th = e.target.closest('th'); if (!th) return; const k = th.dataset.k; sortDir = k === sortK ? -sortDir : -1; sortK = k; drawTable(); });
+$('#tbl tbody').addEventListener('click', e => { const tr = e.target.closest('tr'); if (tr) select(tr.dataset.id); });
+
+function refresh() { drawParks(); drawTable(); }
+refresh();
+
+$('#foot').innerHTML = `<b>자료</b> 인구: WorldPop 2020 100m(대체자료, SGIS 수령 시 교체) · 연령: 행정안전부 행정동별 주민등록인구 2026-10-31 ·
+  기존 공원·하천·산림·토지이용: OpenStreetMap 2026-11-15 · 생활권 1인당 공원면적: 2030 청주시 공원녹지기본계획(2020) 표 11-2 ·
+  공원 경계: V-World(사업성 파트 수집분). <b>규칙</b> 버퍼 = 공원 경계 + 도시공원법 시행규칙 별표3 유치거리(어린이·소공원 250m, 그 외 500m).
+  지역 유형은 버퍼 인구밀도(밀집 ≥ ${fmt(D.params.area_type.dense_per_km2)}명/㎢, 주거 ≥ ${fmt(D.params.area_type.residential_per_km2)}명/㎢)와 OSM 산업용지 비율(≥ ${pct(D.params.area_type.industrial_share)})로 나눈 표시용 라벨이며 점수에 넣지 않습니다.
+  태그: <span class="tag 실자료">실자료</span> <span class="tag 대체자료">대체자료</span> <span class="tag 가정">가정</span> <span class="tag 미산정">미산정</span>. 기준일 ${D.asof}.`;
+</script>
+</body>
+</html>

@@ -14,7 +14,7 @@ from shapely.ops import transform, unary_union
 from shapely.strtree import STRtree
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import EDC_P, OUT, RAW, ROOT, _dec, buffers, sites, to5186, write_rows
+from common import EDC_P, OUT, RAW, ROOT, _dec, buffers, sites, to4326, to5186, write_rows
 import osm
 
 BBOX = None  # 청주시 경계(구 4개)의 범위로 채운다
@@ -111,6 +111,41 @@ def axes():
     return water, unary_union(big), anyriver
 
 
+def landuse():
+    L = osm.areas('landuse')
+    return {k: unary_union([g for t, g in L if t.get('landuse') in v])
+            for k, v in {'res': ['residential'], 'ind': ['industrial'], 'com': ['commercial', 'retail']}.items()}
+
+
+def area_type(dens, res, ind):
+    """밀집/주거/산업/기타 — 표시용 라벨 (params area_type, 가정)."""
+    A = EDC_P['area_type']; t = []
+    if dens >= A['dense_per_km2']:
+        t.append('밀집')
+    elif dens >= A['residential_per_km2'] or res >= A['residential_share']:
+        t.append('주거')
+    if ind >= A['industrial_share']:
+        t.append('산업')
+    return '+'.join(t) or '기타'
+
+
+def _geo(g, tol=8):
+    """5186 도형 → 단순화한 경위도 좌표 목록 (지도용)."""
+    from shapely.geometry import mapping
+    g = transform(to4326, g.simplify(tol))
+    m = mapping(g)
+    rnd = lambda c: [round(c[0], 5), round(c[1], 5)]
+    if m['type'] == 'Polygon':
+        return [[[rnd(c) for c in r] for r in m['coordinates']]]
+    if m['type'] == 'MultiPolygon':
+        return [[[rnd(c) for c in r] for r in p] for p in m['coordinates']]
+    if m['type'] == 'LineString':
+        return [[rnd(c) for c in m['coordinates']]]
+    if m['type'] == 'MultiLineString':
+        return [[rnd(c) for c in l] for l in m['coordinates']]
+    return []
+
+
 def main():
     global BBOX
     gu_lines = [l for l in open(f'{ROOT}/biz/data/vworld/gu.txt', encoding='utf-8').read().split('\n') if l]
@@ -124,10 +159,11 @@ def main():
     dgeo, dratio, dgu = dongs(); total.set_ratio(dgeo, dratio)
     ex_parks, served, n_ex = existing_service(g for g, _, _ in B.values()); print('기존 공원(OSM)', n_ex)
     water, green, anyriver = axes()
+    LU = landuse()
     LZ = EDC_P['living_zone_park']; DT = set(EDC_P['downtown_dongs'])
     zone_of = lambda dong: '도심생활권' if dong in DT else f"{dgu[dong][:2]}생활권"
 
-    rows, wide = [], []
+    rows, wide, geo_out = [], [], {}
     WP, OS, MO, LZK = 'WP-2020', 'OSM-2026-11', 'MOIS-2026-10', 'PARK2030-T11-2'
     def add(sid, ind, val, unit, src, tag):
         rows.append({'site_id': sid, 'indicator': ind, 'value': '' if val is None else val, 'unit': unit, 'source_key': src, 'tag': tag})
@@ -153,6 +189,9 @@ def main():
         cw, cg = park.distance(water), park.distance(green)
         c1 = min(cw, cg)
         radj = int(park.distance(anyriver) <= EDC_P['river_adjacent_m'])
+        dens = e1 / (buf.area / 1e6)
+        sh = {k: buf.intersection(v).area / buf.area for k, v in LU.items()}
+        atype = area_type(dens, sh['res'], sh['ind'])
         add(sid, 'E1', round(e1), '명', WP, '대체자료')
         add(sid, 'E2', round(e2, 4), '비율(0~1)', f'{MO};{WP}', '실자료')
         add(sid, 'D1', None if d1 is None else round(d1, 4), '비율(0~1)', f'{WP};{OS}', '대체자료')
@@ -166,12 +205,34 @@ def main():
                      'D1_unserved': None if d1 is None else round(d1, 3), 'new_served_pop': round(new),
                      'D2_built_m2_per_cap': d2, 'D2_decided_m2_per_cap': LZ['per_cap_decided'][zone],
                      'C1_m': round(c1), 'C1_water_m': round(cw), 'C1_green_m': round(cg),
-                     'C1_near': int(c1 <= EDC_P['c1_near_m']), 'river_adjacent': radj, 'note': ''})
+                     'C1_near': int(c1 <= EDC_P['c1_near_m']), 'river_adjacent': radj,
+                     'area_type': atype, 'pop_density_km2': round(dens), 'osm_res_share': round(sh['res'], 3),
+                     'osm_ind_share': round(sh['ind'], 3), 'osm_com_share': round(sh['com'], 3), 'note': ''})
+        geo_out[sid] = {'park': _geo(park, 2), 'buffer': _geo(buf, 8)}
 
     write_rows(f'{OUT}/indicators_edc.csv', rows)
     keys = list(dict.fromkeys(k for w in wide for k in w))
     with open(f'{OUT}/edc_wide.csv', 'w', encoding='utf-8-sig', newline='') as f:
         w = csv.DictWriter(f, fieldnames=keys); w.writeheader(); w.writerows(wide)
+
+    # 지도용 데이터 (need/out/edc_map.json → build_page.py)
+    from shapely.geometry import box as _box
+    near = unary_union([b for _, b, _ in B.values()]).buffer(1500)
+    view = _box(*near.bounds).buffer(3000)
+    cells = []
+    for c, v, w in zip(total.cells, total.vals, total.wt):
+        if c.intersects(near):
+            x, y = transform(to4326, c.centroid).coords[0]
+            cells.append([round(x, 5), round(y, 5), round(float(v), 1), None if w is None else round(w, 3)])
+    big_parks = unary_union([p for p in getattr(ex_parks, 'geoms', [ex_parks]) if p.intersects(near)])
+    mapd = {'asof': '2026-11-15', 'sites': wide, 'geo': geo_out,
+            'served': _geo(served.intersection(near), 10), 'existing': _geo(big_parks, 4),
+            'water': _geo(water.intersection(view), 15), 'forest': _geo(green.intersection(view), 25),
+            'gu': {k: _geo(g, 30) for k, g in gu.items()}, 'cells': cells,
+            'zones': EDC_P['living_zone_park'], 'params': {k: EDC_P[k] for k in ('area_type', 'c1_near_m', 'river_adjacent_m', 'axis_forest_min_ha', 'axis_rivers')},
+            'buffer_m': {k: v for k, v in __import__('common').PRESETS['buffer_m'].items()}}
+    json.dump(mapd, open(f'{OUT}/edc_map.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+    print('지도 데이터', f'{OUT}/edc_map.json', os.path.getsize(f'{OUT}/edc_map.json') // 1024, 'KB, 격자', len(cells))
 
     # 검증: site_id 1~40, 값 범위, 주민등록 합계, 상관
     ok = [w for w in wide if w.get('E1_pop') is not None]
@@ -180,6 +241,9 @@ def main():
     assert all(0 <= w['D1_unserved'] <= 1 for w in pos) and all(0 <= w['E2_vulnerable'] <= 1 for w in ok)
     print('E2 범위', min(w['E2_vulnerable'] for w in ok), '~', max(w['E2_vulnerable'] for w in ok),
           '/ 서로 다른 값', len({w['E2_vulnerable'] for w in ok}))
+    from collections import Counter
+    print('지역 유형', Counter(w['area_type'] for w in ok))
+    print('C1_near', sum(w['C1_near'] for w in ok), '/', len(ok))
     print('생활권 배정', {z: [w['site_id'] for w in ok if w['living_zone'] == z] for z in LZ['per_cap_built']})
     from scipy.stats import spearmanr
     cols = ['E1_pop', 'E2_vulnerable', 'D1_unserved', 'D2_built_m2_per_cap', 'C1_m']
