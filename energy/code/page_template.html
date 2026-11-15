@@ -1,4 +1,4 @@
-<title>청주 미집행공원 열저감·에너지 지도</title>
+<title>청주 미집행공원 열저감 지도</title>
 <style>
 :root{
   --bg:#f4f5f3; --panel:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#7a7974; --line:#dcdcd6; --soft:#ecece8;
@@ -56,43 +56,52 @@ li{margin:2px 0}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .seg button{border:0;background:transparent;color:var(--ink2);padding:5px 12px;font:inherit;font-size:12px;cursor:pointer}
 .seg button.on{background:var(--ink);color:var(--panel)}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:8px}
+.fstep{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--soft)}
+.fn{font-weight:700;font-size:16px;color:var(--s1)}
+.fv{font-family:var(--mono);font-size:12px;margin:2px 0}
 </style>
 <div class="wrap">
   <header>
-    <h1>청주 장기미집행 공원 — 조성하면 얼마나 시원해지고, 전기를 얼마나 아끼나</h1>
+    <h1>청주 장기미집행 공원 — 조성하면 여름 땅 온도가 얼마나 내려가나</h1>
     <p class="sub" id="lede"></p>
-    <p class="small">에너지 파트 · 독립 참고 결과(판정·단계에는 반영하지 않음) · 기준: <b>공원 조성 vs 지금 그대로</b> · 기준일 <span id="asof"></span></p>
+    <p class="small">에너지(열저감) 파트 · 독립 참고 결과(판정·단계에는 반영하지 않음) · 기준: <b>공원 조성 vs 지금 그대로</b> · 계수는 모두 <b>청주 위성 실측</b>(문헌 계수 0개) · 기준일 <span id="asof"></span></p>
   </header>
 
   <section class="kpis" id="kpis"></section>
 
+  <section class="card">
+    <h2>어떻게 계산했나 — 4단계</h2>
+    <div class="flow" id="flow"></div>
+  </section>
+
   <section class="grid2">
     <div class="card">
-      <h2>공원 위치와 연간 냉방전력 절감</h2>
-      <p class="small">원 크기 = 기준 시나리오 연간 절감(MWh). 원을 누르면 오른쪽에 계산 과정이 나옵니다.</p>
+      <h2>공원 위치와 냉각량</h2>
+      <p class="small">원 크기 = 기준 시나리오 냉각량(°C·ha). 원을 누르면 오른쪽에 계산 과정이 나옵니다.</p>
       <div class="legend"><span><i style="background:var(--s1)"></i>조성형 — 녹지를 새로 만듦</span><span><i style="background:var(--s2)"></i>보전형 — 이미 녹지</span><span><i style="background:var(--na)"></i>미산정</span></div>
-      <div class="chartbox"><svg id="map" role="img" aria-label="청주시 구 경계 위에 공원 39곳을 연간 냉방전력 절감 크기의 원으로 표시한 지도"></svg><div class="tip" id="maptip"></div></div>
+      <div class="chartbox"><svg id="map" role="img" aria-label="청주시 구 경계 위에 공원 39곳을 냉각량 크기의 원으로 표시한 지도"></svg><div class="tip" id="maptip"></div></div>
     </div>
     <div class="card" id="detail"></div>
   </section>
 
   <section class="card rank">
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
-      <div><h2>공원별 순위</h2><p class="small">막대 = 기준 시나리오. 범위(64개 시나리오 최소~최대)는 마우스를 올리면 나옵니다.</p></div>
-      <div class="seg" id="metricSeg"><button data-m="annual" class="on">연간 냉방전력(MWh)</button><button data-m="peak">여름 최대전력(kW)</button><button data-m="dlst">공원 안 지표온도 저감(°C)</button></div>
+      <div><h2>공원별 순위</h2><p class="small">막대 = 기준 시나리오. 범위(8개 시나리오 최소~최대)는 마우스를 올리면 나옵니다.</p></div>
+      <div class="seg" id="metricSeg"><button data-m="cool" class="on">냉각량 (°C·ha)</button><button data-m="cell">공원 일대 지표온도 저감 (°C)</button></div>
     </div>
-    <div class="chartbox"><svg id="rank" width="100%" role="img" aria-label="공원별 지표 막대 그래프"></svg><div class="tip" id="ranktip"></div></div>
+    <div class="chartbox"><svg id="rank" width="100%" role="img" aria-label="공원별 막대 그래프"></svg><div class="tip" id="ranktip"></div></div>
   </section>
 
   <section class="card">
     <h2>전체 결과표</h2>
-    <p class="small">열 제목을 누르면 정렬됩니다. 등급은 64개 시나리오마다 연간 절감 순위로 상(상위 25%)·중(50%까지)·하를 매겨 모두 같으면 <b>확정</b>, 하나라도 다르면 <b>경계</b>.</p>
+    <p class="small">열 제목을 누르면 정렬됩니다. 등급은 8개 시나리오마다 냉각량 순위로 상(상위 25%)·중(50%까지)·하를 매겨, 모두 같으면 <b>확정</b>, 하나라도 다르면 <b>경계</b>.</p>
     <div class="tw" style="max-height:520px;overflow:auto"><table id="tbl"><thead></thead><tbody></tbody></table></div>
   </section>
 
   <section class="card">
     <details open>
-      <summary>계산 방법과 근거</summary>
+      <summary>근거와 한계</summary>
       <div id="method"></div>
     </details>
   </section>
@@ -104,32 +113,38 @@ const f1 = v => v == null || v === '' ? '—' : Number(v).toLocaleString('ko-KR'
 const f2 = v => v == null || v === '' ? '—' : Number(v).toLocaleString('ko-KR', {maximumFractionDigits: 2});
 const f0 = v => v == null || v === '' ? '—' : Math.round(Number(v)).toLocaleString('ko-KR');
 const COLOR = {'조성형': 'var(--s1)', '보전형': 'var(--s2)'};
-const parks = D.parks;
-const ok = parks.filter(p => p.status === '산정');
-const sum = k => ok.reduce((a, p) => a + Number(p[k] || 0), 0);
-const C = D.city;
+const parks = D.parks, ok = parks.filter(p => p.status === '산정');
+const sum = (k, rs = ok) => rs.reduce((a, p) => a + Number(p[k] || 0), 0);
+const CH = D.change, F = D.factors;
+const yr = r => r[0].slice(0, 4) + '–' + r[1].slice(2, 4);
 let sel = null;
-
 $('#asof').textContent = D.asof;
-const ranked = [...ok].sort((a, b) => b.annual_mwh_base - a.annual_mwh_base);
-const kinds = {}; ok.forEach(p => { (kinds[p.kind] = kinds[p.kind] || {n: 0, a: 0}); kinds[p.kind].n++; kinds[p.kind].a += p.annual_mwh_base; });
-$('#lede').textContent = `산정한 ${ok.length}개 공원을 모두 조성하면 기준 시나리오에서 주변 주민의 냉방전력을 연간 약 ${f1(sum('annual_mwh_base'))}MWh, 여름 최대전력을 약 ${f0(sum('peak_kw_base'))}kW 줄입니다. ` +
-  `절감의 ${Math.round(100 * (kinds['조성형'] ? kinds['조성형'].a : 0) / sum('annual_mwh_base'))}%는 녹지를 새로 만드는 조성형 ${kinds['조성형'] ? kinds['조성형'].n : 0}곳에서 나오고, 가장 큰 곳은 ${ranked[0].name}(${ranked[0].location})입니다.`;
 
-// ---------- KPI ----------
+const ranked = [...ok].sort((a, b) => b.cool_base - a.cool_base);
+const zo = ok.filter(p => p.kind === '조성형'), bo = ok.filter(p => p.kind === '보전형');
+const topShare = ranked[0].cool_base / sum('cool_base');
+$('#lede').textContent = `산정한 ${ok.length}개 공원을 모두 조성하면 기준 시나리오에서 냉각량이 ${f1(sum('cool_base'))}°C·ha입니다(범위 ${f1(sum('cool_low'))}~${f1(sum('cool_high'))}). ` +
+  `이 중 ${Math.round(topShare * 100)}%가 ${ranked[0].name}(${ranked[0].location}, ${f1(ranked[0].area_m2 / 10000)}ha) 한 곳에서 나옵니다. ` +
+  `나머지는 대부분 1ha 미만 소공원이라 위성으로 보이는 땅 온도 변화가 0.1°C 안팎으로 작습니다.`;
+
 const kpi = (t, v, r) => `<div class="card kpi"><div class="small">${t}</div><div class="v">${v}</div><div class="r">${r}</div></div>`;
 $('#kpis').innerHTML = [
-  kpi('연간 냉방전력 절감 (기준)', f1(sum('annual_mwh_base')) + ' <span style="font-size:14px">MWh/년</span>', `범위 ${f1(sum('annual_mwh_low'))} ~ ${f1(sum('annual_mwh_high'))} · 64개 시나리오`),
-  kpi('여름 최대전력 절감 (기준)', f0(sum('peak_kw_base')) + ' <span style="font-size:14px">kW</span>', `범위 ${f0(sum('peak_kw_low'))} ~ ${f0(sum('peak_kw_high'))}`),
-  kpi('녹지(NDVI) 0.1 높아질 때 지표온도', `${f2(-C.coef.controlled / 10)} ~ ${f2(-C.coef.simple / 10)}°C`, `청주 Landsat 여름 ${C.ls_scenes}장 회귀`),
-  kpi('공원 성격', `조성형 ${kinds['조성형'] ? kinds['조성형'].n : 0} · 보전형 ${kinds['보전형'] ? kinds['보전형'].n : 0}`, `미산정 ${parks.length - ok.length}곳 · 기준: 지금 NDVI가 잔디 수준(${f2(C.target.grass)}) 이상이면 보전형`)
+  kpi('냉각량 합계 (기준)', f1(sum('cool_base')) + ' <span style="font-size:14px">°C·ha</span>', `범위 ${f1(sum('cool_low'))} ~ ${f1(sum('cool_high'))} · ${D.n_scen}개 시나리오`),
+  kpi('가장 큰 곳', ranked[0].name, `공원 일대 −${f2(ranked[0].dlst_cell_base)}°C · 주변 ${D.ring_m}m −${f2(ranked[0].dlst_ring_base)}°C · 전체의 ${Math.round(topShare * 100)}%`),
+  kpi('녹지 0.1 늘 때 지표온도', `−${f2(F.coef[0] / 10)} ~ −${f2(F.coef[1] / 10)}°C`, `청주에서 녹지가 실제로 변한 ${f0(CH.all_n)}픽셀 (${yr(D.periods.before)} → ${yr(D.periods.after)})`),
+  kpi('공원 성격', `조성형 ${zo.length} · 보전형 ${bo.length}`, `냉각량의 ${Math.round(100 * sum('cool_base', zo) / sum('cool_base'))}%가 조성형 · 미산정 ${parks.length - ok.length}곳`)
 ].join('');
 
-// ---------- 지도 ----------
+const st = (n, t, v, src) => `<div class="fstep"><div class="fn">${n}</div><div><b>${t}</b><div class="fv">${v}</div><div class="small">${src}</div></div></div>`;
+$('#flow').innerHTML =
+  st('①', '녹지 증가', `조성 목표 NDVI − 지금 NDVI (0 미만이면 0)`, `지금: Sentinel-2 여름 ${D.city.s2_scenes}장 · 목표: 청주 잔디 ${f2(D.target.grass)} ~ 수목 ${f2(D.target.tree)}`) +
+  st('②', '공원 일대 지표온도 저감', `계수 × ① × min(1, 면적 ÷ 1ha)`, `계수 ${f2(F.coef[0])}~${f2(F.coef[1])}°C/NDVI: 녹지가 늘어난 곳(${f0(CH.green_n)}픽셀)~줄어든 곳(${f0(CH.loss_n)}픽셀) · 1ha = 위성 열밴드 최소 칸`) +
+  st('③', `주변 ${D.ring_m}m 지표온도 저감`, `② × 퍼짐 비율 (1ha 이상 공원만)`, `퍼짐 ${f2(F.spill[0])}~${f2(F.spill[1])}: 청주 특례사업지 ${D.spill_sites.join('·')} 개발 전후 실측`) +
+  st('④', '냉각량 (°C·ha)', `② × 공원 일대 면적 + ③ × 고리 면적`, `순위·등급의 기준 — "몇 도를 몇 ha에서 낮추나"`);
+
 (function map() {
   const svg = $('#map'); const W = 640, H = 560, pad = 16;
   const pts = []; D.gu.forEach(g => g.poly.forEach(p => p[0].forEach(c => pts.push(c))));
-  ok.concat(parks).forEach(p => p.poly && p.poly.forEach(q => q[0].forEach(c => pts.push(c))));
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
   const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
   const kx = Math.cos((y0 + y1) / 2 * Math.PI / 180);
@@ -139,13 +154,12 @@ $('#kpis').innerHTML = [
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   let html = D.gu.map(g => `<path class="gu" d="${path(g.poly)}"/>`).join('');
   D.gu.forEach(g => { const r = g.poly[0][0]; const c = P([r.reduce((a, v) => a + v[0], 0) / r.length, r.reduce((a, v) => a + v[1], 0) / r.length]); html += `<text class="gu-label" x="${c[0]}" y="${c[1]}">${g.name}</text>`; });
-  const maxv = Math.max(...ok.map(p => p.annual_mwh_base));
-  const rad = v => 5 + 22 * Math.sqrt(Math.max(0, v) / maxv);
-  const placed = parks.filter(p => p.poly).map(p => {
+  const maxv = Math.max(...ok.map(p => p.cool_base));
+  const rad = v => 5 + 24 * Math.sqrt(Math.max(0, v) / maxv);
+  parks.filter(p => p.poly).map(p => {
     const r0 = p.poly[0][0]; const c = P([r0.reduce((a, v) => a + v[0], 0) / r0.length, r0.reduce((a, v) => a + v[1], 0) / r0.length]);
-    return {p, c, r: p.status === '산정' ? rad(p.annual_mwh_base) : 5};
-  }).sort((a, b) => b.r - a.r);
-  placed.forEach(({p, c, r}) => {
+    return {p, c, r: p.status === '산정' ? rad(p.cool_base) : 5};
+  }).sort((a, b) => b.r - a.r).forEach(({p, c, r}) => {
     html += `<circle class="dot" data-id="${p.site_id}" cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="${r.toFixed(1)}" fill="${COLOR[p.kind] || 'var(--na)'}" fill-opacity="0.85"/>`;
   });
   svg.innerHTML = html;
@@ -154,60 +168,58 @@ $('#kpis').innerHTML = [
     const p = parks.find(q => q.site_id == el.dataset.id);
     el.addEventListener('pointermove', ev => {
       const b = box.getBoundingClientRect();
-      tip.innerHTML = `<b>${p.name}</b> · ${p.kind}<br>` + (p.status === '산정' ? `연간 ${f2(p.annual_mwh_base)} MWh (범위 ${f2(p.annual_mwh_low)}~${f2(p.annual_mwh_high)})<br>공원 안 지표 −${f2(p.dlst_site_base)}°C · 주변 ${f0(p.pop_ring)}명` : p.note);
-      tip.style.display = 'block';
-      const tw = tip.offsetWidth; tip.style.left = Math.min(Math.max(0, ev.clientX - b.left + 12), b.width - tw) + 'px'; tip.style.top = (ev.clientY - b.top + 14) + 'px';
+      tip.innerHTML = `<b>${p.name}</b> · ${p.kind}<br>` + (p.status === '산정' ? `냉각량 ${f2(p.cool_base)} °C·ha (범위 ${f2(p.cool_low)}~${f2(p.cool_high)})<br>공원 일대 −${f2(p.dlst_cell_base)}°C` : p.note);
+      tip.style.display = 'block'; const tw = tip.offsetWidth;
+      tip.style.left = Math.min(Math.max(0, ev.clientX - b.left + 12), b.width - tw) + 'px'; tip.style.top = (ev.clientY - b.top + 14) + 'px';
     });
     el.addEventListener('pointerleave', () => tip.style.display = 'none');
     el.addEventListener('click', () => select(p.site_id));
   });
 })();
 
-// ---------- 상세 ----------
 const LU = [['숲', '#1baf7a'], ['농지', '#eda100'], ['시가지', '#e34948'], ['기반시설', '#a3a29c'], ['공원', '#6250d6']];
 function detail(p) {
   const el = $('#detail');
-  if (!p) { el.innerHTML = '<h2>공원을 고르세요</h2><p class="small">지도의 원이나 아래 표의 행을 누르면 계산 과정이 나옵니다.</p>'; return; }
+  if (!p) { el.innerHTML = '<h2>공원을 고르세요</h2>'; return; }
   const lu = LU.map(([k, c]) => [k, c, Number(p['share_' + k] || 0)]).filter(x => x[2] > 0);
   let h = `<h2>${p.name}<span class="tag">${p.kind}</span>${p.grade ? `<span class="tag">등급 ${p.grade_range} · ${p.grade_stable}</span>` : ''}</h2>
     <p class="small">${p.location} · ${f0(p.area_m2)}㎡ · ${p.type} · 실효 ${p.expiry}</p>
-    <div class="lu" aria-label="지금 땅 상태 비율">${lu.map(([k, c, v]) => `<span title="${k} ${Math.round(v * 100)}%" style="width:${v * 100}%;background:${c}"></span>`).join('')}</div>
+    <div class="lu">${lu.map(([k, c, v]) => `<span title="${k} ${Math.round(v * 100)}%" style="width:${v * 100}%;background:${c}"></span>`).join('')}</div>
     <p class="small">지금 땅 상태(필지 이용상황): ${lu.map(([k, c, v]) => `<span style="color:${c}">●</span> ${k} ${Math.round(v * 100)}%`).join(' · ') || '자료 없음'}</p>`;
   if (p.status !== '산정') { el.innerHTML = h + `<p style="margin-top:12px">${p.note}</p>`; return; }
   const step = (k, v, r, note) => `<div class="step"><div><div>${k}</div><div class="k">${note}</div></div><div class="val">${v}<span class="rng">${r}</span></div></div>`;
   const ar = '<div class="arrow">↓</div>';
-  h += `<div class="chain">` +
-    step('녹지 증가 (NDVI)', `+${f2(p.dndvi_base)}`, `범위 ${f2(p.dndvi_low)} ~ ${f2(p.dndvi_high)}`, `지금 ${f2(p.ndvi_now)} → 조성 목표 ${f2(C.target.grass)}(잔디)~${f2(C.target.tree)}(수목)`) + ar +
-    step('공원 안 지표온도', `−${f2(p.dlst_site_base)}°C`, `범위 ${f2(p.dlst_site_low)} ~ ${f2(p.dlst_site_high)}`, `NDVI 1당 ${f2(C.coef.controlled)}~${f2(C.coef.simple)}°C (청주 회귀)`) + ar +
-    step(`주변 ${p.ring_m}m 기온`, `−${f2(p.dta_ring_base)}°C`, `범위 ${f2(p.dta_ring_low)} ~ ${f2(p.dta_ring_high)}`, `퍼짐 ${f2(C.spill.low)}~${f2(C.spill.high)}(특례 실측) × 지표→기온 ${D.params.air_per_surface.low}~${D.params.air_per_surface.high}`) + ar +
-    step('여름 최대전력', `${f2(p.peak_kw_base)} kW`, `범위 ${f2(p.peak_kw_low)} ~ ${f2(p.peak_kw_high)}`, `주변 인구 ${f0(p.pop_ring)}명 × ${D.params.electricity.peak_w_per_c_person.low}~${D.params.electricity.peak_w_per_c_person.high} W/°C`) +
-    step('연간 냉방전력', `${f2(p.annual_mwh_base)} MWh`, `범위 ${f2(p.annual_mwh_low)} ~ ${f2(p.annual_mwh_high)}`, `${f0(p.pop_ring)}명 × ${D.params.electricity.cooling_kwh_per_person_yr}kWh × ${D.params.electricity.pct_per_c.low * 100}~${D.params.electricity.pct_per_c.high * 100}%/°C`) +
-    `</div>` + (p.note ? `<p class="small" style="margin-top:8px">※ ${p.note}</p>` : '') +
-    `<p class="small" style="margin-top:8px">현재 지표온도(시가지 평균 대비): ${p.lsta_now === '' ? '—' : (p.lsta_now > 0 ? '+' : '') + f2(p.lsta_now) + '°C'}${p.area_m2 < D.params.ring_rule.small_area_m2 ? ' · 1ha 미만이라 위성 열자료는 주변이 섞인 값' : ''}</p>`;
+  const big = p.ring_applied === '적용';
+  h += '<div class="chain">' +
+    step('① 녹지 증가 (NDVI)', `+${f2(p.dndvi_base)}`, `범위 ${f2(p.dndvi_low)} ~ ${f2(p.dndvi_high)}`, `지금 ${f2(p.ndvi_now)} → 목표 ${f2(D.target.grass)}~${f2(D.target.tree)}`) + ar +
+    step('② 공원 일대 지표온도', `−${f2(p.dlst_cell_base)}°C`, `범위 ${f2(p.dlst_cell_low)} ~ ${f2(p.dlst_cell_high)}`, big ? '1ha 이상 → 공원 전체 평균' : `1ha 미만 → 위성 칸의 ${Math.round(p.cell_share * 100)}%만 공원이라 그만큼만 반영`) + ar +
+    step(`③ 주변 ${D.ring_m}m 지표온도`, big ? `−${f2(p.dlst_ring_base)}°C` : '해당 없음', big ? `범위 ${f2(p.dlst_ring_low)} ~ ${f2(p.dlst_ring_high)} · 고리 ${f1(p.ring_ha)}ha` : '', big ? `퍼짐 ${f2(F.spill[0])}~${f2(F.spill[1])} (특례사업지 실측)` : '실측 근거(3~15ha)와 규모가 달라 적용하지 않음') + ar +
+    step('④ 냉각량', `${f2(p.cool_base)} °C·ha`, `범위 ${f2(p.cool_low)} ~ ${f2(p.cool_high)}`, '몇 도를 몇 ha에서 낮추나') + '</div>' +
+    `<p class="small" style="margin-top:8px">참고: 주변 ${D.ring_m}m 인구 ${f0(p.pop_300)}명 · 지금 지표온도(시가지 평균 대비) ${p.lsta_now === '' ? '—' : (p.lsta_now > 0 ? '+' : '') + f2(p.lsta_now) + '°C'}</p>` +
+    (p.note ? `<p class="small">※ ${p.note}</p>` : '');
   el.innerHTML = h;
 }
 function select(id) {
-  sel = id; const p = parks.find(q => q.site_id == id); detail(p);
+  sel = id; detail(parks.find(q => q.site_id == id));
   document.querySelectorAll('#map .dot').forEach(d => d.classList.toggle('sel', d.dataset.id == id));
   document.querySelectorAll('#tbl tbody tr').forEach(tr => tr.classList.toggle('sel', tr.dataset.id == id));
 }
 
-// ---------- 순위 ----------
-let metric = 'annual';
-const MET = {annual: ['annual_mwh', 'MWh', f2], peak: ['peak_kw', 'kW', f2], dlst: ['dlst_site', '°C', f2]};
+let metric = 'cool';
+const MET = {cool: ['cool', '°C·ha'], cell: ['dlst_cell', '°C']};
 function rank() {
-  const [k, unit, fmt] = MET[metric];
+  const [k, unit] = MET[metric];
   const rows = [...ok].sort((a, b) => b[k + '_base'] - a[k + '_base']);
   const svg = $('#rank'); const W = Math.max(320, svg.parentNode.clientWidth); const rowH = 20, mL = 104, mR = 64, mT = 6;
-  const H = mT + rows.length * rowH + 22; const max = Math.max(...rows.map(r => r[k + '_base'])) || 1;
+  const H = mT + rows.length * rowH + 8; const max = Math.max(...rows.map(r => r[k + '_base'])) || 1;
   const x = v => mL + (W - mL - mR) * v / max;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('height', H);
   let h = '';
   rows.forEach((r, i) => {
-    const y = mT + i * rowH; const v = r[k + '_base'];
+    const y = mT + i * rowH, v = r[k + '_base'];
     h += `<text x="${mL - 8}" y="${y + 13}" text-anchor="end">${r.name}</text>`;
     h += `<rect x="${mL}" y="${y + 3}" width="${Math.max(2, x(v) - mL)}" height="${rowH - 6}" rx="3" style="fill:${COLOR[r.kind]}"/>`;
-    h += `<text x="${x(v) + 6}" y="${y + 13}">${fmt(v)}</text>`;
+    h += `<text x="${x(v) + 6}" y="${y + 13}">${f2(v)}</text>`;
     h += `<rect class="hit" data-id="${r.site_id}" x="0" y="${y}" width="${W}" height="${rowH}" fill="transparent" style="cursor:pointer"/>`;
   });
   svg.innerHTML = h;
@@ -216,7 +228,7 @@ function rank() {
     const r = ok.find(q => q.site_id == el.dataset.id);
     el.addEventListener('pointermove', ev => {
       const b = box.getBoundingClientRect();
-      tip.innerHTML = `<b>${r.name}</b> · ${r.kind}<br>기준 ${fmt(r[k + '_base'])} ${unit} · 범위 ${fmt(r[k + '_low'])} ~ ${fmt(r[k + '_high'])}`;
+      tip.innerHTML = `<b>${r.name}</b> · ${r.kind}<br>기준 ${f2(r[k + '_base'])} ${unit} · 범위 ${f2(r[k + '_low'])} ~ ${f2(r[k + '_high'])}`;
       tip.style.display = 'block'; const tw = tip.offsetWidth;
       tip.style.left = Math.min(Math.max(0, ev.clientX - b.left + 12), b.width - tw) + 'px'; tip.style.top = (ev.clientY - b.top + 14) + 'px';
     });
@@ -229,45 +241,37 @@ document.querySelectorAll('#metricSeg button').forEach(b => b.addEventListener('
 }));
 window.addEventListener('resize', rank);
 
-// ---------- 표 ----------
 const COLS = [['site_id', '#', 1], ['name', '공원', 0], ['location', '위치', 0], ['area_m2', '면적㎡', 1], ['kind', '성격', 0], ['dominant_landuse', '주된 땅', 0],
-  ['ndvi_now', '지금 NDVI', 1], ['dlst_site_base', '공원 안 지표↓°C', 1], ['dta_ring_base', '주변 기온↓°C', 1], ['pop_ring', '주변 인구', 1],
-  ['peak_kw_base', '최대전력 kW', 1], ['annual_mwh_base', '연간 MWh', 1], ['annual_mwh_low', 'MWh 하한', 1], ['annual_mwh_high', 'MWh 상한', 1], ['grade_range', '등급', 0], ['grade_stable', '확정', 0], ['note', '비고', 0]];
-let sortK = 'annual_mwh_base', sortD = -1;
+  ['ndvi_now', '지금 NDVI', 1], ['dndvi_base', '녹지 증가', 1], ['dlst_cell_base', '공원 일대↓°C', 1], ['dlst_ring_base', `주변 ${D.ring_m}m↓°C`, 1],
+  ['cool_base', '냉각량 °C·ha', 1], ['cool_low', '하한', 1], ['cool_high', '상한', 1], ['pop_300', `주변 ${D.ring_m}m 인구`, 1], ['grade_range', '등급', 0], ['grade_stable', '확정', 0], ['note', '비고', 0]];
+let sortK = 'cool_base', sortD = -1;
 function table() {
   $('#tbl thead').innerHTML = '<tr>' + COLS.map(([k, t, n]) => `<th data-k="${k}" class="${n ? 'r' : ''}">${t}${k === sortK ? (sortD < 0 ? ' ▼' : ' ▲') : ''}</th>`).join('') + '</tr>';
   const rows = [...parks].sort((a, b) => {
-    const va = a[sortK], vb = b[sortK]; const na = va === '' || va == null, nb = vb === '' || vb == null;
+    const va = a[sortK], vb = b[sortK], na = va === '' || va == null, nb = vb === '' || vb == null;
     if (na !== nb) return na ? 1 : -1;
     return (typeof va === 'number' && typeof vb === 'number' ? va - vb : String(va).localeCompare(String(vb), 'ko')) * sortD;
   });
   $('#tbl tbody').innerHTML = rows.map(p => `<tr data-id="${p.site_id}" class="${p.site_id == sel ? 'sel' : ''}">` + COLS.map(([k, t, n]) => {
-    const v = p[k]; return `<td class="${n ? 'r' : ''}">${v === '' || v == null ? '—' : n ? (k === 'site_id' ? v : k === 'area_m2' || k === 'pop_ring' ? f0(v) : f2(v)) : v}</td>`;
+    const v = p[k]; return `<td class="${n ? 'r' : ''}">${v === '' || v == null ? '—' : n ? (k === 'site_id' ? v : k === 'area_m2' || k === 'pop_300' ? f0(v) : f2(v)) : v}</td>`;
   }).join('') + '</tr>').join('');
   document.querySelectorAll('#tbl th').forEach(th => th.addEventListener('click', () => { const k = th.dataset.k; sortD = k === sortK ? -sortD : -1; sortK = k; table(); }));
   document.querySelectorAll('#tbl tbody tr').forEach(tr => tr.addEventListener('click', () => select(tr.dataset.id)));
 }
 
-// ---------- 방법 ----------
-const pe = D.params.electricity;
-$('#method').innerHTML = `<ul>
-<li><b>질문</b>: 공원을 조성하면 지금 상태와 비교해 공원과 주변이 얼마나 시원해지고 주변 주민의 전력을 얼마나 줄이나. 개발 압력·비용은 필요성·사업성 파트가 다룹니다.</li>
-<li><b>① 녹지 증가</b>: Sentinel-2 여름(6~9월) ${C.s2_scenes}장 중앙값으로 공원 경계 안 지금 NDVI를 재고, 조성 후 목표를 청주 시가지의 잔디·초지 중앙값 ${f2(C.target.grass)} ~ 수목 중앙값 ${f2(C.target.tree)}로 둡니다. 지금이 목표보다 높으면 증가 0.</li>
-<li><b>② 공원 안 지표온도</b>: Landsat 8·9 여름 ${C.ls_scenes}장(2021~25)의 지표온도 편차를 NDVI로 회귀한 청주 계수 ${f2(C.coef.controlled)}°C(시가화율·표고 통제) ~ ${f2(C.coef.simple)}°C(NDVI만) / NDVI 1.</li>
-<li><b>③ 주변 기온</b>: 공원 안 변화가 주변으로 퍼지는 비율 ${f2(C.spill.low)} ~ ${f2(C.spill.high)} (청주 특례사업지 잠두봉·매봉 개발 전후 실측) × 지표온도→기온 비율 ${D.params.air_per_surface.low} ~ ${D.params.air_per_surface.high} (문헌 E2). 주변 범위는 1ha 미만 ${D.params.ring_rule.small_ring_m}m, 그 이상 ${D.params.ring_rule.large_ring_m}m 고리.</li>
-<li><b>④ 전력</b>: 주변 고리 인구(GHSL 2020) × 기온 저감 × ${pe.peak_w_per_c_person.low}~${pe.peak_w_per_c_person.high} W/°C·인(최대전력) / × 1인당 냉방전력 ${pe.cooling_kwh_per_person_yr}kWh(한전 2022) × ${pe.pct_per_c.low * 100}~${pe.pct_per_c.high * 100}%/°C(연간).</li>
-<li><b>시나리오</b>: 6개 계수의 상·하한 ${C.n_scen}개 조합. 표의 "기준"은 각 계수 중간값(보고용). 확률 추출은 쓰지 않습니다.</li>
+$('#method').innerHTML = `<p style="margin-top:8px"><b>근거 — 모두 청주 위성 실측</b></p><ul>
+<li><b>온도 계수</b>: ${yr(D.periods.before)}년과 ${yr(D.periods.after)}년 여름(Landsat 8·9, ${CH.scenes_before}장·${CH.scenes_after}장)을 비교해, NDVI가 ${D.min_change} 이상 변한 픽셀에서 "녹지 변화 → 지표온도 변화" 기울기를 구했습니다. 녹지가 늘어난 ${f0(CH.green_n)}픽셀은 ${f2(CH.green_slope)}°C, 줄어든 ${f0(CH.loss_n)}픽셀은 ${f2(CH.loss_slope)}°C / NDVI 1. 이 둘을 하한·상한으로 씁니다.</li>
+<li>참고로 한 시기 안에서 장소끼리 비교한 회귀는 ${f2(D.city.b_controlled)}~${f2(D.city.b_simple)}°C로 더 크게 나옵니다. 숲과 도심의 차이에는 녹지 말고도 여러 차이가 섞여 있어서, "녹지를 바꾸면 얼마나 변하나"에는 실제 변화 자료를 씁니다.</li>
+<li><b>목표 녹지</b>: Sentinel-2 여름 ${D.city.s2_scenes}장으로 청주 시가지 잔디·초지 중앙값 ${f2(D.target.grass)}, 수목 중앙값 ${f2(D.target.tree)}.</li>
+<li><b>1ha 칸</b>: Landsat 열밴드의 원래 해상도는 100m라 1ha보다 작은 공원은 칸 안에서 주변과 섞입니다. 그래서 면적 비율만큼만 반영합니다.</li>
+<li><b>퍼짐 비율</b>: 2026-11-13 청주 민간공원 특례사업지 개발 전후 분석에서 주변 ${D.ring_m}m 온도 변화 ÷ 개발지 변화 = ${f2(F.spill[0])}~${f2(F.spill[1])}. 실측 대상(3~15ha)과 규모가 비슷한 1ha 이상 공원에만 씁니다.</li>
 </ul>
-<p style="margin-top:10px"><b>한계</b></p><ul>
-<li>지표온도 기준 계수를 문헌 비율로 기온으로 바꿨습니다. 기온 실측은 없어 범위가 넓습니다.</li>
-<li>1ha 미만 소공원은 위성 열자료(100m급)로 직접 잴 수 없어 청주 전체 계수를 적용한 추정입니다.</li>
-<li>전력은 주변 거주 인구 기준이라 상가·업무 건물 몫은 빠져 있습니다. 1°C당 증가율은 총전력 기준 문헌값이라 냉방전력에는 보수적입니다.</li>
-<li>어린이공원152(경계 없음)·생태공원3(하천 위주)은 미산정. 경계가 근사·불일치인 공원은 비고에 표시했습니다.</li>
+<p style="margin-top:10px"><b>하지 않은 것</b></p><ul>
+<li><b>전력(kWh)으로 바꾸지 않습니다.</b> 공원 주변 수백 m의 작은 기온 변화가 전력에 주는 영향을 보여 주는 근거가 부족합니다. 앞선 버전의 전력 추정은 문헌 계수를 쌓아 범위가 수백 배로 벌어져 폐기했습니다.</li>
+<li>지표온도(땅 표면)이며 기온이 아닙니다. 공원 안 그늘 같은 체감 효과는 따로 보지 않습니다.</li>
+<li>개발 압력·비용은 필요성·사업성 파트에서 다룹니다. 어린이공원152(경계 없음)·생태공원3(하천 위주)은 미산정.</li>
 </ul>
-<p style="margin-top:10px"><b>근거</b>: <code>evidence/evidence_E_energy.md</code> · 계수 <code>energy/code/params.yaml</code> · GEE 원출력 <code>energy/data/gee/gee_output.txt</code> ·
-Santamouris et al. 2015 <a href="https://doi.org/10.1016/j.enbuild.2014.09.052">doi:10.1016/j.enbuild.2014.09.052</a> ·
-Du et al. 2024 <a href="https://doi.org/10.1088/1748-9326/ad30a3">doi:10.1088/1748-9326/ad30a3</a> ·
-한국전력 1인당 냉방전력(이코노미스트 2026.7.29) <a href="https://economist.co.kr/article/view/ecn202607290031">기사</a></p>`;
+<p style="margin-top:10px" class="small">파일: <code>energy/code/params.yaml</code> · GEE 원출력 <code>energy/data/gee/gee_output.txt</code>, <code>gee_change_output.txt</code> · 특례 실측 <code>energy/data/gee/tukrye_before_after.json</code> · 근거 <code>evidence/evidence_E_energy.md</code></p>`;
 
 detail(null); rank(); table(); select(ranked[0].site_id);
 </script>

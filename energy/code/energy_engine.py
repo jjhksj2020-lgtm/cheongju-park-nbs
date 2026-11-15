@@ -1,22 +1,22 @@
-"""청주 장기미집행 공원 40개소 — 열저감·전력 절감 계산 엔진 (energy 파트, 독립 참고 결과)
+"""청주 장기미집행 공원 40개소 — 열저감 계산 엔진 (energy 파트, 독립 참고 결과)
 
-질문: 공원을 조성하면(지금 상태 대비) 공원과 주변이 얼마나 시원해지고, 주변 건물 전력을 얼마나 줄이나?
+질문: 공원을 조성하면(지금 상태 대비) 공원 일대와 주변의 여름 지표온도가 얼마나 내려가나?
+원칙: 계수는 모두 청주 위성 실측. 문헌 계수 0개. 전력(kWh)으로는 바꾸지 않는다.
+
 계산 사슬 (공원마다, 시나리오마다)
-  녹지 증가 ΔNDVI = max(0, 조성 후 목표 NDVI − 현재 NDVI)                 ← Sentinel-2 (GEE)
-  공원 안 지표온도 저감 = |청주 녹지-온도 계수| × ΔNDVI                    ← Landsat 회귀 (GEE)
-  주변 고리 지표온도 저감 = 공원 안 저감 × 퍼짐 비율                         ← 특례사업지 실측 (E1)
-  주변 기온 저감 = 주변 지표온도 저감 × 지표→기온 비율                       ← 문헌 (E2)
-  최대전력 절감(kW) = 주변 인구 × 기온 저감 × 1인당 W/°C ÷ 1000             ← GHSL 인구, 문헌 (E4)
-  연간 냉방전력 절감(MWh) = 주변 인구 × 1인당 냉방전력 × %/°C × 기온 저감     ← GHSL 인구, 한전 (E4·E5)
-6개 계수(목표 NDVI·온도 계수·퍼짐·기온 비율·W/°C·%/°C)를 상·하한으로 바꾼 64개 시나리오 → 범위와 등급, 모두 같은 등급이면 확정.
+  ① 녹지 증가 ΔNDVI = max(0, 조성 목표 NDVI − 지금 NDVI)                 지금: Sentinel-2 / 목표: 청주 잔디~수목 중앙값
+  ② 공원 일대 지표온도 저감 = 계수 × ΔNDVI × min(1, 공원 면적 ÷ 1ha)       계수: 청주에서 녹지가 실제로 변한 픽셀의 기울기
+       (1ha = Landsat 열밴드가 온도를 구분하는 최소 칸. 그보다 작은 공원은 칸 안에서 섞인 만큼만 낮아진다)
+  ③ 주변 300m 지표온도 저감 = ② × 퍼짐 비율 (1ha 이상 공원만)          퍼짐: 특례사업지 개발 전후 실측
+  ④ 냉각량(°C·ha) = ② × max(면적, 1ha) + ③ × 고리 면적                 순위·등급 기준
+3개 계수(목표 NDVI·온도 계수·퍼짐)의 상·하한 8개 시나리오. 모두 같은 등급이면 확정.
 
 입력 (읽기만)
-  biz/data/input/sites.csv                     공고 40곳 (site_id 마스터)
-  biz/data/vworld/parcels.txt · parcel_attr.txt 필지 면적·이용상황 → 지금 땅 상태
-  energy/data/gee/gee_output.txt               GEE 결과 (CITY| 계수, PARK| 공원별)
-  energy/data/gee/tukrye_before_after.json     특례사업지 전후 실측 (퍼짐 비율)
-출력 (energy/out/)
-  master_energy.csv · summary.md · energydata.json(지도용)
+  biz/data/input/sites.csv · biz/data/vworld/{parks,gu,parcels,parcel_attr}.txt · land_own.csv
+  energy/data/gee/gee_output.txt          1차 GEE: 공원별 지금 NDVI·인구, 조성 목표 NDVI (CITY|, PARK|)
+  energy/data/gee/gee_change_output.txt   2차 GEE: 녹지 변화-온도 변화 계수, 고리 면적 (CHANGE|, RING|)
+  energy/data/gee/tukrye_before_after.json  특례사업지 전후 실측
+출력 (energy/out/): master_energy.csv · summary.md · energydata.json(지도용)
 코드에 기준값 숫자를 쓰지 않는다 — params.yaml만 읽는다.
 """
 from __future__ import annotations
@@ -26,113 +26,105 @@ C = os.path.dirname(os.path.abspath(__file__)); E = os.path.dirname(C); ROOT = o
 P = yaml.safe_load(open(f'{C}/params.yaml', encoding='utf-8'))
 BIZ = f'{ROOT}/biz/data'; GEE = f'{E}/data/gee'; OUT = f'{E}/out'
 os.makedirs(OUT, exist_ok=True)
-U = P['units']; EL = P['electricity']
+HA = P['units']['m2_per_ha']; CELL = P['thermal_cell_m2']; RING_MIN = P['spillover']['min_park_m2']
+
+
+def read_lines(path, tags):
+    got = {t: [] for t in tags}
+    for line in open(path, encoding='utf-8'):
+        for t in tags:
+            if line.startswith(t + '|'):
+                got[t].append(json.loads(line[len(t) + 1:]))
+    return got
 
 
 # ---------- 읽기 ----------
 sites = {int(r['site_id']): r for r in csv.DictReader(open(f'{BIZ}/input/sites.csv', encoding='utf-8-sig'))}
-
-city, gee = None, {}
-for line in open(f'{GEE}/gee_output.txt', encoding='utf-8'):
-    if line.startswith('CITY|'):
-        city = json.loads(line[len('CITY|'):])
-    elif line.startswith('PARK|'):
-        r = json.loads(line[len('PARK|'):]); gee[int(r['id'])] = r
-assert city is not None, 'gee_output.txt 에 CITY| 줄이 없습니다'
-
+g1 = read_lines(f'{GEE}/gee_output.txt', ['CITY', 'PARK'])
+g2 = read_lines(f'{GEE}/gee_change_output.txt', ['CHANGE', 'RING'])
+city = g1['CITY'][0]; change = g2['CHANGE'][0]
+gee = {int(r['id']): r for r in g1['PARK']}
+ring_area = {int(r['id']): r['ring_area'] for r in g2['RING']}
+own = {int(r['site_id']): r for r in csv.DictReader(open(f'{BIZ}/vworld/land_own.csv', encoding='utf-8-sig'))}
 tk = json.load(open(f"{GEE}/{P['spillover']['source_file']}", encoding='utf-8'))
-spill_vals = [r['neighbor_300m'] / r['effect'] for r in tk['sites'] if r['site'] in P['spillover']['sites']]
-SPILL = {'low': min(spill_vals), 'high': max(spill_vals)}
+spill = [r['neighbor_300m'] / r['effect'] for r in tk['sites'] if r['site'] in P['spillover']['sites']]
 
-own = {int(r['site_id']): r for r in csv.DictReader(open(f'{BIZ}/vworld/land_own.csv', encoding='utf-8-sig'))}   # 경계 매칭 상태
-cls_of = {u: c for c, us in P['landuse_class'].items() for u in us}
+cls_of = {u: c for c, us in P['landuse_class'].items() for u in us}   # 지금 땅 상태 (설명용)
 landuse = {}
 parcels = [l.split('~') for l in open(f'{BIZ}/vworld/parcels.txt', encoding='utf-8').read().split('\n') if l]
 attrs = [l.split('~') for l in open(f'{BIZ}/vworld/parcel_attr.txt', encoding='utf-8').read().split('\n') if l]
 for p, a in zip(parcels, attrs):
     assert p[0] == a[0] and p[1] == a[1], (p[:2], a[:2])
     d = landuse.setdefault(int(p[0]), {c: 0.0 for c in P['landuse_class']})
-    d[cls_of.get(a[6], '기반시설')] += float(p[2])
+    d[cls_of.get(a[6], P['landuse_other'])] += float(p[2])
 
-# ---------- 계수 ----------
-COEF = {'controlled': abs(city['b_controlled']), 'simple': abs(city['b_simple'])}
+# ---------- 계수 (모두 청주 실측) ----------
+COEF = {k: abs(change[f'{k}_slope']) for k in ('green', 'loss', 'all')}
 TARGET = {'grass': city['ndvi_grass'], 'tree': city['ndvi_tree']}
-FACTORS = {   # 이름: (하한 값, 상한 값)
+FACTORS = {
     'target': (TARGET[P['target_ndvi']['low']], TARGET[P['target_ndvi']['high']]),
-    'coef': (COEF[P['lst_coef']['low']], COEF[P['lst_coef']['high']]),
-    'spill': (SPILL['low'], SPILL['high']),
-    'air': (P['air_per_surface']['low'], P['air_per_surface']['high']),
-    'peak_w': (EL['peak_w_per_c_person']['low'], EL['peak_w_per_c_person']['high']),
-    'pct': (EL['pct_per_c']['low'], EL['pct_per_c']['high']),
+    'coef': tuple(sorted((COEF[P['coef']['low']], COEF[P['coef']['high']]))),
+    'spill': (min(spill), max(spill)),
 }
-SCEN = [dict(zip(FACTORS, combo)) for combo in itertools.product(*FACTORS.values())]
-BASE = {k: sum(v) / len(v) for k, v in FACTORS.items()}   # params.base_rule: 중간값 (보고용)
+SCEN = [dict(zip(FACTORS, c)) for c in itertools.product(*FACTORS.values())]
+BASE = {k: sum(v) / len(v) for k, v in FACTORS.items()}   # 보고용 기준 = 중간값
 
 
-def chain(g, ring, f):
-    """한 공원·한 시나리오의 계산 사슬."""
+def chain(g, area, ring_m2, f):
     dndvi = max(P['ndvi_gain_floor'], f['target'] - g['ndvi_s2'])
-    d_site = f['coef'] * dndvi
-    d_ring_air = d_site * f['spill'] * f['air']
-    pop = g[f'pop_{ring}']
-    peak = pop * d_ring_air * f['peak_w'] / U['w_per_kw']
-    annual = pop * EL['cooling_kwh_per_person_yr'] * f['pct'] * d_ring_air / U['kwh_per_mwh']
-    return {'dndvi': dndvi, 'd_site': d_site, 'd_air': d_ring_air, 'peak_kw': peak, 'annual_mwh': annual}
+    d_cell = f['coef'] * dndvi * min(1, area / CELL)
+    d_ring = d_cell * f['spill'] if area >= RING_MIN else 0
+    amount = d_cell * max(area, CELL) / HA + d_ring * ring_m2 / HA
+    return {'dndvi': dndvi, 'd_cell': d_cell, 'd_ring': d_ring, 'amount': amount}
 
 
-rows, per_scen = [], {}
-excluded = set(P['excluded_types'])
+rows, per = [], {}
 for sid, s in sites.items():
-    area = float(s['area_m2']); g = gee.get(sid)
-    lu = landuse.get(sid)
-    shares = {c: (v / sum(lu.values()) if lu and sum(lu.values()) else None) for c, v in (lu or {c: 0 for c in P['landuse_class']}).items()}
-    dom = max(lu, key=lu.get) if lu and sum(lu.values()) else None
-    kind = None if g is None else ('보전형' if g['ndvi_s2'] >= FACTORS['target'][0] else '조성형')   # params.park_kind
-    ring = P['ring_rule']['small_ring_m'] if area < P['ring_rule']['small_area_m2'] else P['ring_rule']['large_ring_m']
-    row = {'site_id': sid, 'name': s['name'], 'type': s['type'], 'location': s['location'], 'area_m2': int(area), 'expiry': s['expiry'],
-           'kind': kind or '미확인', 'dominant_landuse': dom or '미확인',
-           **{f'share_{c}': (round(v, 3) if v is not None else '') for c, v in shares.items()}, 'ring_m': ring,
-           'boundary': own.get(sid, {}).get('boundary') or '미확인'}
+    g = gee.get(sid); lu = landuse.get(sid) or {}; lt = sum(lu.values())
+    row = {'site_id': sid, 'name': s['name'], 'type': s['type'], 'location': s['location'], 'area_m2': int(float(s['area_m2'])),
+           'expiry': s['expiry'], **{f'share_{c}': (round(v / lt, 3) if lt else '') for c, v in lu.items()},
+           'dominant_landuse': max(lu, key=lu.get) if lt else '미확인', 'boundary': own.get(sid, {}).get('boundary') or '미확인'}
     note = ''
     if g is None:
         note = '공원 경계 없음(V-World 도시계획시설 미등재) → 미산정'
-    elif s['type'] in excluded:
+    elif s['type'] in P['excluded_types']:
         note = P['excluded_note']
     if note:
-        row.update({'note': note, 'status': '미산정'}); rows.append(row); continue
-    res = [chain(g, ring, f) for f in SCEN]
-    per_scen[sid] = res
-    b = chain(g, ring, BASE)
+        rows.append({**row, 'kind': '미산정', 'status': '미산정', 'note': note}); continue
+    area = g['area_poly']; rm2 = ring_area.get(sid, 0)
+    res = [chain(g, area, rm2, f) for f in SCEN]; b = chain(g, area, rm2, BASE); per[sid] = res
     lo = lambda k: min(r[k] for r in res); hi = lambda k: max(r[k] for r in res)
-    row.update({'status': '산정', 'ndvi_now': round(g['ndvi_s2'], 3), 'lsta_now': round(g['lsta'], 2) if g.get('lsta') is not None else '',
-                'pop_ring': round(g[f'pop_{ring}']),
-                'dndvi_low': round(lo('dndvi'), 3), 'dndvi_high': round(hi('dndvi'), 3),
-                'dlst_site_low': round(lo('d_site'), 2), 'dlst_site_high': round(hi('d_site'), 2),
-                'dta_ring_low': round(lo('d_air'), 3), 'dta_ring_high': round(hi('d_air'), 3),
-                'peak_kw_low': round(lo('peak_kw'), 2), 'peak_kw_high': round(hi('peak_kw'), 2),
-                'annual_mwh_low': round(lo('annual_mwh'), 2), 'annual_mwh_high': round(hi('annual_mwh'), 2),
-                'dndvi_base': round(b['dndvi'], 3), 'dlst_site_base': round(b['d_site'], 2), 'dta_ring_base': round(b['d_air'], 3),
-                'peak_kw_base': round(b['peak_kw'], 2), 'annual_mwh_base': round(b['annual_mwh'], 2),
-                'note': '' if row['boundary'] in P['boundary_ok'] else f"경계 {row['boundary']} — 사업성 파트 기록대로 청주시 확인 필요"})
+    big = area >= RING_MIN
+    row.update({
+        'status': '산정', 'kind': '보전형' if g['ndvi_s2'] >= FACTORS['target'][0] else '조성형',
+        'ndvi_now': round(g['ndvi_s2'], 3), 'lsta_now': round(g['lsta'], 2) if g.get('lsta') is not None else '',
+        'poly_m2': round(area), 'cell_share': round(min(1, area / CELL), 3),
+        'ring_applied': '적용' if big else '해당 없음(1ha 미만)', 'ring_ha': round(rm2 / HA, 2) if big else '',
+        'pop_300': round(g['pop_300']),
+        'dndvi_base': round(b['dndvi'], 3), 'dndvi_low': round(lo('dndvi'), 3), 'dndvi_high': round(hi('dndvi'), 3),
+        'dlst_cell_base': round(b['d_cell'], 2), 'dlst_cell_low': round(lo('d_cell'), 2), 'dlst_cell_high': round(hi('d_cell'), 2),
+        'dlst_ring_base': round(b['d_ring'], 2), 'dlst_ring_low': round(lo('d_ring'), 2), 'dlst_ring_high': round(hi('d_ring'), 2),
+        'cool_base': round(b['amount'], 2), 'cool_low': round(lo('amount'), 2), 'cool_high': round(hi('amount'), 2),
+        'note': '' if row['boundary'] in P['boundary_ok'] else f"경계 {row['boundary']} — 사업성 파트 기록대로 청주시 확인 필요"})
     rows.append(row)
 
-# ---------- 등급: 시나리오마다 연간 전력 절감 순위 ----------
-ids = list(per_scen)
-grades = {sid: [] for sid in ids}
+# ---------- 등급 ----------
+ids = list(per); grades = {i: [] for i in ids}
 n_top = round(len(ids) * P['grade']['top_share']); n_mid = round(len(ids) * P['grade']['mid_share'])
 for k in range(len(SCEN)):
-    order = sorted(ids, key=lambda i: per_scen[i][k]['annual_mwh'], reverse=True)
+    order = sorted(ids, key=lambda i: per[i][k]['amount'], reverse=True)
     for rank, i in enumerate(order):
-        v = per_scen[i][k]['annual_mwh']
+        v = per[i][k]['amount']
         grades[i].append('하' if v <= P['ndvi_gain_floor'] else '상' if rank < n_top else '중' if rank < n_mid else '하')
 ORDER = ['상', '중', '하']
 for row in rows:
     gs = grades.get(row['site_id'])
-    if not gs:
-        row.update({'grade': '', 'grade_stable': '', 'grade_range': ''}); continue
-    uniq = sorted(set(gs), key=ORDER.index)
-    row.update({'grade': max(set(gs), key=gs.count), 'grade_stable': '확정' if len(uniq) == 1 else '경계',
-                'grade_range': uniq[0] if len(uniq) == 1 else f'{uniq[0]}~{uniq[-1]}'})
+    if gs:
+        u = sorted(set(gs), key=ORDER.index)
+        row.update({'grade': max(set(gs), key=gs.count), 'grade_stable': '확정' if len(u) == 1 else '경계',
+                    'grade_range': u[0] if len(u) == 1 else f'{u[0]}~{u[-1]}'})
+    else:
+        row.update({'grade': '', 'grade_stable': '', 'grade_range': ''})
 
 cols = list(dict.fromkeys(k for r in rows for k in r))
 with open(f'{OUT}/master_energy.csv', 'w', encoding='utf-8-sig', newline='') as f:
@@ -140,41 +132,41 @@ with open(f'{OUT}/master_energy.csv', 'w', encoding='utf-8-sig', newline='') as 
 
 # ---------- 요약 ----------
 ok = [r for r in rows if r['status'] == '산정']
-tot = lambda k: sum(r[k] for r in ok)
-by_kind = {}
-for r in ok:
-    b = by_kind.setdefault(r['kind'], {'n': 0, 'lo': 0.0, 'hi': 0.0, 'base': 0.0, 'area': 0})
-    b['n'] += 1; b['lo'] += r['annual_mwh_low']; b['hi'] += r['annual_mwh_high']; b['base'] += r['annual_mwh_base']; b['area'] += r['area_m2']
-top = sorted(ok, key=lambda r: r['annual_mwh_base'], reverse=True)
-lines = [
-    '# 에너지(열저감) 파트 요약 — 독립 참고 결과', '',
-    f"기준: 조성 vs 지금 그대로. 시나리오 {len(SCEN)}개(6개 계수 상·하한). 산정 {len(ok)}개소 / 미산정 {len(rows) - len(ok)}개소.", '',
-    '## 청주 계수 (GEE)',
-    f"- 녹지-지표온도: NDVI 1 증가당 {-COEF['controlled']:.2f}°C(시가화율·표고 통제) ~ {-COEF['simple']:.2f}°C(NDVI만) — Landsat 여름 {city['ls_scenes']}장",
-    f"- 조성 목표 NDVI: 잔디·초지 {TARGET['grass']:.3f} ~ 수목 {TARGET['tree']:.3f} — Sentinel-2 여름 {city['s2_scenes']}장",
-    f"- 주변 퍼짐 비율: {SPILL['low']:.2f} ~ {SPILL['high']:.2f} (특례사업지 {', '.join(P['spillover']['sites'])} 실측)", '',
-    '## 합계 (산정 공원 전체)',
-    f"- 연간 냉방전력 절감: {tot('annual_mwh_low'):,.1f} ~ {tot('annual_mwh_high'):,.1f} MWh/년 (기준 {tot('annual_mwh_base'):,.1f})",
-    f"- 여름 최대전력 절감: {tot('peak_kw_low'):,.1f} ~ {tot('peak_kw_high'):,.1f} kW (기준 {tot('peak_kw_base'):,.1f})", '',
-    '## 공원 성격별',
-] + [f"- {k}: {b['n']}개소, 면적 {b['area']:,}㎡, 연간 {b['lo']:,.1f} ~ {b['hi']:,.1f} MWh (기준 {b['base']:,.1f})" for k, b in by_kind.items()] + [
-    '', '## 연간 냉방전력 절감 상위 10 (기준 시나리오 순)', '',
-    '| 순위 | 공원 | 성격 | 지금 NDVI | 공원 안 지표 저감(°C) 기준 | 주변 인구 | 연간 MWh 기준 (범위) | 등급 |', '|---|---|---|---|---|---|---|---|',
-] + [f"| {i} | {r['name']} | {r['kind']} | {r['ndvi_now']} | {r['dlst_site_base']} | {r['pop_ring']:,} | {r['annual_mwh_base']} ({r['annual_mwh_low']}~{r['annual_mwh_high']}) | {r['grade_range']} {r['grade_stable']} |"
-     for i, r in enumerate(top[:10], 1)] + [
-    '', '## 미산정', ''] + [f"- {r['name']}: {r['note']}" for r in rows if r['status'] != '산정'] + [
-    '', '## 검증',
-    f"- 64개 시나리오 모두 계산: {all(len(v) == len(SCEN) for v in per_scen.values())}",
-    f"- 등급 확정 {sum(r['grade_stable'] == '확정' for r in ok)}개소 / 경계 {sum(r['grade_stable'] == '경계' for r in ok)}개소",
-    '- 코드에 기준값 숫자 없음: params.yaml만 읽음', '',
-    '## 한계',
-    '- 지표온도 기준 계수에 문헌 비율(0.08~0.6)을 곱해 기온으로 바꿨다. 기온 실측은 없다.',
-    '- 1ha 미만 소공원은 위성 열자료(100m급)로 직접 잴 수 없어 청주 전체 계수를 적용한 추정이다.',
-    '- 전력은 주변 거주 인구 기준(GHSL 2020)이라 상가·업무 건물 몫은 빠져 있다. 1°C당 증가율은 총전력 기준 문헌값을 냉방전력에 적용해 보수적이다.',
-    '- 비교 기준은 "조성 vs 지금 그대로". 개발 압력·비용은 필요성·사업성 파트에서 다룬다.', '']
-open(f'{OUT}/summary.md', 'w', encoding='utf-8').write('\n'.join(lines))
+tot = lambda k, rs=ok: sum(r[k] for r in rs)
+kinds = {k: [r for r in ok if r['kind'] == k] for k in ('조성형', '보전형')}
+top = sorted(ok, key=lambda r: r['cool_base'], reverse=True)
+share = lambda rs: tot('cool_base', rs) / tot('cool_base') if tot('cool_base') else 0
+L = ['# 에너지(열저감) 파트 요약 — 독립 참고 결과', '',
+     f"기준: 조성 vs 지금 그대로. 계수는 모두 청주 위성 실측(문헌 계수 0개). 시나리오 {len(SCEN)}개. 산정 {len(ok)}개소 / 미산정 {len(rows) - len(ok)}개소.", '',
+     '## 청주 계수 (GEE)',
+     f"- 녹지 변화 → 지표온도 변화 ({P['change']['before'][0][:4]}–{P['change']['before'][1][:4]} → {P['change']['after'][0][:4]}–{P['change']['after'][1][:4]} 여름, NDVI가 {P['change']['min_change']} 이상 변한 픽셀):",
+     f"  - 녹지가 늘어난 곳 {change['green_n']:,}픽셀: NDVI 1당 {change['green_slope']:.2f}°C",
+     f"  - 녹지가 줄어든 곳 {change['loss_n']:,}픽셀: NDVI 1당 {change['loss_slope']:.2f}°C",
+     f"  - 전체 {change['all_n']:,}픽셀: NDVI 1당 {change['all_slope']:.2f}°C (참고)",
+     f"  - 참고: 한 시기 공간 비교 회귀(1차 실행)는 {city['b_controlled']:.2f} ~ {city['b_simple']:.2f}°C — 변화가 아니라 장소 차이라 쓰지 않음",
+     f"- 조성 목표 NDVI: 잔디·초지 {TARGET['grass']:.3f} ~ 수목 {TARGET['tree']:.3f} (Sentinel-2 여름 {city['s2_scenes']}장)",
+     f"- 주변 {P['change']['ring_m']}m 퍼짐: {FACTORS['spill'][0]:.2f} ~ {FACTORS['spill'][1]:.2f} ({', '.join(P['spillover']['sites'])} 실측), 1ha 이상 공원만", '',
+     '## 합계',
+     f"- 냉각량: {tot('cool_low'):,.1f} ~ {tot('cool_high'):,.1f} °C·ha (기준 {tot('cool_base'):,.1f})",
+     ] + [f"- {k} {len(rs)}곳: 기준 {tot('cool_base', rs):,.1f} °C·ha ({share(rs):.0%})" for k, rs in kinds.items()] + [
+     '', '## 냉각량 상위 10 (기준 시나리오)', '',
+     '| 순위 | 공원 | 성격 | 면적㎡ | 지금 NDVI | 공원 일대 저감°C | 주변 300m 저감°C | 냉각량 °C·ha (범위) | 주변 인구 | 등급 |',
+     '|---|---|---|---|---|---|---|---|---|---|'] + [
+    f"| {i} | {r['name']} | {r['kind']} | {r['area_m2']:,} | {r['ndvi_now']} | {r['dlst_cell_base']} | {r['dlst_ring_base'] if r['ring_applied'] == '적용' else '—'} | {r['cool_base']} ({r['cool_low']}~{r['cool_high']}) | {r['pop_300']:,} | {r['grade_range']} {r['grade_stable']} |"
+    for i, r in enumerate(top[:10], 1)] + [
+     '', '## 미산정', ''] + [f"- {r['name']}: {r['note']}" for r in rows if r['status'] != '산정'] + [
+     '', '## 검증',
+     f"- 시나리오 {len(SCEN)}개 모두 계산: {all(len(v) == len(SCEN) for v in per.values())}",
+     f"- 등급 확정 {sum(r['grade_stable'] == '확정' for r in ok)}개소 / 경계 {sum(r['grade_stable'] == '경계' for r in ok)}개소",
+     '- 코드에 기준값 숫자 없음: params.yaml만 읽음', '',
+     '## 한계',
+     '- 지표온도(땅 표면)이며 기온이 아니다. 전력 절감으로 바꾸지 않는다(국지 기온–전력 관계의 근거 부족, evidence E5).',
+     '- 1ha 미만 공원은 위성 칸(1ha) 안에서 섞인 만큼만 반영한 "공원 일대" 저감이다. 공원 안 그늘 같은 체감 효과는 따로 보지 않는다.',
+     '- 주변 퍼짐 비율은 숲→개발(가열)에서 잰 값을 조성(냉각)에 쓴 것이고, 비슷한 규모(1ha 이상)에만 적용했다.', '']
+open(f'{OUT}/summary.md', 'w', encoding='utf-8').write('\n'.join(L))
 
-# ---------- 지도용 데이터 ----------
+
+# ---------- 지도용 ----------
 def decode(s):
     sc = P['coord_scale']; polys = []
     for p in s.split(';'):
@@ -192,7 +184,9 @@ geo = {int(l.split('~')[0]): decode(l.split('~', 1)[1]) for l in open(f'{BIZ}/vw
 gu = [{'name': l.split('~')[0], 'poly': decode(l.split('~', 1)[1])} for l in open(f'{BIZ}/vworld/gu.txt', encoding='utf-8').read().split('\n') if l]
 for r in rows:
     r['poly'] = geo.get(r['site_id'])
-json.dump({'asof': '2026-11-14', 'city': {**city, 'coef': COEF, 'target': TARGET, 'spill': SPILL, 'n_scen': len(SCEN)},
-           'factors': {k: list(v) for k, v in FACTORS.items()}, 'params': {k: P[k] for k in ('air_per_surface', 'electricity', 'ring_rule')}, 'base': BASE,
-           'gu': gu, 'parks': rows}, open(f'{OUT}/energydata.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
-print(open(f'{OUT}/summary.md', encoding='utf-8').read())
+json.dump({'asof': P['asof'], 'change': change, 'city': city, 'coef': COEF, 'target': TARGET, 'factors': {k: list(v) for k, v in FACTORS.items()},
+           'base': BASE, 'n_scen': len(SCEN), 'cell_m2': CELL, 'ring_m': P['change']['ring_m'], 'min_ring_park_m2': RING_MIN,
+           'min_change': P['change']['min_change'], 'periods': {'before': P['change']['before'], 'after': P['change']['after']},
+           'spill_sites': P['spillover']['sites'], 'gu': gu, 'parks': rows},
+          open(f'{OUT}/energydata.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+print('\n'.join(L))
