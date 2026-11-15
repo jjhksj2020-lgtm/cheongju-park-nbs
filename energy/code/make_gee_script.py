@@ -1,5 +1,5 @@
-"""GEE 스크립트 만들기: gee_energy.template.js + params.yaml(gee) + biz/data/vworld/parks.txt(공원 경계) → gee_energy.js
-만든 gee_energy.js 를 GEE Code Editor(프로젝트 cheongju-grpi)에 붙여넣고 Run → 콘솔 출력을 energy/data/gee/gee_output.txt 에 붙인다.
+"""GEE 스크립트 만들기: *.template.js + params.yaml(gee·change) + biz/data/vworld/parks.txt(공원 경계) → gee_energy.js · gee_change.js
+만든 js 를 GEE Code Editor(프로젝트 cheongju-grpi)에 붙여넣고 Run → 콘솔 출력을 energy/data/gee/gee_output.txt · gee_change_output.txt 에 붙인다.
 실행: python energy/code/make_gee_script.py"""
 import json, os, yaml
 C = os.path.dirname(os.path.abspath(__file__)); E = os.path.dirname(C); ROOT = os.path.dirname(E)
@@ -29,7 +29,10 @@ for line in open(PARKS_TXT, encoding='utf-8').read().split('\n'):
     if line:
         sid, enc = line.split('~', 1)
         parks.append({'id': int(sid), 'g': decode(enc)})
-tpl = open(f'{C}/gee_energy.template.js', encoding='utf-8').read()
-js = tpl.replace('__CFG__', json.dumps(P['gee'], ensure_ascii=False)).replace('__PARKS__', json.dumps(parks, separators=(',', ':')))
-open(f'{C}/gee_energy.js', 'w', encoding='utf-8').write(js)
-print('energy/code/gee_energy.js', len(parks), '공원', len(js) // 1024, 'KB')
+for name in ('gee_energy', 'gee_change'):
+    tpl = open(f'{C}/{name}.template.js', encoding='utf-8').read()
+    js = (tpl.replace('__CFG__', json.dumps(P['gee'], ensure_ascii=False))
+             .replace('__CHANGE__', json.dumps(P['change'], ensure_ascii=False))
+             .replace('__PARKS__', json.dumps(parks, separators=(',', ':'))))
+    open(f'{C}/{name}.js', 'w', encoding='utf-8').write(js)
+    print(f'energy/code/{name}.js', len(parks), '공원', len(js) // 1024, 'KB')
