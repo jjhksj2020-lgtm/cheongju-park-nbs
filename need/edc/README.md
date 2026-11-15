@@ -1,71 +1,58 @@
 # 필요성 · 이용성(E·D)과 연결성(C) 지표
 
 청주시 기준 **② 이용성**(E1·E2·D1·D2)과 **① 공원조성 가치 중 C1**(녹지축 거리)을 계산한다.
-지표 정의는 `docs/청주_장기미집행공원_중간보고서.pdf` 2-3 (가).
+지표 정의는 `docs/청주_장기미집행공원_중간보고서.pdf` 2-3 (가)를 따른다.
 
 > 이 폴더 밖은 고치지 않는다. 결과는 `need/out/indicators_edc.csv` 하나로만 넘긴다.
 
 ## 지표
 
-| 지표 | 산식 | 자료 (출처키) |
+| 지표 | 산식 | 출처키 · tag |
 |---|---|---|
-| E1 버퍼 인구 | 공원 경계 + 버퍼(`presets.yaml` buffer_m) 안 인구, 면적 가중 | SGIS 격자·집계구 인구 (SGIS-grid) |
-| E2 취약인구 비율 | 버퍼 안 (65세 이상 + 9세 이하) ÷ 버퍼 인구 | SGIS 연령별 인구 (SGIS-grid) |
-| D1 서비스권 밖 인구 비율 | 기존 조성공원 유치거리 합집합 밖 버퍼 인구 ÷ 버퍼 인구 | 전국도시공원정보표준데이터 + 시행규칙 별표3 |
-| D2 생활권 1인당 공원면적 | 공원이 속한 생활권 값 | 2030 도시기본계획 표 7-10 (CJ-park) |
-| C1 녹지축 거리 | 공원 경계 → 4대 녹지축·5대 수변생태축 최단거리(m) | 제안서 p.9 도면 디지타이징 (SJ-axis) |
-| (참고) 신규 수혜 인구 | 조성 시 처음 서비스권에 들어오는 인구 | D1 계산 부산물 |
+| E1 버퍼 인구 | 공원 경계 + 버퍼(`presets.yaml` buffer_m) 안 인구. 100m 격자를 면적 비율로 나눠 더한다 | WP-2020 · 대체자료 |
+| E2 취약인구 비율 | 버퍼 안 격자마다 소속 행정동의 (0~9세 + 65세 이상) ÷ 총인구를 붙이고 인구 가중 평균. 버퍼에 거주 격자가 없으면 소속 동 값 | MOIS-2026-10 + WP-2020 · 실자료 |
+| D1 서비스권 밖 인구 비율 | 기존 공원(OSM) 유치거리 합집합 밖의 버퍼 인구 ÷ 버퍼 인구 | WP-2020 + OSM · 대체자료 |
+| D2 생활권 1인당 공원면적 | 공원이 속한 생활권의 1인당 **조성**면적(㎡/인). 결정면적은 `edc_wide.csv`에 참고로 둔다 | PARK2030-T11-2 · 실자료 (도심생활권 배정은 가정) |
+| C1 녹지·수변축 거리 | 공원 경계 → 수변생태축 하천 또는 50ha 이상 산림 중 가까운 곳(m) | OSM · 대체자료 |
+| C1_near · river_adjacent | C1 ≤ 500m · 하천 100m 이내 (1/0). 사업성 `need.csv`가 받는다 | OSM · 가정 |
+| 신규 수혜 인구 | 조성하면 처음 서비스권에 들어오는 인구 = E1 × D1 | WP-2020 + OSM · 대체자료 |
 
-- `C1_near`, `river_adjacent` 플래그(1/0)는 사업성 파트 `need.csv`에 들어간다(`biz/data/input/need.TEMPLATE.csv`).
-- |r| ≥ 0.7이면 하나만 쓴다(D1↔E1). 용도지역 비율은 개발압력 P2와 겹치므로 점수에 넣지 않는다.
+## 자료
 
-## 지금 쓰는 자료 (1차, 모두 tag `대체자료` 또는 `가정`)
-
-| 출처키 | 자료 | 받는 법 | 교체 계획 |
+| 출처키 | 자료 | 위치 | 비고 |
 |---|---|---|---|
-| WP-2020 | WorldPop 2020 100m constrained 인구(전체·성별 연령 밴드) | data.worldpop.org, `data/raw/worldpop/` (용량이 커서 저장소에 안 올림) | SGIS 격자·집계구 인구(키 발급 후) |
-| OSM-2026-11 | OpenStreetMap 공원·놀이터, 하천, 산림 (2026-11-15 Overpass) | `data/raw/osm/*.json` | 청주시 공원현황 표·V-World 도시계획시설 |
-| — | D2: 구별 1인당 기존 공원면적 (OSM 공원 ÷ WorldPop) | 계산 | 2030 도시기본계획 표 7-10 생활권 값 |
-| — | C1: 수변축 하천(params `axis_rivers`)·50ha 이상 산림까지 최단거리 | 계산 | 제안서 녹지축 도면 원본 |
+| WP-2020 | WorldPop 2020 100m constrained 총인구 | `data/raw/worldpop/` (저장소 제외, 아래 명령으로 받음) | 청주 합계 90.2만 명, 주민등록 86.2만 명과 약 5% 차이. SGIS 격자를 받으면 교체 |
+| MOIS-2026-10 | 행정안전부 행정동별 성별·연령별 주민등록인구, 2026-10-31 (data.go.kr 15097972) | `data/raw/mois/cheongju_age_dong_20261031.csv` (청주 43개 동만 추림) | 1세 단위 → 0~9세, 65세 이상 합산 |
+| — | 행정동 경계 2026-10-01 (github.com/vuski/admdongkor) | `data/raw/dong/cheongju_dong_20261001.geojson` (청주만) | |
+| PARK2030-T11-2 | 2030 청주시 공원녹지기본계획(2020) 표 11-2 생활권별 공원현황 (2040 청주도시기본계획 제11장 p.421에 재인용, cheongju.go.kr cts17053_n12.pdf) | `code/params.yaml` living_zone_park | 1인당 조성면적: 도심 1.7 · 서원 2.6 · 흥덕 5.2 · 상당 6.0 · 청원 7.4 |
+| OSM-2026-11 | OpenStreetMap 공원·놀이터, 하천, 산림 (2026-11-15 Overpass) | `data/raw/osm/*.json` | 청주시 공원현황·V-World 시설 자료로 교체 |
 
-기준값(유치거리, 플래그 경계, 하천 목록)은 `code/params.yaml`에만 있다.
+- **생활권 배정**: 공원과 가장 많이 겹치는 행정동이 `downtown_dongs`(중앙·성안·탑대성·사직1·사직2·사창·운천신봉·우암)에 있으면 도심생활권, 아니면 소속 구의 생활권으로 본다. 도심 동 목록은 청주형 15분 도시 일상생활권 구축계획(1차, 2025) 보도에서 가져왔다. 2030 계획 원문의 동 목록은 확인하지 못했다(가정).
+- **중간보고서 수정 필요**: 1-1의 "도심생활권 1인당 공원면적은 7.4㎡로 최저"는 표 11-2와 맞지 않는다. 7.4㎡는 청원생활권의 조성면적(최고)이고, 도심생활권은 조성 1.7㎡·결정 11.1㎡로 최저다.
+- 기준값(유치거리, 플래그 경계, 하천 목록, 생활권 표)은 `code/params.yaml`에만 있다.
 
-**E2는 미산정이다.** WorldPop 연령 밴드는 넓은 행정구역의 연령 비율을 격자에 똑같이 나눠 놓은 자료라서, 모든 공원이 0.285로 같게 나왔다. 공원 사이의 차이를 보려면 SGIS 집계구 연령별 인구나 행안부 행정동 연령별 주민등록인구가 필요하다.
+## 결과 (2026-11-15)
 
-## 1차 결과 (2026-11-15)
-
-- 산정 39/40 (5 어린이공원152는 경계가 없어 미산정). 버퍼 인구가 0인 곳은 33·34 두 곳이다.
-- WorldPop 청주 총인구 90.2만 명 (주민등록 89.0만 명, 2026.8): 약 1% 차이.
-- r(D1, E1)은 pearson −0.41, spearman −0.60으로 |r| < 0.7이라 둘 다 쓴다.
+- 39/40곳을 산정했다(5 어린이공원152는 경계가 없어 미산정). 버퍼 인구가 0인 곳은 33·34 두 곳이고, 이 두 곳의 E2는 소속 동 값을 썼다.
+- E2는 0.19(복대1동)~0.55(현도·낭성면) 사이다.
+- 지표 쌍의 |r|은 모두 0.7 미만이다(가장 큰 값: E1↔D1 spearman −0.60). 다섯 지표를 모두 쓴다.
 - C1은 50ha 이상 산림이 많아서 대부분 가깝게 나온다(C1_near 1이 28곳). 녹지축 도면을 받기 전에는 변별력이 약하다.
 
 ## 실행
 
 ```bash
-pip install shapely pyproj pyyaml rasterio numpy
+pip install shapely pyproj pyyaml rasterio numpy scipy
 cd need/edc/code && python build_edc.py
 ```
 
-결과: `need/out/indicators_edc.csv`(긴 표, 점수 계산용), `need/out/edc_wide.csv`(공원별 가로표, 검토용).
-`data/raw/worldpop/`이 비어 있으면 아래로 받는다(약 160MB).
+결과는 `need/out/indicators_edc.csv`(긴 표, 점수 계산용)와 `need/out/edc_wide.csv`(공원별 가로표, 검토용)이다.
+`data/raw/worldpop/`이 비어 있으면 먼저 받는다(10MB).
 
 ```bash
-cd need/edc/data/raw/worldpop
-curl -O https://data.worldpop.org/GIS/Population/Global_2000_2020_Constrained/2020/BSGM/KOR/kor_ppp_2020_UNadj_constrained.tif
-for s in f m; do for a in 0 1 5 65 70 75 80; do curl -O https://data.worldpop.org/GIS/AgeSex_structures/Global_2000_2020_Constrained/2020/KOR/kor_${s}_${a}_2020_constrained.tif; done; done
-```
-
-## 폴더
-
-```
-need/edc/
-  README.md
-  indicators_edc.TEMPLATE.csv   결과 양식
-  code/        계산 스크립트
-  data/raw/    받은 원자료 (출처키별)
+cd need/edc/data/raw/worldpop && curl -O https://data.worldpop.org/GIS/Population/Global_2000_2020_Constrained/2020/BSGM/KOR/kor_ppp_2020_UNadj_constrained.tif
 ```
 
 ## 결과 양식
 
-`site_id, indicator, value, unit, source_key, tag` — tag는 `실자료 / 가정 / 미산정 / 대체자료`.
+`site_id, indicator, value, unit, source_key, tag`. tag는 `실자료 / 가정 / 미산정 / 대체자료` 중 하나다.
 공원 경계는 `biz/data/vworld/parks.txt`를 읽기만 한다(복사·수정 금지).

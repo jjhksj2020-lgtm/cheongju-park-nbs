@@ -4,7 +4,7 @@
 입력(읽기 전용): biz/data/input/sites.csv, biz/data/vworld/parks.txt, biz/data/vworld/gu.txt, need/presets.yaml
 원자료: data/raw/worldpop/*.tif (WorldPop 2020 100m constrained), data/raw/osm/*.json (Overpass)
 """
-import csv, glob, os, re, sys, warnings
+import csv, json, os, sys, warnings
 import numpy as np
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 import rasterio
@@ -32,7 +32,7 @@ class Pop:
             a[a == nd] = 0
         a[~np.isfinite(a)] = 0; a[a < 0] = 0
         rows, cols = np.nonzero(a)
-        self.cells, self.vals = [], []
+        self.cells, self.vals, self.wt = [], [], None
         for i, j in zip(rows, cols):
             x0, y0 = t * (j, i); x1, y1 = t * (j + 1, i + 1)
             self.cells.append(transform(to5186, box(min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1))))
@@ -47,16 +47,38 @@ class Pop:
             c = self.cells[k]; s += self.vals[k] * c.intersection(g).area / c.area
         return s
 
+    def set_ratio(self, dongs, ratio):
+        """격자 중심이 속한 행정동의 비율(취약연령 ÷ 총인구)을 격자마다 붙인다."""
+        names = list(dongs); tree = STRtree([dongs[n] for n in names]); self.wt = []
+        for c in self.cells:
+            p = c.centroid; hit = [names[k] for k in tree.query(p) if dongs[names[k]].contains(p)]
+            self.wt.append(ratio[hit[0]] if hit else None)
+
+    def ratio(self, g):
+        """도형 안 인구 가중 평균 비율 (동 비율이 없는 격자는 제외)."""
+        num = den = 0.0
+        for k in self.tree.query(g):
+            if self.wt[k] is None:
+                continue
+            c = self.cells[k]; v = self.vals[k] * c.intersection(g).area / c.area
+            num += v * self.wt[k]; den += v
+        return num / den if den > 0 else None
+
 
 def worldpop():
-    d = f'{RAW}/worldpop'
-    total = Pop(f'{d}/kor_ppp_2020_UNadj_constrained.tif')
-    vp = EDC_P['vulnerable_age']; vul = []
-    for f in sorted(glob.glob(f'{d}/kor_[fm]_*_2020_constrained.tif')):
-        age = int(re.search(r'_[fm]_(\d+)_', f).group(1))       # 밴드 시작 나이: 0, 1(1~4), 5(5~9), 65, 70, 75, 80(80+)
-        if age >= vp['old_min'] or age + 4 <= vp['young_max']:
-            vul.append(Pop(f))
-    return total, vul
+    return Pop(f'{RAW}/worldpop/kor_ppp_2020_UNadj_constrained.tif')
+
+
+def dongs():
+    """행정동 경계(5186)와 주민등록 연령 집계. 이름 = 동 이름(청주 안에서 중복 없음)."""
+    from shapely.geometry import shape
+    gj = json.load(open(f'{RAW}/dong/cheongju_dong_20261001.geojson', encoding='utf-8'))
+    geo = {f['properties']['adm_nm'].split()[-1].replace('·', ''): transform(to5186, shape(f['geometry'])) for f in gj['features']}
+    age = {r['dong'].replace('·', ''): r for r in csv.DictReader(open(f'{RAW}/mois/cheongju_age_dong_20261031.csv', encoding='utf-8-sig'))}
+    assert set(geo) == set(age), set(geo) ^ set(age)
+    ratio = {n: (int(r['age0_9']) + int(r['age65p'])) / int(r['total']) for n, r in age.items()}
+    gu = {n: r['gu'].split()[-1] for n, r in age.items()}
+    return geo, ratio, gu
 
 
 # ---------- 기존 공원 서비스권 (D1) ----------
@@ -96,18 +118,17 @@ def main():
     BBOX = unary_union(list(gu4326.values())).bounds
     gu = {k: transform(to5186, v) for k, v in gu4326.items()}
 
-    B = buffers(); S = {s['site_id']: s for s in sites()}
+    B = buffers()
     print('공원 경계', len(B), '/ 40')
-    total, vul = worldpop(); print('WorldPop 격자', len(total.cells), '칸, 취약연령 밴드', len(vul))
+    total = worldpop(); print('WorldPop 격자', len(total.cells), '칸')
+    dgeo, dratio, dgu = dongs(); total.set_ratio(dgeo, dratio)
     ex_parks, served, n_ex = existing_service(g for g, _, _ in B.values()); print('기존 공원(OSM)', n_ex)
     water, green, anyriver = axes()
-
-    # D2 대체: 구별 1인당 기존 공원면적 (생활권 표 7-10 수령 전)
-    d2 = {k: ex_parks.intersection(g).area / max(total.sum(g), 1) for k, g in gu.items()}
-    print('구별 1인당 기존공원(㎡, OSM·WorldPop)', {k: round(v, 2) for k, v in d2.items()})
+    LZ = EDC_P['living_zone_park']; DT = set(EDC_P['downtown_dongs'])
+    zone_of = lambda dong: '도심생활권' if dong in DT else f"{dgu[dong][:2]}생활권"
 
     rows, wide = [], []
-    WP, OS = 'WP-2020', 'OSM-2026-11'
+    WP, OS, MO, LZK = 'WP-2020', 'OSM-2026-11', 'MOIS-2026-10', 'PARK2030-T11-2'
     def add(sid, ind, val, unit, src, tag):
         rows.append({'site_id': sid, 'indicator': ind, 'value': '' if val is None else val, 'unit': unit, 'source_key': src, 'tag': tag})
 
@@ -119,29 +140,32 @@ def main():
                 add(sid, ind, None, unit, 'VW-upis', '미산정')
             wide.append({'site_id': sid, 'name': s['name'], 'note': '공원 경계 없음(V-World 매칭 실패) → 미산정'}); continue
         park, buf, rad = B[sid]
+        dong = max(dgeo, key=lambda k: dgeo[k].intersection(park).area)
+        zone = zone_of(dong)
         e1 = total.sum(buf)
-        e2v = sum(v.sum(buf) for v in vul)
-        unserved = buf.difference(served)
-        new = total.sum(unserved)
-        e2 = e2v / e1 if e1 > 0 else None
+        e2 = total.ratio(buf)
+        e2_src = '버퍼 격자 가중'
+        if e2 is None:                       # 버퍼에 거주 격자가 없으면 공원이 속한 동의 비율
+            e2, e2_src = dratio[dong], '소속 동 값'
+        new = total.sum(buf.difference(served))
         d1 = new / e1 if e1 > 0 else None
-        gname = max(gu, key=lambda k: gu[k].intersection(park).area)
+        d2 = LZ['per_cap_built'][zone]
         cw, cg = park.distance(water), park.distance(green)
         c1 = min(cw, cg)
         radj = int(park.distance(anyriver) <= EDC_P['river_adjacent_m'])
         add(sid, 'E1', round(e1), '명', WP, '대체자료')
-        # WorldPop 연령 밴드는 넓은 행정구역 비율을 그대로 나눠 놓아 공원 간 차이가 없다(전 공원 0.285) → 미산정
-        add(sid, 'E2', None, '비율(0~1)', WP, '미산정')
+        add(sid, 'E2', round(e2, 4), '비율(0~1)', f'{MO};{WP}', '실자료')
         add(sid, 'D1', None if d1 is None else round(d1, 4), '비율(0~1)', f'{WP};{OS}', '대체자료')
-        add(sid, 'D2', round(d2[gname], 2), '㎡/인', f'{WP};{OS}', '대체자료')
+        add(sid, 'D2', d2, '㎡/인', LZK, '실자료' if zone != '도심생활권' else '가정')
         add(sid, 'C1', round(c1), 'm', OS, '대체자료')
         add(sid, 'C1_near', int(c1 <= EDC_P['c1_near_m']), '1/0', OS, '가정')
         add(sid, 'river_adjacent', radj, '1/0', OS, '가정')
         add(sid, 'new_served_pop', round(new), '명', f'{WP};{OS}', '대체자료')
-        wide.append({'site_id': sid, 'name': s['name'], 'type': s['type'], 'gu': gname, 'buffer_m': rad,
-                     'E1_pop': round(e1), 'E2_vulnerable_wp_uniform': None if e2 is None else round(e2, 3),
+        wide.append({'site_id': sid, 'name': s['name'], 'type': s['type'], 'dong': dong, 'living_zone': zone, 'buffer_m': rad,
+                     'E1_pop': round(e1), 'E2_vulnerable': round(e2, 3), 'E2_basis': e2_src,
                      'D1_unserved': None if d1 is None else round(d1, 3), 'new_served_pop': round(new),
-                     'D2_gu_m2_per_cap': round(d2[gname], 2), 'C1_m': round(c1), 'C1_water_m': round(cw), 'C1_green_m': round(cg),
+                     'D2_built_m2_per_cap': d2, 'D2_decided_m2_per_cap': LZ['per_cap_decided'][zone],
+                     'C1_m': round(c1), 'C1_water_m': round(cw), 'C1_green_m': round(cg),
                      'C1_near': int(c1 <= EDC_P['c1_near_m']), 'river_adjacent': radj, 'note': ''})
 
     write_rows(f'{OUT}/indicators_edc.csv', rows)
@@ -149,17 +173,23 @@ def main():
     with open(f'{OUT}/edc_wide.csv', 'w', encoding='utf-8-sig', newline='') as f:
         w = csv.DictWriter(f, fieldnames=keys); w.writeheader(); w.writerows(wide)
 
-    # 검증: 값 범위, site_id 1~40, D1↔E1 상관
+    # 검증: site_id 1~40, 값 범위, 주민등록 합계, 상관
     ok = [w for w in wide if w.get('E1_pop') is not None]
     assert {r['site_id'] for r in rows} == {str(i) for i in range(1, 41)}
     pos = [w for w in ok if w['E1_pop'] > 0]
-    assert all(0 <= w['D1_unserved'] <= 1 for w in pos)
-    e2s = {w['E2_vulnerable_wp_uniform'] for w in pos}
-    print('E2(WorldPop) 서로 다른 값 개수:', len(e2s), '→ 1이면 공원 간 차이 없음, 미산정 유지')
-    e1 = np.array([w['E1_pop'] for w in pos], float); d1v = np.array([w['D1_unserved'] for w in pos], float)
+    assert all(0 <= w['D1_unserved'] <= 1 for w in pos) and all(0 <= w['E2_vulnerable'] <= 1 for w in ok)
+    print('E2 범위', min(w['E2_vulnerable'] for w in ok), '~', max(w['E2_vulnerable'] for w in ok),
+          '/ 서로 다른 값', len({w['E2_vulnerable'] for w in ok}))
+    print('생활권 배정', {z: [w['site_id'] for w in ok if w['living_zone'] == z] for z in LZ['per_cap_built']})
     from scipy.stats import spearmanr
-    print('행', len(rows), '/ 산정 공원', len(ok), '/ 인구 0 공원', len(ok) - len(pos),
-          '/ r(D1,E1) pearson =', round(float(np.corrcoef(e1, d1v)[0, 1]), 3), 'spearman =', round(float(spearmanr(e1, d1v)[0]), 3))
+    cols = ['E1_pop', 'E2_vulnerable', 'D1_unserved', 'D2_built_m2_per_cap', 'C1_m']
+    M = np.array([[w[c] for c in cols] for w in pos], float)
+    print('행', len(rows), '/ 산정 공원', len(ok), '/ 인구 0 공원', len(ok) - len(pos))
+    for i in range(len(cols)):
+        for j in range(i + 1, len(cols)):
+            r = float(np.corrcoef(M[:, i], M[:, j])[0, 1]); rs = float(spearmanr(M[:, i], M[:, j])[0])
+            flag = '  ← |r|≥0.7' if max(abs(r), abs(rs)) >= 0.7 else ''
+            print(f'  r({cols[i]},{cols[j]}) pearson {r:.2f} spearman {rs:.2f}{flag}')
     print('저장:', f'{OUT}/indicators_edc.csv', f'{OUT}/edc_wide.csv')
 
 
