@@ -1,0 +1,8 @@
+site_id,indicator,value,unit,source_key,tag
+1,E1,,명,SGIS-grid,미산정
+1,E2,,비율(0~1),SGIS-grid,미산정
+1,D1,,비율(0~1),PARK-std,미산정
+1,D2,,㎡/인,CJ-park,미산정
+1,C1,,m,SJ-axis,미산정
+1,C1_near,,1/0,SJ-axis,미산정
+1,new_served_pop,,명,SGIS-grid;PARK-std,미산정
