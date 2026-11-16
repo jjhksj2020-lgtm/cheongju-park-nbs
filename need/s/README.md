@@ -49,7 +49,14 @@
 1. 입력값: `code/gee_solar_s.js`, `code/gee_shadow_month_s.js`를 GEE Code Editor에서 Run → 콘솔의 `SOLAR_JSON`·`LIT_JSON`·`MONTH_JSON`을 `data/gee/`에 저장 (이미 들어 있음)
 2. `pip install pyyaml` → `python code/s_engine.py` → `data/S_results_40parks.csv`, `data/S_summary.md`
 
-## 결과 (2026-11-16)
+## v2 보완 (2026-11-16 오후) — 폴리곤 · 안정성
+
+- 수목 비율·경사는 **공원 폴리곤 안**(`need/h/data/gee/gee_v2_output_20261116.json`), 인구는 WorldPop 2020. 실행: `python code/s_engine_v2.py` → `data/S_results_40parks_v2.csv`, `data/S_summary_v2.md`.
+- 안정성: 밀도(0.11/0.18) × 구조물 비율(×0.6/×1.4) × 음영(0.5/1.5%/m) × 가중치(0.4/0.6/0.8) = 24 시나리오 모두 같은 등급이면 **확정**.
+- 결과: 상 13 · 중 16 · 하 11, **확정 28/40**, 용량 합계 1,543 kW(v1 1,903). 근린공원8 2위(19,592명 보장·95%)로 유지. 문화공원4는 폴리곤 안 수목이 67%(원 기준 96%)라 98 kW로 올라 9위(경계).
+- 대시보드 `HS_지도.html`: H·S·종합 3탭, 안정성 열, 계수 슬라이더 −2.1~−10.1 (기본 −4.6).
+
+## 결과 v1 (2026-11-16 오전, 참고)
 
 - 40/40 산정. 설치 가능 용량 합계 1,903 kW, 연 발전 2,268 MWh. 등급 상 13 · 중 16 · 하 11.
 - 1인 부하 0.03~0.15 kWh/일 어디서나 등급이 같은 공원 36/40 (확정).

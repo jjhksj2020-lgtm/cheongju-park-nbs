@@ -1,11 +1,11 @@
-<title>청주 공원 열환경 DSS</title>
+<title>청주 공원 열·에너지 DSS</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* 레이아웃: 상단 요약 띠 → 좌 제어판 + 우 지도/순위 → 차트 → 근거 카드. 도시계획 보고서의 "표·지도·근거" 순서를 그대로 따름 */
+/* 레이아웃: 탭(열환경 H · 에너지 자립 S · 종합) → 요약 띠 → 좌 제어판 + 지도 + 순위 → 차트 → 근거 문단 */
 :root{
   --bg:#f6f5f1; --panel:#ffffff; --fg:#1d1f1a; --muted:#6b6f66; --line:#dcdad2;
-  --accent:#2f6b4f; --accent-soft:#e3efe8;
+  --accent:#2f6b4f; --accent-soft:#e3efe8; --sun:#b7791f; --sun-soft:#f6ecd6;
   --hot:#c8452c; --cool:#2a66b8; --mid:#d8d5cc;
   --g-high:#b8431f; --g-mid:#8a7a1f; --g-low:#4e6c86; --g-none:#8c8f88;
   --font:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
@@ -13,11 +13,11 @@
 }
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
   --bg:#15171a; --panel:#1e2125; --fg:#e8e6df; --muted:#9a9e95; --line:#32363b;
-  --accent:#7dbf9c; --accent-soft:#223229; --hot:#e8674b; --cool:#5b93e0; --mid:#3a3e44;
+  --accent:#7dbf9c; --accent-soft:#223229; --sun:#e2b45a; --sun-soft:#352c18; --hot:#e8674b; --cool:#5b93e0; --mid:#3a3e44;
   --g-high:#f08a63; --g-mid:#d7c25a; --g-low:#8db3d6; --g-none:#777b74; color-scheme:dark } }
 :root[data-theme="dark"]{
   --bg:#15171a; --panel:#1e2125; --fg:#e8e6df; --muted:#9a9e95; --line:#32363b;
-  --accent:#7dbf9c; --accent-soft:#223229; --hot:#e8674b; --cool:#5b93e0; --mid:#3a3e44;
+  --accent:#7dbf9c; --accent-soft:#223229; --sun:#e2b45a; --sun-soft:#352c18; --hot:#e8674b; --cool:#5b93e0; --mid:#3a3e44;
   --g-high:#f08a63; --g-mid:#d7c25a; --g-low:#8db3d6; --g-none:#777b74; color-scheme:dark }
 
 *{box-sizing:border-box}
@@ -29,6 +29,12 @@ h2{font-size:.95rem;font-weight:700;margin:0 0 10px;letter-spacing:-.01em}
 .eyebrow{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700}
 .cap{color:var(--muted);font-size:.8rem;margin:6px 0 0}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tabs a{padding:10px 14px;text-decoration:none;color:var(--muted);font-weight:700;border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs a[aria-current="page"]{color:var(--fg);border-color:var(--accent)}
+.tabs a.s[aria-current="page"]{border-color:var(--sun)}
+.view{display:grid;gap:20px}
+.view[hidden]{display:none}
 
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .kpi{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
@@ -43,8 +49,9 @@ h2{font-size:.95rem;font-weight:700;margin:0 0 10px;letter-spacing:-.01em}
 .seg{display:flex;border:1px solid var(--line);border-radius:5px;overflow:hidden}
 .seg button{flex:1;border:0;background:transparent;color:var(--fg);padding:7px 4px;font:inherit;font-size:.82rem;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--accent);color:#fff;font-weight:700}
-.seg button:focus-visible,input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seg button:focus-visible,input:focus-visible,select:focus-visible,button:focus-visible,.tabs a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 input[type=range]{width:100%;accent-color:var(--accent)}
+.sview input[type=range]{accent-color:var(--sun)}
 .val{font-family:var(--mono);font-size:.8rem;float:right}
 .types{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.78rem;cursor:pointer;background:transparent;color:var(--fg);font-family:inherit}
@@ -53,6 +60,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .mapbox svg{width:100%;height:auto;display:block}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.75rem;color:var(--muted);margin-top:8px;align-items:center}
 .grad{width:90px;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--cool),var(--mid),var(--hot));display:inline-block;vertical-align:middle}
+.grad.s{background:linear-gradient(90deg,var(--mid),var(--sun))}
 
 .tbl{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:5px}
 table{border-collapse:collapse;width:100%;font-size:.8rem;white-space:nowrap}
@@ -66,255 +74,373 @@ tbody tr:hover,tbody tr.sel{background:var(--accent-soft)}
 
 .chartbox{overflow-x:auto}
 .chartbox svg{display:block;min-width:900px;width:100%;height:auto}
-
 .card{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start}
 select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--fg)}
 .prose{max-width:68ch;font-size:.92rem}
 .prose p{margin:0 0 10px}
 .verdict{display:inline-block;border-left:4px solid var(--accent);padding:6px 10px;background:var(--accent-soft);font-weight:700;margin-top:4px}
+.sview .verdict{border-color:var(--sun);background:var(--sun-soft)}
 .note{font-size:.78rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
 .note b{color:var(--fg)}
-@media (max-width:900px){.main{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.card{grid-template-columns:1fr}}
+.both{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.both svg{width:100%;height:auto;display:block}
+@media (max-width:900px){.main,.both{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.card{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:no-preference){.seg button,.chip{transition:background .15s}}
 </style>
-
 <div class="wrap">
   <header>
-    <div class="eyebrow">필요성 N · H 위해 — 열환경</div>
-    <h1>청주 장기미집행 공원 40개소 — 열환경 필요성 대시보드</h1>
-    <p class="cap">출처: Landsat 8/9 82장 · Sentinel-2 14장 (GEE, 2026-11-14) · 인구 300m 버퍼 · 좌표는 V-World 지오코딩(지번, 2026-11-16) · 결과는 순위와 상/중/하 (하 = 보류, 다른 축 검토)</p>
+    <div class="eyebrow">필요성 N · 청주 장기미집행 공원 40개소</div>
+    <h1>열환경(H)과 에너지 자립(S) 대시보드</h1>
+    <p class="cap">출처: V-World 공원 경계(39곳) · Landsat 8/9 48장·Sentinel-2 8장 여름 2024–25 (GEE 2026-11-16) · ERA5-Land 일사 · SRTM · WorldPop 2020 인구 · GHSL 건물높이 · 결과는 순위와 상/중/하 (하 = 보류, 다른 축 검토). S는 중간보고서대로 표시용.</p>
   </header>
 
-  <section class="kpis" id="kpis"></section>
+  <nav class="tabs" id="tabs">
+    <a href="#heat" data-view="heat">열환경 H</a>
+    <a href="#energy" data-view="energy" class="s">에너지 자립 S</a>
+    <a href="#both" data-view="both">H × S 종합</a>
+  </nav>
 
-  <section class="main">
-    <div class="panel ctl">
-      <h2>시나리오</h2>
-      <div>
-        <label>조성 유형</label>
-        <div class="seg" id="scen">
-          <button type="button" data-v="tree" aria-pressed="true">수목형 · NDVI 0.86</button>
-          <button type="button" data-v="grass" aria-pressed="false">잔디형 · NDVI 0.54</button>
-        </div>
+  <!-- ================= H ================= -->
+  <section class="view" id="view-heat">
+    <div class="kpis" id="kpis"></div>
+    <div class="main">
+      <div class="panel ctl">
+        <h2>시나리오</h2>
+        <div><label>조성 유형</label>
+          <div class="seg" id="scen">
+            <button type="button" data-v="tree" aria-pressed="true">수목형 · NDVI 0.86</button>
+            <button type="button" data-v="grass" aria-pressed="false">잔디형 · NDVI 0.54</button>
+          </div></div>
+        <div><label for="b">녹지→온도 계수 (℃ / NDVI) <span class="val" id="bv"></span></label>
+          <input type="range" id="b" min="-10.1" max="-2.1" step="0.1" value="-4.6">
+          <p class="cap">−2.1 = 녹지 늘어난 곳 실측 · −4.6 = 기준(중간) · −7.0 = 녹지 줄어든 곳 실측 · −10.1 = 공간 회귀(상한)</p></div>
+        <div><label for="wh">가중치: 현재 더위 <span class="val" id="whv"></span></label><input type="range" id="wh" min="0" max="1" step="0.05" value="0.5"></div>
+        <div><label for="wp">가중치: 주변 인구(편익) <span class="val" id="wpv"></span></label><input type="range" id="wp" min="0" max="1" step="0.05" value="0.5"></div>
+        <div><label>공원 유형</label><div class="types" id="types"></div></div>
       </div>
-      <div>
-        <label for="b">녹지→온도 계수 (℃ / NDVI) <span class="val" id="bv"></span></label>
-        <input type="range" id="b" min="-16.9" max="-5" step="0.1" value="-10.1">
-        <p class="cap">−10.1 = 건물밀도 통제 회귀 · −16.9 = 단순 회귀</p>
+      <div class="panel mapbox">
+        <h2>지도 — 색: 공원 일대 온도 편차, 크기: 냉각 편익</h2>
+        <div id="map"></div>
+        <div class="legend"><span>시원 <span class="grad"></span> 더움</span><span>● 크기 = 명·℃</span><span>점을 누르면 근거 문단이 바뀝니다</span></div>
       </div>
-      <div>
-        <label for="wh">가중치: 현재 더위 <span class="val" id="whv"></span></label>
-        <input type="range" id="wh" min="0" max="1" step="0.05" value="0.5">
-      </div>
-      <div>
-        <label for="wp">가중치: 주변 인구(편익) <span class="val" id="wpv"></span></label>
-        <input type="range" id="wp" min="0" max="1" step="0.05" value="0.5">
-      </div>
-      <div>
-        <label>공원 유형</label>
-        <div class="types" id="types"></div>
+      <div class="panel">
+        <h2>필요성(H) 순위</h2>
+        <div class="tbl"><table><thead><tr><th>순위</th><th>공원</th><th>유형</th><th>등급</th><th>안정성</th><th>일대 ℃</th><th>냉각 ℃</th><th>편익</th><th>열등급</th></tr></thead><tbody id="rows"></tbody></table></div>
       </div>
     </div>
-
-    <div class="panel mapbox">
-      <h2>지도 — 색: 현재 온도 편차, 크기: 냉각 편익</h2>
-      <div id="map"></div>
-      <div class="legend"><span>시원 <span class="grad"></span> 더움</span><span>● 크기 = 명·℃</span><span>점을 누르면 아래 근거 문단이 바뀝니다</span></div>
+    <div class="panel chartbox"><h2>조성 전 → 후 공원 땅 예상 온도 (청주 평균 대비 ℃)</h2><div id="chart"></div></div>
+    <div class="panel card">
+      <div><h2>시설별 근거 문단</h2><label class="cap" for="pick">공원 선택</label><select id="pick"></select></div>
+      <div class="prose" id="prose"></div>
     </div>
-
-    <div class="panel">
-      <h2>필요성(H) 순위</h2>
-      <div class="tbl"><table><thead><tr><th>순위</th><th>공원</th><th>유형</th><th>등급</th><th>현재 ℃</th><th>냉각 ℃</th><th>편익</th><th>열등급</th></tr></thead><tbody id="rows"></tbody></table></div>
-    </div>
+    <p class="note"><b>계산 방식 (v2, 2026-11-16).</b> 공원 경계는 V-World 폴리곤 39곳(어린이공원152만 등가원) · 현재 더위 = 경계+300m 일대 온도 편차 · 냉각 = 계수 × max(0, 목표 NDVI − 공원 땅 NDVI) · 편익 = |냉각| × 경계+300m 인구(WorldPop 2020, 이용성 파트와 같은 자료) · 열등급 = 일대 온도 5분위(1 = 가장 더움) · H 점수 = 가중 백분위 · 등급 = 상위 30% 상, 하위 30% 하 · 안정성 = 계수(−2.1/−7.0) × 목표(수목/잔디) × 가중치(5:5, 7:3, 3:7) 12개 시나리오에서 등급이 모두 같으면 확정. 계수 기본값은 청주 2013–16→2023–25 녹지 변화 실측의 중간값(에너지 파트와 동일), 공간 회귀 −10.1은 상한 참고.</p>
   </section>
 
-  <section class="panel chartbox">
-    <h2>조성 전 → 후 예상 온도 (청주 평균 대비 ℃)</h2>
-    <div id="chart"></div>
-  </section>
-
-  <section class="panel card">
-    <div>
-      <h2>시설별 근거 문단</h2>
-      <label class="cap" for="pick">공원 선택</label>
-      <select id="pick"></select>
+  <!-- ================= S ================= -->
+  <section class="view sview" id="view-energy" hidden>
+    <div class="kpis" id="skpis"></div>
+    <div class="main">
+      <div class="panel ctl">
+        <h2>시나리오</h2>
+        <div><label for="skw">설치 밀도 (kW / ㎡) <span class="val" id="skwv"></span></label>
+          <input type="range" id="skw" min="0.11" max="0.18" step="0.01" value="0.15">
+          <p class="cap">0.11 = 지상 이격형(보고서) · 0.15 = 캐노피·지붕형 · 0.18 = 빽빽한 캐노피</p></div>
+        <div><label for="sload">1인 필수 부하 (kWh / 일) <span class="val" id="sloadv"></span></label>
+          <input type="range" id="sload" min="0.03" max="0.15" step="0.01" value="0.05">
+          <p class="cap">0.03 = LED 조명+충전만 · 0.05 = 일본 대피소 시산 · 0.15 = 환기·냉장·급수펌프 추가</p></div>
+        <div><label for="sdays">ESS 자립 일수 <span class="val" id="sdaysv"></span></label><input type="range" id="sdays" min="1" max="3" step="0.5" value="2"></div>
+        <div><label for="swc">가중치: 보장 인원 (나머지 = 자립률) <span class="val" id="swcv"></span></label><input type="range" id="swc" min="0" max="1" step="0.05" value="0.6"></div>
+        <div><label>공원 유형</label><div class="types" id="stypes"></div></div>
+      </div>
+      <div class="panel mapbox">
+        <h2>지도 — 색: 자립률, 크기: 전력 보장 대피 인원</h2>
+        <div id="smap"></div>
+        <div class="legend"><span>0% <span class="grad s"></span> 100%</span><span>● 크기 = 보장 인원</span><span>점을 누르면 근거 문단이 바뀝니다</span></div>
+      </div>
+      <div class="panel">
+        <h2>회복력(S) 순위</h2>
+        <div class="tbl"><table><thead><tr><th>순위</th><th>공원</th><th>유형</th><th>등급</th><th>안정성</th><th>용량 kW</th><th>MWh/yr</th><th>대피 인원</th><th>보장 인원</th><th>자립률</th></tr></thead><tbody id="srows"></tbody></table></div>
+      </div>
     </div>
-    <div class="prose" id="prose"></div>
+    <div class="panel chartbox"><h2>대피 인원 vs 전력 보장 가능 인원 (재난 시 12월 수준 발전)</h2><div id="schart"></div></div>
+    <div class="panel card">
+      <div><h2>시설별 근거 문단</h2><label class="cap" for="spick">공원 선택</label><select id="spick"></select></div>
+      <div class="prose" id="sprose"></div>
+    </div>
+    <p class="note"><b>계산 방식.</b> 설치 면적 = 공원면적 × 시설부지 상한(소공원 20·어린이 60·근린 40%, 주제공원 40% 가정) × PV 구조물 비율(소 15·어린이 10·근린 25·역사·문화 20·생태 10%, 가정) × (1 − 수목 비율) × 경사 15° 초과 시 ½ · 용량 상한 500 kW · 발전 = 용량 × 1,300 kWh/kW × (일사 ÷ 1,463) × (1 − 건물높이 × 1%/m, 최대 35%) · 재난 시 일 발전 = 연 ÷ 365 × 0.70 · 대피 인원 = min(2km 인구 × 30%, 면적 ÷ 2㎡) · 자립률 = 일 발전 ÷ (대피 인원 × 1인 부하) · 보장 인원 = min(대피 인원, 일 발전 ÷ 1인 부하) · S 점수 = 보장 인원 백분위 × w + 자립률(상한 1) 백분위 × (1 − w) · 안정성 = 밀도(0.11/0.18) × 구조물 비율(×0.6/×1.4) × 음영(0.5/1.5%/m) × 가중치(0.4/0.6/0.8) 24개 시나리오에서 등급이 모두 같으면 확정. 수목·경사는 공원 폴리곤 안, 인구는 WorldPop 2020. 지형 그늘은 GEE 검사에서 40곳 모두 0.</p>
   </section>
 
-  <p class="note"><b>계산 방식.</b> 냉각 = 계수 × max(0, 목표 NDVI − 현재 NDVI) · 편익 = |냉각| × 300m 인구 · 열등급 = 현재 온도 편차 5분위(1 = 가장 더움) · H 점수 = 가중 백분위(현재 더위, 편익) · 등급 = 상위 30% 상, 하위 30% 하. 어린이공원152는 브이월드가 리를 가좌리로 추정한 좌표 기준(가정). 좌표가 같은 공원(외남동 소공원37·38)은 지도에서 살짝 흩어 놓았습니다. 열·녹지·인구 값 모두 지오코딩 좌표로 재산출한 결과.</p>
+  <!-- ================= BOTH ================= -->
+  <section class="view" id="view-both" hidden>
+    <div class="kpis" id="bkpis"></div>
+    <div class="both">
+      <div class="panel">
+        <h2>H 점수 × S 점수 — 오른쪽 위가 열·전력 모두 상</h2>
+        <div id="scatter"></div>
+        <p class="cap">점 크기 = 공원 면적(로그). 점선 = 상 등급 경계(상위 30%). 현재 H·S 탭의 시나리오 설정을 그대로 씀.</p>
+      </div>
+      <div class="panel">
+        <h2>두 축 등급표</h2>
+        <div class="tbl"><table><thead><tr><th>#</th><th>공원</th><th>유형</th><th>H 등급</th><th>H 순위</th><th>H 안정성</th><th>S 등급</th><th>S 순위</th><th>S 안정성</th><th>종합</th></tr></thead><tbody id="brows"></tbody></table></div>
+      </div>
+    </div>
+    <p class="note"><b>종합 읽는 법.</b> "열·전력 모두 상"은 조성하면 더위도 줄고 정전 시 대피 거점도 되는 곳. "열만 상"은 수목형 조성 우선(PV 자리 적음), "전력만 상"은 캐노피·시설 위주 공원. 두 축은 서로 밀고 당긴다 — 나무를 많이 심을수록 PV 자리는 줄어든다 (S 계산의 (1 − 수목 비율)). 합산 점수에는 H만 들어가고 S는 표시용.</p>
+  </section>
 </div>
-
 <script>
 const RAW=[
-[1,"근린공원","근린공원165","상당구 용정동 241-2 임",2030,105864,127.52499,36.62540,0.63,0.798,77],
-[2,"근린공원","근린공원151","청원구 내수읍 초정리 산29-3 임",2032,31334,127.60687,36.71754,-0.47,0.730,55],
-[3,"근린공원","근린공원8","상당구 북문로1가 177 대",2033,41315,127.48988,36.63658,7.81,0.167,4250],
-[4,"어린이공원","어린이공원144","서원구 사직동 631-60 도",2028,2031,127.47240,36.62971,5.74,0.330,3830],
-[5,"어린이공원","어린이공원152","청원구 오창읍 207-5 전",2028,2758,127.38129,36.72977,-0.13,0.642,27],
-[6,"어린이공원","어린이공원194","청원구 오창읍 장대리 327-30 공",2029,1511,127.45453,36.74343,6.08,0.345,552],
-[7,"어린이공원","어린이공원218","청원구 내수읍 마산리 198 구",2030,1500,127.53842,36.72000,6.13,0.422,465],
-[8,"어린이공원","어린이공원219","청원구 오창읍 장대리 406 잡",2030,1525,127.44709,36.74142,0.65,0.673,88],
-[9,"어린이공원","어린이공원220","청원구 내수읍 초정리 299 전",2032,2796,127.60332,36.71742,4.69,0.539,103],
-[10,"어린이공원","어린이공원221","청원구 내수읍 초정리 17 장",2032,3297,127.60555,36.72236,3.09,0.539,73],
-[11,"어린이공원","어린이공원223","상당구 남일면 송암리 594-9 천",2033,1551,127.51335,36.59040,7.02,0.519,363],
-[12,"소공원","소공원23","서원구 현도면 시목리 342-3 도",2026,1869,127.41248,36.49320,3.19,0.607,92],
-[13,"소공원","소공원52","서원구 현도면 양지리 253-2 전",2026,1320,127.41300,36.46018,1.70,0.616,50],
-[14,"소공원","소공원53","서원구 현도면 양지리 348 대",2026,820,127.41198,36.45819,1.19,0.616,44],
-[15,"소공원","소공원54","서원구 현도면 노산리 948 구",2027,883,127.43826,36.45852,-0.21,0.673,39],
-[16,"소공원","소공원55","서원구 현도면 노산리 산53 임",2027,1223,127.44817,36.45965,3.56,0.636,67],
-[17,"소공원","소공원169","서원구 사직동 638-48 도",2028,3274,127.47408,36.63090,6.29,0.327,3719],
-[18,"소공원","소공원68","흥덕구 오송읍 봉산리 664 도",2029,1213,127.30764,36.60590,4.21,0.460,248],
-[19,"소공원","소공원73","청원구 북이면 신대리 301-28 임",2029,1530,127.54076,36.73932,6.28,0.502,214],
-[20,"소공원","소공원76","흥덕구 복대동 219-1 대",2029,496,127.43769,36.63631,8.24,0.225,7517],
-[21,"소공원","소공원77","흥덕구 복대동 78-22 전",2029,247,127.44958,36.63772,9.33,0.229,3094],
-[22,"소공원","소공원78","청원구 주성동 294-1 임",2030,2244,127.49932,36.68111,5.15,0.494,856],
-[23,"소공원","소공원79","상당구 운동동 65-9 대",2030,554,127.52785,36.60561,5.55,0.551,282],
-[24,"소공원","소공원80","흥덕구 수의동 148-9 도",2030,8177,127.39242,36.62054,3.12,0.551,194],
-[25,"소공원","소공원37","청원구 외남동 산18-4 임",2031,1509,127.48679,36.70065,4.46,0.469,523],
-[26,"소공원","소공원38","청원구 외남동 산18-4 임",2031,1119,127.48679,36.70065,4.46,0.469,523],
-[27,"소공원","소공원39","청원구 주성동 253-8 임",2031,2090,127.50117,36.67993,5.13,0.478,1048],
-[28,"소공원","소공원40","흥덕구 현암동 산26 임",2031,2174,127.39112,36.60269,-0.18,0.717,89],
-[29,"소공원","소공원41","흥덕구 현암동 273 도",2031,858,127.39178,36.60320,0.12,0.716,93],
-[30,"소공원","소공원42","흥덕구 현암동 산2-2 임",2031,606,127.39412,36.60164,1.90,0.662,150],
-[31,"소공원","소공원155","청원구 내수읍 초정리 340-1 대",2032,3242,127.59909,36.72040,5.58,0.461,125],
-[32,"소공원","소공원156","청원구 내수읍 초정리 334-5 전",2032,9629,127.59766,36.71795,2.37,0.640,66],
-[33,"소공원","소공원162","상당구 낭성면 삼산리 242-3 대",2037,586,127.56639,36.66461,0.17,0.686,43],
-[34,"소공원","소공원163","상당구 가덕면 노동리 438-7 답",2037,522,127.52344,36.55178,2.91,0.696,37],
-[35,"소공원","소공원164","청원구 오창읍 양지리 114-2 전",2037,369,127.44417,36.73761,1.61,0.608,115],
-[36,"소공원","소공원165","흥덕구 옥산면 남촌리 785-4 도",2037,705,127.42346,36.69224,2.81,0.578,90],
-[37,"역사공원","역사공원167","흥덕구 지동동 산64 임",2035,75336,127.40749,36.63378,-5.12,0.864,2],
-[38,"역사공원","역사공원199","서원구 모충동 505-14 대",2039,5215,127.47221,36.62800,5.06,0.301,3728],
-[39,"문화공원","문화공원4","청원구 내수읍 우산리 산55-2 임",2040,24789,127.60139,36.70618,-5.40,0.820,8],
-[40,"생태공원","생태공원3","청원구 정상동 340-3 제",2032,2579169,127.45022,36.67746,2.67,0.483,122]];
-const parks=RAW.map(r=>({id:r[0],type:r[1],name:r[2],addr:r[3],expire:r[4],area:r[5],lon:r[6],lat:r[7],lsta:r[8],ndvi:r[9],pop:r[10]}));
+[1, "근린공원", "근린공원165", "상당구 용정동 241-2 임", 2030, 105864, 127.524994, 36.625398, 2.2, -0.13, 0.868, 2354, 1463, 15.3, 3.0, 0.942, 45918],
+[2, "근린공원", "근린공원151", "청원구 내수읍 초정리 산29-3 임", 2032, 31334, 127.606874, 36.717545, 1.12, 0.02, 0.754, 214, 1459, 7.8, 3.0, 0.788, 2458],
+[3, "근린공원", "근린공원8", "상당구 북문로1가 177 대", 2033, 41315, 127.489879, 36.636583, 8.43, 8.49, 0.342, 6088, 1464, 2.3, 17.0, 0.236, 141371],
+[4, "어린이공원", "어린이공원144", "서원구 사직동 631-60 도", 2028, 2031, 127.472398, 36.62971, 5.36, 3.98, 0.539, 4739, 1464, 10.7, 20.1, 0.288, 143357],
+[5, "어린이공원", "어린이공원152", "청원구 오창읍 207-5 전", 2028, 2758, 127.381294, 36.729772, -0.12, 0.51, 0.672, 60, 1463, 4.7, 1.3, 0, 1479],
+[6, "어린이공원", "어린이공원194", "청원구 오창읍 장대리 327-30 공", 2029, 1511, 127.454528, 36.743425, 6.0, 5.84, 0.399, 363, 1461, 3.4, 6.4, 0, 6884],
+[7, "어린이공원", "어린이공원218", "청원구 내수읍 마산리 198 구", 2030, 1500, 127.538424, 36.719997, 5.99, 2.38, 0.704, 369, 1460, 2.2, 6.3, 0, 6048],
+[8, "어린이공원", "어린이공원219", "청원구 오창읍 장대리 406 잡", 2030, 1525, 127.447092, 36.741424, 0.56, 0.63, 0.834, 287, 1462, 3.3, 3.3, 1, 7982],
+[9, "어린이공원", "어린이공원220", "청원구 내수읍 초정리 299 전", 2032, 2796, 127.603316, 36.717423, 4.8, 3.76, 0.739, 192, 1459, 1.4, 3.8, 0, 2435],
+[10, "어린이공원", "어린이공원221", "청원구 내수읍 초정리 17 장", 2032, 3297, 127.605555, 36.722358, 3.76, 4.84, 0.386, 184, 1459, 1.9, 3.5, 0.005, 2428],
+[11, "어린이공원", "어린이공원223", "상당구 남일면 송암리 594-9 천", 2033, 1551, 127.513353, 36.590405, 7.36, 6.46, 0.703, 577, 1464, 2.6, 5.1, 0, 18604],
+[12, "소공원", "소공원23", "서원구 현도면 시목리 342-3 도", 2026, 1869, 127.412476, 36.493197, 3.31, 3.02, 0.761, 131, 1467, 2.7, 2.8, 0.928, 5885],
+[13, "소공원", "소공원52", "서원구 현도면 양지리 253-2 전", 2026, 1320, 127.413, 36.460176, 1.5, 2.97, 0.62, 141, 1468, 6.6, 2.1, 0.025, 19165],
+[14, "소공원", "소공원53", "서원구 현도면 양지리 348 대", 2026, 820, 127.411976, 36.458188, 1.08, 4.14, 0.485, 186, 1468, 4.4, 1.9, 0, 22662],
+[15, "소공원", "소공원54", "서원구 현도면 노산리 948 구", 2027, 883, 127.438262, 36.458517, 2.53, 3.48, 0.634, 101, 1467, 5.1, 2.1, 0, 11873],
+[16, "소공원", "소공원55", "서원구 현도면 노산리 산53 임", 2027, 1223, 127.448167, 36.459655, 4.04, 8.16, 0.67, 86, 1467, 5.7, 2.4, 0.996, 8965],
+[17, "소공원", "소공원169", "서원구 사직동 638-48 도", 2028, 3274, 127.474076, 36.630903, 6.19, 6.52, 0.162, 5141, 1464, 2.2, 15.7, 0, 143110],
+[18, "소공원", "소공원68", "흥덕구 오송읍 봉산리 664 도", 2029, 1213, 127.307642, 36.605904, 4.53, 4.78, 0.431, 362, 1467, 4.3, 5.4, 0.001, 10735],
+[19, "소공원", "소공원73", "청원구 북이면 신대리 301-28 임", 2029, 1530, 127.540758, 36.739316, 6.08, 8.33, 0.491, 123, 1460, 2.6, 5.3, 0, 3729],
+[20, "소공원", "소공원76", "흥덕구 복대동 219-1 대", 2029, 496, 127.437693, 36.636305, 8.17, 9.24, 0.127, 3862, 1464, 1.7, 27.9, 0, 132836],
+[21, "소공원", "소공원77", "흥덕구 복대동 78-22 전", 2029, 247, 127.449581, 36.637716, 9.32, 7.7, 0.413, 3811, 1464, 4.0, 14.5, 0, 144412],
+[22, "소공원", "소공원78", "청원구 주성동 294-1 임", 2030, 2244, 127.499324, 36.68111, 4.93, 5.55, 0.702, 565, 1462, 4.0, 8.2, 0.67, 26173],
+[23, "소공원", "소공원79", "상당구 운동동 65-9 대", 2030, 554, 127.527851, 36.605606, 5.75, 8.46, 0.482, 307, 1464, 5.7, 4.6, 0.244, 21160],
+[24, "소공원", "소공원80", "흥덕구 수의동 148-9 도", 2030, 8177, 127.392421, 36.620544, 2.49, 3.83, 0.792, 819, 1465, 6.7, 2.8, 0.893, 16868],
+[25, "소공원", "소공원37", "청원구 외남동 산18-4 임", 2031, 1509, 127.486786, 36.700651, 4.41, 5.16, 0.559, 485, 1462, 5.9, 5.8, 0.542, 11149],
+[26, "소공원", "소공원38", "청원구 외남동 산18-4 임", 2031, 1119, 127.486786, 36.700651, 4.44, 5.77, 0.543, 463, 1462, 5.1, 5.8, 0, 11190],
+[27, "소공원", "소공원39", "청원구 주성동 253-8 임", 2031, 2090, 127.50117, 36.679925, 5.02, 5.32, 0.789, 638, 1462, 3.5, 8.6, 0.769, 26771],
+[28, "소공원", "소공원40", "흥덕구 현암동 산26 임", 2031, 2174, 127.391122, 36.602685, -0.06, 2.61, 0.719, 92, 1466, 9.8, 1.5, 0.947, 7841],
+[29, "소공원", "소공원41", "흥덕구 현암동 273 도", 2031, 858, 127.391783, 36.603204, 0.58, 0.91, 0.611, 72, 1466, 9.1, 2.1, 0.866, 6626],
+[30, "소공원", "소공원42", "흥덕구 현암동 산2-2 임", 2031, 606, 127.394125, 36.601638, 1.79, 1.43, 0.852, 83, 1466, 3.4, 2.7, 0.538, 7470],
+[31, "소공원", "소공원155", "청원구 내수읍 초정리 340-1 대", 2032, 3242, 127.599087, 36.720397, 5.66, 4.6, 0.719, 290, 1459, 3.0, 4.5, 0, 2586],
+[32, "소공원", "소공원156", "청원구 내수읍 초정리 334-5 전", 2032, 9629, 127.597658, 36.717946, 3.16, 1.38, 0.761, 263, 1459, 4.7, 3.2, 0.025, 2642],
+[33, "소공원", "소공원162", "상당구 낭성면 삼산리 242-3 대", 2037, 586, 127.566386, 36.664612, 0.17, 1.88, 0.504, 9, 1461, 5.7, 1.5, 0.402, 483],
+[34, "소공원", "소공원163", "상당구 가덕면 노동리 438-7 답", 2037, 522, 127.523439, 36.551783, 2.84, 4.38, 0.456, 15, 1465, 6.1, 2.1, 0.457, 1401],
+[35, "소공원", "소공원164", "청원구 오창읍 양지리 114-2 전", 2037, 369, 127.444166, 36.737609, 1.58, 5.84, 0.521, 239, 1462, 6.1, 3.4, 0, 9599],
+[36, "소공원", "소공원165", "흥덕구 옥산면 남촌리 785-4 도", 2037, 705, 127.423458, 36.692242, 2.65, 6.03, 0.456, 197, 1463, 1.4, 2.6, 0, 10654],
+[37, "역사공원", "역사공원167", "흥덕구 지동동 산64 임", 2035, 75336, 127.407487, 36.633779, -4.1, -5.39, 0.865, 966, 1465, 16.2, 0.4, 1, 53912],
+[38, "역사공원", "역사공원199", "서원구 모충동 505-14 대", 2039, 5215, 127.472215, 36.628002, 4.57, 5.89, 0.439, 4799, 1464, 10.5, 16.4, 0.024, 144276],
+[39, "문화공원", "문화공원4", "청원구 내수읍 우산리 산55-2 임", 2040, 24789, 127.601385, 36.706181, -4.31, -3.44, 0.754, 44, 1459, 13.7, 1.0, 0.67, 1939],
+[40, "생태공원", "생태공원3", "청원구 정상동 340-3 제", 2032, 2579169, 127.45022, 36.677464, -0.22, -2.11, 0.485, 3642, 1463, 2.4, 1.2, 0.039, 43487]];
+// RAW v2 (공원 폴리곤 기준): [id,type,name,addr,expire,area,lon,lat, lsta_300(일대),lsta_in(공원 안),ndvi_in,pop300(WorldPop), ghi,slope,bh300,tree_frac,pop2000]
+const parks=RAW.map(r=>({id:r[0],type:r[1],name:r[2],addr:r[3],expire:r[4],area:r[5],lon:r[6],lat:r[7],lsta:r[8],lstaIn:r[9],ndvi:r[10],pop:r[11],ghi:r[12],slope:r[13],bh:r[14],tree:r[15],pop2k:r[16]}));
+const HC={green:-2.141,loss:-7.013,spatial:-10.135,def:-4.577};
 const NDVI={tree:0.863,grass:0.535}, SCEN_KO={tree:"수목형",grass:"잔디형"};
 const TYPES=[...new Set(parks.map(p=>p.type))];
-const state={scen:"tree",b:-10.1,wh:0.5,wp:0.5,types:new Set(TYPES),pick:null};
+const SP={ // S 기준값 (need/s/code/params.yaml과 동일)
+  facility:{소공원:.20,어린이공원:.60,근린공원:.40,역사공원:.40,문화공원:.40,생태공원:.10},
+  pvshare:{소공원:.15,어린이공원:.10,근린공원:.25,역사공원:.20,문화공원:.20,생태공원:.10},
+  slopeLimit:15, slopePenalty:.5, capKw:500, baseYield:1300, ghiRef:1463, bldLossPerM:.01, bldLossMax:.35, worst:.70,
+  evacRate:.30, m2PerPerson:2, ssRankCap:1, cuts:[.3,.7]};
+const state={scen:"tree",b:HC.def,wh:.5,wp:.5,types:new Set(TYPES),pick:null,
+  skw:.15,sload:.05,sdays:2,swc:.6,stypes:new Set(TYPES),spick:null,view:"heat"};
 
-// ---- 통계 도우미 (pandas 동작과 맞춤) ----
-function rankAvg(vals){ // 평균 순위, 1부터
-  const idx=vals.map((v,i)=>[v,i]).sort((a,b)=>a[0]-b[0]); const r=new Array(vals.length);
-  for(let i=0;i<idx.length;){ let j=i; while(j+1<idx.length&&idx[j+1][0]===idx[i][0]) j++;
-    const avg=(i+j)/2+1; for(let k=i;k<=j;k++) r[idx[k][1]]=avg; i=j+1; } return r; }
-function rankFirstDesc(vals){ const idx=vals.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]||a[1]-b[1]); const r=[]; idx.forEach((e,k)=>r[e[1]]=k+1); return r; }
-function quantile(sorted,q){ const pos=(sorted.length-1)*q, lo=Math.floor(pos), hi=Math.ceil(pos); return sorted[lo]+(sorted[hi]-sorted[lo])*(pos-lo); }
+// ---- 통계 도우미 ----
+function rankAvg(vals){const idx=vals.map((v,i)=>[v,i]).sort((a,b)=>a[0]-b[0]);const r=new Array(vals.length);
+  for(let i=0;i<idx.length;){let j=i;while(j+1<idx.length&&idx[j+1][0]===idx[i][0])j++;const avg=(i+j)/2+1;for(let k=i;k<=j;k++)r[idx[k][1]]=avg;i=j+1;}return r;}
+function rankFirstDesc(vals){const idx=vals.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]||a[1]-b[1]);const r=[];idx.forEach((e,k)=>r[e[1]]=k+1);return r;}
+function quantile(sorted,q){const pos=(sorted.length-1)*q,lo=Math.floor(pos),hi=Math.ceil(pos);return sorted[lo]+(sorted[hi]-sorted[lo])*(pos-lo);}
+function gradeOf(scores){const s=scores.slice().sort((a,b)=>a-b),q7=quantile(s,.7),q3=quantile(s,.3);return v=>v>=q7?"상":(v>=q3?"중":"하");}
 
-function compute(){
-  const target=NDVI[state.scen];
+// ---- H 계산 ----
+function computeH(o){ o=o||{}; const b=o.b??state.b, scen=o.scen??state.scen, wh=o.wh??state.wh, wp=o.wp??state.wp;
+  const target=NDVI[scen];
   const d=parks.filter(p=>state.types.has(p.type)).map(p=>({...p}));
-  d.forEach(p=>{ if(p.lsta==null){p.ok=false;return;} p.ok=true;
-    p.dndvi=Math.max(0,target-p.ndvi); p.cool=state.b*p.dndvi; p.after=p.lsta+p.cool; p.benefit=Math.abs(p.cool)*p.pop; });
-  const ok=d.filter(p=>p.ok), n=ok.length;
-  if(n){
-    const rf=rankFirstDesc(ok.map(p=>p.lsta)); // 1 = 가장 더움
-    ok.forEach((p,i)=>{ p.heatRankFirst=rf[i]; p.heatGrade=1+Math.min(4,Math.floor(((rf[i]-1)/n)*5)); });
-    const rh=rankAvg(ok.map(p=>p.lsta)), rb=rankAvg(ok.map(p=>p.benefit));
-    const ws=Math.max(state.wh+state.wp,1e-9);
-    ok.forEach((p,i)=>{ p.rHeat=rh[i]/n; p.rBen=rb[i]/n; p.H=(state.wh*p.rHeat+state.wp*p.rBen)/ws; });
-    const hr=rankFirstDesc(ok.map(p=>p.H)); ok.forEach((p,i)=>p.Hrank=hr[i]);
-    const br=rankFirstDesc(ok.map(p=>p.benefit)); ok.forEach((p,i)=>p.benRank=br[i]);
-    const s=ok.map(p=>p.H).sort((a,b)=>a-b), q7=quantile(s,.7), q3=quantile(s,.3);
-    ok.forEach(p=>p.grade=p.H>=q7?"상":(p.H>=q3?"중":"하"));
+  d.forEach(p=>{p.ok=true;p.dndvi=Math.max(0,target-p.ndvi);p.cool=b*p.dndvi;p.after=p.lstaIn+p.cool;p.benefit=Math.abs(p.cool)*p.pop;});
+  const ok=d, n=ok.length; if(!n) return {d,ok};
+  const rf=rankFirstDesc(ok.map(p=>p.lsta)); ok.forEach((p,i)=>{p.heatRankFirst=rf[i];p.heatGrade=1+Math.min(4,Math.floor(((rf[i]-1)/n)*5));});
+  const rh=rankAvg(ok.map(p=>p.lsta)),rb=rankAvg(ok.map(p=>p.benefit)),ws=Math.max(wh+wp,1e-9);
+  ok.forEach((p,i)=>{p.rHeat=rh[i]/n;p.rBen=rb[i]/n;p.H=(wh*p.rHeat+wp*p.rBen)/ws;});
+  const hr=rankFirstDesc(ok.map(p=>p.H)); ok.forEach((p,i)=>p.Hrank=hr[i]);
+  const br=rankFirstDesc(ok.map(p=>p.benefit)); ok.forEach((p,i)=>p.benRank=br[i]);
+  const g=gradeOf(ok.map(p=>p.H)); ok.forEach(p=>p.grade=g(p.H));
+  if(!o.noStab){ // 안정성: 계수 2 × 목표 2 × 가중치 3 = 12 시나리오
+    const gs={}; ok.forEach(p=>gs[p.id]=[]);
+    for(const bb of [HC.green,HC.loss]) for(const sc of ["tree","grass"]) for(const [a,c] of [[.5,.5],[.7,.3],[.3,.7]])
+      computeH({b:bb,scen:sc,wh:a,wp:c,noStab:true}).ok.forEach(p=>gs[p.id].push(p.grade));
+    ok.forEach(p=>{p.nHigh=gs[p.id].filter(x=>x==="상").length;p.stab=new Set(gs[p.id]).size===1?"확정":"경계";});
   }
-  d.forEach(p=>{ if(!p.ok) p.grade="미산정"; });
   return {d,ok};
 }
-
-// ---- 렌더 ----
-const $=s=>document.querySelector(s);
-const f1=v=>v.toFixed(1), fs=v=>(v>0?"+":"")+v.toFixed(1), fi=v=>Math.round(v).toLocaleString("ko-KR");
-function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
-function lerp(a,b,t){return a+(b-a)*t}
-function hex(c){return [1,3,5].map(i=>parseInt(c.slice(i,i+2),16))}
-function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
-function heatColor(t){ const c=hex(cssVar("--cool")),m=hex(cssVar("--mid")),h=hex(cssVar("--hot"));
-  const [a,b,u]=t<.5?[c,m,t*2]:[m,h,(t-.5)*2]; return `rgb(${a.map((v,i)=>Math.round(lerp(v,b[i],u))).join(",")})`; }
-
-function render(){
-  const {d,ok}=compute();
-  if(state.pick==null||!d.some(p=>p.name===state.pick&&p.ok)){ const top=ok.slice().sort((a,b)=>a.Hrank-b.Hrank)[0]; state.pick=top?top.name:null; }
-  $("#bv").textContent=f1(state.b); $("#whv").textContent=state.wh.toFixed(2); $("#wpv").textContent=state.wp.toFixed(2);
-
-  // KPI
-  const hottest=ok.slice().sort((a,b)=>b.lsta-a.lsta)[0], top=ok.slice().sort((a,b)=>b.benefit-a.benefit)[0];
-  const mean=ok.length?ok.reduce((s,p)=>s+p.cool,0)/ok.length:0;
-  $("#kpis").innerHTML=[
-    ["분석 공원",`${ok.length} / ${d.length}`,"위성값 있는 곳 / 선택된 곳"],
-    ["평균 예상 냉각",ok.length?`${f1(mean)} ℃`:"–",`${SCEN_KO[state.scen]} 조성 시`],
-    ["현재 가장 더운 곳",hottest?hottest.name:"–",hottest?`청주 평균 대비 ${fs(hottest.lsta)}℃`:""],
-    ["편익 1위",top?top.name:"–",top?`${fi(top.benefit)} 명·℃`:""]
-  ].map(k=>`<div class="kpi"><div class="l">${k[0]}</div><div class="v">${esc(k[1])}</div><div class="s">${esc(k[2])}</div></div>`).join("");
-
-  renderMap(ok); renderTable(ok); renderChart(ok); renderPick(ok,d);
+// ---- S 계산 ----
+function computeS(o){ o=o||{}; const skw=o.skw??state.skw, sc=o.sc??1, bl=o.bl??SP.bldLossPerM, swc=o.swc??state.swc;
+  const d=parks.filter(p=>state.stypes.has(p.type)).map(p=>({...p}));
+  d.forEach(p=>{
+    const fs=p.slope>SP.slopeLimit?SP.slopePenalty:1;
+    p.pvArea=p.area*SP.facility[p.type]*Math.min(1,SP.pvshare[p.type]*sc)*(1-p.tree)*fs;
+    const kwRaw=p.pvArea*skw; p.kw=Math.min(kwRaw,SP.capKw); p.capped=kwRaw>SP.capKw;
+    p.fBld=1-Math.min(SP.bldLossMax,bl*p.bh); p.yield=SP.baseYield*(p.ghi/SP.ghiRef)*p.fBld;
+    p.eYear=p.kw*p.yield; p.eDay=p.eYear/365*SP.worst;
+    const nDem=p.pop2k*SP.evacRate, nCap=p.area/SP.m2PerPerson; p.nEvac=Math.min(nDem,nCap); p.evacLimit=nCap<nDem?"면적":"수요";
+    p.load=p.nEvac*state.sload; p.ess=p.load*state.sdays;
+    p.ss=p.load>0?p.eDay/p.load:0; p.nCov=Math.min(p.nEvac,p.eDay/state.sload);
+  });
+  const n=d.length; if(!n) return {d};
+  const ps=rankAvg(d.map(p=>Math.min(p.ss,SP.ssRankCap))),pc=rankAvg(d.map(p=>p.nCov));
+  d.forEach((p,i)=>{p.S=swc*pc[i]/n+(1-swc)*ps[i]/n;});
+  const sr=rankFirstDesc(d.map(p=>p.S)); d.forEach((p,i)=>p.Srank=sr[i]);
+  d.forEach(p=>{const pct=1-(p.Srank-1)/n; p.Sgrade=pct>=SP.cuts[1]?"상":(pct>=SP.cuts[0]?"중":"하");});   // need/s/s_engine.py와 같은 순위 백분위
+  if(!o.noStab){ // 안정성: 밀도 2 × 구조물 비율 2 × 음영 2 × 가중치 3 = 24 시나리오
+    const gs={}; d.forEach(p=>gs[p.id]=[]);
+    for(const k of [.11,.18]) for(const c of [.6,1.4]) for(const b of [.005,.015]) for(const w of [.4,.6,.8])
+      computeS({skw:k,sc:c,bl:b,swc:w,noStab:true}).d.forEach(p=>gs[p.id].push(p.Sgrade));
+    d.forEach(p=>{p.nHigh=gs[p.id].filter(x=>x==="상").length;p.stab=new Set(gs[p.id]).size===1?"확정":"경계";});
+  }
+  return {d};
 }
 
-function renderMap(ok){
-  const W=560,H=600,P=36, m=ok.filter(p=>p.lon!=null);
+// ---- 렌더 도우미 ----
+const $=s=>document.querySelector(s);
+const f1=v=>v.toFixed(1), fs=v=>(v>0?"+":"")+v.toFixed(1), fi=v=>Math.round(v).toLocaleString("ko-KR"), pc=v=>Math.round(v*100)+"%";
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function hex(c){return [1,3,5].map(i=>parseInt(c.slice(i,i+2),16))}
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+function mix(a,b,u){return `rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*u)).join(",")})`}
+function heatColor(t){const c=hex(cssVar("--cool")),m=hex(cssVar("--mid")),h=hex(cssVar("--hot"));return t<.5?mix(c,m,t*2):mix(m,h,(t-.5)*2);}
+function sunColor(t){return mix(hex(cssVar("--mid")),hex(cssVar("--sun")),Math.max(0,Math.min(1,t)));}
+function kpis(el,items){$(el).innerHTML=items.map(k=>`<div class="kpi"><div class="l">${k[0]}</div><div class="v">${esc(k[1])}</div><div class="s">${esc(k[2])}</div></div>`).join("");}
+
+// 지도 (공통)
+function drawMap(el,pts,opt){
+  const W=560,H=600,P=36;
   const lons=parks.map(p=>p.lon),lats=parks.map(p=>p.lat);
   const x0=Math.min(...lons)-.02,x1=Math.max(...lons)+.02,y0=Math.min(...lats)-.02,y1=Math.max(...lats)+.02;
   const sx=v=>P+(v-x0)/(x1-x0)*(W-2*P), sy=v=>H-P-(v-y0)/(y1-y0)*(H-2*P);
-  const lmin=Math.min(...m.map(p=>p.lsta)),lmax=Math.max(...m.map(p=>p.lsta)),bmax=Math.max(...m.map(p=>p.benefit))||1;
-  // 같은 좌표 흩기
-  const seen={};
-  const pts=m.map(p=>{const k=p.lon+","+p.lat; const c=(seen[k]=(seen[k]||0)+1)-1; const a=c*2.4,r=c?9+c*3:0;
-    return {...p,x:sx(p.lon)+Math.cos(a)*r,y:sy(p.lat)+Math.sin(a)*r};});
-  pts.sort((a,b)=>b.benefit-a.benefit);
+  const seen={}; const m=pts.map(p=>{const k=p.lon+","+p.lat;const c=(seen[k]=(seen[k]||0)+1)-1;const a=c*2.4,r=c?9+c*3:0;return {...p,x:sx(p.lon)+Math.cos(a)*r,y:sy(p.lat)+Math.sin(a)*r};});
+  m.sort((a,b)=>opt.size(b)-opt.size(a)); const smax=Math.max(...m.map(opt.size))||1;
   const grid=[];
-  for(let lon=127.35;lon<=127.6;lon+=.05) grid.push(`<line x1="${sx(lon)}" y1="${P}" x2="${sx(lon)}" y2="${H-P}"/><text x="${sx(lon)}" y="${H-P+16}" text-anchor="middle">${lon.toFixed(2)}E</text>`);
-  for(let lat=36.55;lat<=36.75;lat+=.05) grid.push(`<line x1="${P}" y1="${sy(lat)}" x2="${W-P}" y2="${sy(lat)}"/><text x="${P-4}" y="${sy(lat)+4}" text-anchor="end">${lat.toFixed(2)}N</text>`);
-  const dots=pts.map(p=>{const t=(p.lsta-lmin)/((lmax-lmin)||1), r=4+16*Math.sqrt(p.benefit/bmax);
-    return `<circle class="dot" data-n="${esc(p.name)}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r.toFixed(1)}" fill="${heatColor(t)}" fill-opacity=".82" stroke="${p.name===state.pick?'var(--fg)':'var(--panel)'}" stroke-width="${p.name===state.pick?2.5:1}"><title>${esc(p.name)} · ${esc(p.addr)}
-현재 ${fs(p.lsta)}℃ · NDVI ${p.ndvi.toFixed(2)}
-조성 시 ${f1(p.cool)}℃ · 편익 ${fi(p.benefit)} 명·℃
-등급 ${p.grade} · H ${p.Hrank}위</title></circle>`;}).join("");
-  const labels=pts.slice(0,5).map(p=>`<text x="${(p.x+14).toFixed(1)}" y="${(p.y+4).toFixed(1)}" font-weight="700">${esc(p.name)}</text>`).join("");
-  $("#map").innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="공원 위치 지도"><rect x="${P}" y="${P}" width="${W-2*P}" height="${H-2*P}" fill="var(--bg)" stroke="var(--line)"/>
-  <g stroke="var(--line)" stroke-dasharray="2 4" font-size="10" fill="var(--muted)" font-family="var(--mono)">${grid.join("")}</g>${dots}<g font-size="11" fill="var(--fg)" font-family="var(--font)">${labels}</g></svg>`;
-  $("#map").querySelectorAll(".dot").forEach(c=>c.addEventListener("click",()=>{state.pick=c.dataset.n;render();}));
+  for(let lon=127.35;lon<=127.6;lon+=.05)grid.push(`<line x1="${sx(lon)}" y1="${P}" x2="${sx(lon)}" y2="${H-P}"/><text x="${sx(lon)}" y="${H-P+16}" text-anchor="middle">${lon.toFixed(2)}E</text>`);
+  for(let lat=36.5;lat<=36.75;lat+=.05)grid.push(`<line x1="${P}" y1="${sy(lat)}" x2="${W-P}" y2="${sy(lat)}"/><text x="${P-4}" y="${sy(lat)+4}" text-anchor="end">${lat.toFixed(2)}N</text>`);
+  const dots=m.map(p=>{const r=4+16*Math.sqrt(opt.size(p)/smax);const sel=p.name===opt.pick;
+    return `<circle class="dot" data-n="${esc(p.name)}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r.toFixed(1)}" fill="${opt.color(p)}" fill-opacity=".85" stroke="${sel?'var(--fg)':'var(--panel)'}" stroke-width="${sel?2.5:1}"><title>${opt.tip(p)}</title></circle>`;}).join("");
+  const labels=m.slice(0,5).map(p=>`<text x="${(p.x+14).toFixed(1)}" y="${(p.y+4).toFixed(1)}" font-weight="700">${esc(p.name)}</text>`).join("");
+  $(el).innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="공원 위치 지도"><rect x="${P}" y="${P}" width="${W-2*P}" height="${H-2*P}" fill="var(--bg)" stroke="var(--line)"/><g stroke="var(--line)" stroke-dasharray="2 4" font-size="10" fill="var(--muted)" font-family="var(--mono)">${grid.join("")}</g>${dots}<g font-size="11" fill="var(--fg)" font-family="var(--font)">${labels}</g></svg>`;
+  $(el).querySelectorAll(".dot").forEach(c=>c.addEventListener("click",()=>opt.onPick(c.dataset.n)));
 }
 
-function renderTable(ok){
-  const rows=ok.slice().sort((a,b)=>a.Hrank-b.Hrank).map(p=>`<tr data-n="${esc(p.name)}" class="${p.name===state.pick?'sel':''}"><td class="num">${p.Hrank}</td><td>${esc(p.name)}</td><td>${esc(p.type)}</td><td><span class="pill p-${p.grade}">${p.grade}</span></td><td class="num">${fs(p.lsta)}</td><td class="num">${f1(p.cool)}</td><td class="num">${fi(p.benefit)}</td><td class="num">${p.heatGrade}</td></tr>`).join("");
-  $("#rows").innerHTML=rows||`<tr><td colspan="8">선택된 유형에 분석 가능한 공원이 없습니다</td></tr>`;
-  $("#rows").querySelectorAll("tr[data-n]").forEach(tr=>tr.addEventListener("click",()=>{state.pick=tr.dataset.n;render();}));
-}
-
-function renderChart(ok){
-  const t=ok.slice().sort((a,b)=>b.lsta-a.lsta); if(!t.length){$("#chart").innerHTML="";return;}
-  const W=Math.max(900,t.length*26),H=360,L=46,R=12,T=28,B=78,iw=W-L-R,ih=H-T-B;
-  const vals=t.flatMap(p=>[p.lsta,p.after]); let vmin=Math.floor(Math.min(0,...vals)),vmax=Math.ceil(Math.max(0,...vals));
-  const y=v=>T+(vmax-v)/(vmax-vmin)*ih, bw=iw/t.length, bar=bw*.36;
-  const ticks=[]; for(let v=vmin;v<=vmax;v+=2) ticks.push(`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="10" fill="var(--muted)" font-family="var(--mono)">${v}</text>`);
-  const bars=t.map((p,i)=>{const x=L+i*bw+bw*.12; const r=(v,xx,c)=>`<rect x="${xx.toFixed(1)}" y="${Math.min(y(v),y(0)).toFixed(1)}" width="${bar.toFixed(1)}" height="${Math.abs(y(v)-y(0)).toFixed(1)}" fill="${c}"><title>${esc(p.name)} ${v>0?"+":""}${f1(v)}℃</title></rect>`;
-    return r(p.lsta,x,"var(--hot)")+r(p.after,x+bar+2,"var(--cool)")+`<text transform="translate(${(L+i*bw+bw/2).toFixed(1)},${H-B+10}) rotate(-60)" text-anchor="end" font-size="9.5" fill="var(--muted)">${esc(p.name)}</text>`;}).join("");
-  $("#chart").innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="min-width:${W}px" role="img" aria-label="조성 전후 온도">${ticks.join("")}
-  <line x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--fg)" stroke-width="1"/>${bars}
-  <g font-size="11" fill="var(--fg)"><rect x="${L}" y="6" width="10" height="10" fill="var(--hot)"/><text x="${L+14}" y="15">현재</text><rect x="${L+54}" y="6" width="10" height="10" fill="var(--cool)"/><text x="${L+68}" y="15">조성 후 (${SCEN_KO[state.scen]})</text></g>
-  <text x="${L}" y="${T-6}" font-size="10" fill="var(--muted)">℃ (청주 평균 대비)</text></svg>`;
-}
-
-function renderPick(ok,d){
-  const sel=$("#pick"); sel.innerHTML=ok.slice().sort((a,b)=>a.Hrank-b.Hrank).map(p=>`<option value="${esc(p.name)}" ${p.name===state.pick?"selected":""}>${p.Hrank}. ${esc(p.name)}</option>`).join("");
-  const p=ok.find(q=>q.name===state.pick); if(!p){$("#prose").innerHTML="<p>분석 가능한 공원이 없습니다.</p>";return;}
-  const verdict=p.grade==="상"?"존치·조성 후보":(p.grade==="중"?"존치":"보류 (다른 축 검토)");
-  const target=NDVI[state.scen];
+// ---- H 렌더 ----
+function renderH(){
+  const {d,ok}=computeH();
+  if(state.pick==null||!ok.some(p=>p.name===state.pick)){const t=ok.slice().sort((a,b)=>a.Hrank-b.Hrank)[0];state.pick=t?t.name:null;}
+  $("#bv").textContent=f1(state.b);$("#whv").textContent=state.wh.toFixed(2);$("#wpv").textContent=state.wp.toFixed(2);
+  const hottest=ok.slice().sort((a,b)=>b.lsta-a.lsta)[0],top=ok.slice().sort((a,b)=>b.benefit-a.benefit)[0];
+  const mean=ok.length?ok.reduce((s,p)=>s+p.cool,0)/ok.length:0;
+  kpis("#kpis",[["분석 공원",`${ok.length} / ${parks.length}`,"선택된 유형"],["평균 예상 냉각",ok.length?`${f1(mean)} ℃`:"–",`${SCEN_KO[state.scen]} 조성 시`],
+    ["현재 가장 더운 곳",hottest?hottest.name:"–",hottest?`청주 평균 대비 ${fs(hottest.lsta)}℃`:""],["냉각 편익 1위",top?top.name:"–",top?`${fi(top.benefit)} 명·℃`:""]]);
+  const lmin=Math.min(...ok.map(p=>p.lsta)),lmax=Math.max(...ok.map(p=>p.lsta));
+  drawMap("#map",ok,{size:p=>p.benefit,color:p=>heatColor((p.lsta-lmin)/((lmax-lmin)||1)),pick:state.pick,onPick:n=>{state.pick=n;renderH();},
+    tip:p=>`${esc(p.name)} · ${esc(p.addr)}\n현재 ${fs(p.lsta)}℃ · NDVI ${p.ndvi.toFixed(2)}\n조성 시 ${f1(p.cool)}℃ · 편익 ${fi(p.benefit)} 명·℃\n등급 ${p.grade} · H ${p.Hrank}위`});
+  $("#rows").innerHTML=ok.slice().sort((a,b)=>a.Hrank-b.Hrank).map(p=>`<tr data-n="${esc(p.name)}" class="${p.name===state.pick?'sel':''}"><td class="num">${p.Hrank}</td><td>${esc(p.name)}</td><td>${esc(p.type)}</td><td><span class="pill p-${p.grade}">${p.grade}</span></td><td>${p.stab} <span class="num">${p.nHigh}/12</span></td><td class="num">${fs(p.lsta)}</td><td class="num">${f1(p.cool)}</td><td class="num">${fi(p.benefit)}</td><td class="num">${p.heatGrade}</td></tr>`).join("")||`<tr><td colspan="9">선택된 유형이 없습니다</td></tr>`;
+  $("#rows").querySelectorAll("tr[data-n]").forEach(tr=>tr.addEventListener("click",()=>{state.pick=tr.dataset.n;renderH();}));
+  // 차트
+  const t=ok.slice().sort((a,b)=>b.lsta-a.lsta);
+  if(t.length){const W=Math.max(900,t.length*26),H=360,L=46,R=12,T=28,B=78,iw=W-L-R,ih=H-T-B;
+    const vals=t.flatMap(p=>[p.lsta,p.after]);const vmin=Math.floor(Math.min(0,...vals)),vmax=Math.ceil(Math.max(0,...vals));
+    const y=v=>T+(vmax-v)/(vmax-vmin)*ih,bw=iw/t.length,bar=bw*.36;const ticks=[];
+    for(let v=vmin;v<=vmax;v+=2)ticks.push(`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="10" fill="var(--muted)" font-family="var(--mono)">${v}</text>`);
+    const bars=t.map((p,i)=>{const x=L+i*bw+bw*.12;const r=(v,xx,c)=>`<rect x="${xx.toFixed(1)}" y="${Math.min(y(v),y(0)).toFixed(1)}" width="${bar.toFixed(1)}" height="${Math.abs(y(v)-y(0)).toFixed(1)}" fill="${c}"><title>${esc(p.name)} ${fs(v)}℃</title></rect>`;
+      return r(p.lsta,x,"var(--hot)")+r(p.after,x+bar+2,"var(--cool)")+`<text transform="translate(${(L+i*bw+bw/2).toFixed(1)},${H-B+10}) rotate(-60)" text-anchor="end" font-size="9.5" fill="var(--muted)">${esc(p.name)}</text>`;}).join("");
+    $("#chart").innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="min-width:${W}px" role="img" aria-label="조성 전후 온도">${ticks.join("")}<line x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--fg)"/>${bars}<g font-size="11" fill="var(--fg)"><rect x="${L}" y="6" width="10" height="10" fill="var(--hot)"/><text x="${L+14}" y="15">현재</text><rect x="${L+54}" y="6" width="10" height="10" fill="var(--cool)"/><text x="${L+68}" y="15">조성 후 (${SCEN_KO[state.scen]})</text></g><text x="${L}" y="${T-6}" font-size="10" fill="var(--muted)">℃ (청주 평균 대비)</text></svg>`;}
+  else $("#chart").innerHTML="";
+  // 근거
+  const sel=$("#pick");sel.innerHTML=ok.slice().sort((a,b)=>a.Hrank-b.Hrank).map(p=>`<option value="${esc(p.name)}" ${p.name===state.pick?"selected":""}>${p.Hrank}. ${esc(p.name)}</option>`).join("");
+  const p=ok.find(q=>q.name===state.pick); if(!p){$("#prose").innerHTML="<p>선택된 유형이 없습니다.</p>";return;}
+  const verdict=p.grade==="상"?"존치·조성 후보":(p.grade==="중"?"존치":"보류 (다른 축 검토)");const target=NDVI[state.scen];
   $("#prose").innerHTML=`<p><b>${esc(p.name)}</b> (${esc(p.addr)}, ${p.expire} 실효) — 필요성 <span class="pill p-${p.grade}">${p.grade}</span> · 열환경 ${p.heatGrade}등급 · H 순위 <b>${p.Hrank}위</b> / ${ok.length}</p>
-  <p>이 자리는 여름 지표온도가 청주 평균보다 <b class="num">${fs(p.lsta)}℃</b> 이고, 녹지 정도(NDVI)는 <b class="num">${p.ndvi.toFixed(2)}</b> 이다 [Landsat/S2, GEE 2026-11-16].</p>
-  <p>${SCEN_KO[state.scen]} 공원으로 조성하면 녹지가 ${p.ndvi.toFixed(2)} → ${target.toFixed(2)} 로 올라 <b class="num">약 ${f1(Math.abs(p.cool))}℃</b> 내려갈 것으로 추정된다 (청주 전역 회귀 ${f1(state.b)}℃/NDVI)${p.dndvi===0?" — 이미 목표 녹지 수준 이상이라 추가 냉각 효과는 없다":""}.</p>
-  <p>300m 안에 <b class="num">${fi(p.pop)}명</b> 이 살아 냉각 편익은 <b class="num">${fi(p.benefit)} 명·℃</b> 로 ${ok.length}곳 중 <b>${p.benRank}위</b> 다 [GHSL 인구 2020 · 300m 버퍼].</p>
+  <p>공원 일대(경계+300m) 여름 지표온도는 청주 평균보다 <b class="num">${fs(p.lsta)}℃</b>, 공원 땅 자체는 <b class="num">${fs(p.lstaIn)}℃</b> 이고 땅의 녹지 정도(NDVI)는 <b class="num">${p.ndvi.toFixed(2)}</b> 이다 [Landsat/S2 2024–25, V-World 공원 경계, GEE 2026-11-16].</p>
+  <p>${SCEN_KO[state.scen]} 공원으로 조성하면 녹지가 ${p.ndvi.toFixed(2)} → ${target.toFixed(2)} 로 올라 공원 땅이 <b class="num">약 ${f1(Math.abs(p.cool))}℃</b> 내려갈 것으로 추정된다 (계수 ${f1(state.b)}℃/NDVI — 청주 2013–16→2023–25 녹지 변화 실측 −2.1~−7.0의 ${state.b===HC.def?"중간값":"범위 안"})${p.dndvi===0?" — 이미 목표 녹지 수준 이상이라 추가 냉각 효과는 없다":""}.</p>
+  <p>300m 안에 <b class="num">${fi(p.pop)}명</b> 이 살아 냉각 편익은 <b class="num">${fi(p.benefit)} 명·℃</b> 로 ${ok.length}곳 중 <b>${p.benRank}위</b> 다 [WorldPop 2020 · 경계+300m]. 계수·목표·가중치를 바꾼 12개 시나리오 중 <b>${p.nHigh}개</b>에서 상 등급 → <b>${p.stab}</b>.</p>
   <p class="verdict">판정: ${verdict}</p>`;
 }
 
+// ---- S 렌더 ----
+function renderS(){
+  const {d}=computeS();
+  if(state.spick==null||!d.some(p=>p.name===state.spick)){const t=d.slice().sort((a,b)=>a.Srank-b.Srank)[0];state.spick=t?t.name:null;}
+  $("#skwv").textContent=state.skw.toFixed(2);$("#sloadv").textContent=state.sload.toFixed(2);$("#sdaysv").textContent=state.sdays+"일";$("#swcv").textContent=state.swc.toFixed(2);
+  const top=d.slice().sort((a,b)=>b.nCov-a.nCov)[0];
+  kpis("#skpis",[["설치 가능 용량 합계",`${fi(d.reduce((s,p)=>s+p.kw,0))} kW`,`${d.filter(p=>p.capped).length}곳은 500 kW 상한`],
+    ["연 발전량 합계",`${fi(d.reduce((s,p)=>s+p.eYear,0)/1000)} MWh`,"1,300 kWh/kW × 일사·음영 보정"],
+    ["전력 보장 대피 인원 합계",`${fi(d.reduce((s,p)=>s+p.nCov,0))} 명`,`대피 인원 ${fi(d.reduce((s,p)=>s+p.nEvac,0))}명 중`],
+    ["보장 인원 1위",top?top.name:"–",top?`${fi(top.nCov)}명 · 자립률 ${pc(top.ss)}`:""]]);
+  drawMap("#smap",d,{size:p=>p.nCov,color:p=>sunColor(Math.min(1,p.ss)),pick:state.spick,onPick:n=>{state.spick=n;renderS();},
+    tip:p=>`${esc(p.name)} · ${esc(p.addr)}\n용량 ${f1(p.kw)} kW · ${f1(p.eYear/1000)} MWh/yr\n대피 ${fi(p.nEvac)}명 · 보장 ${fi(p.nCov)}명 · 자립률 ${pc(p.ss)}\n등급 ${p.Sgrade} · S ${p.Srank}위`});
+  $("#srows").innerHTML=d.slice().sort((a,b)=>a.Srank-b.Srank).map(p=>`<tr data-n="${esc(p.name)}" class="${p.name===state.spick?'sel':''}"><td class="num">${p.Srank}</td><td>${esc(p.name)}</td><td>${esc(p.type)}</td><td><span class="pill p-${p.Sgrade}">${p.Sgrade}</span></td><td>${p.stab} <span class="num">${p.nHigh}/24</span></td><td class="num">${f1(p.kw)}</td><td class="num">${f1(p.eYear/1000)}</td><td class="num">${fi(p.nEvac)}</td><td class="num">${fi(p.nCov)}</td><td class="num">${pc(p.ss)}</td></tr>`).join("")||`<tr><td colspan="10">선택된 유형이 없습니다</td></tr>`;
+  $("#srows").querySelectorAll("tr[data-n]").forEach(tr=>tr.addEventListener("click",()=>{state.spick=tr.dataset.n;renderS();}));
+  // 차트: 대피 인원 vs 보장 인원 (로그축)
+  const t=d.slice().sort((a,b)=>b.nEvac-a.nEvac);
+  if(t.length){const W=Math.max(900,t.length*26),H=360,L=52,R=12,T=28,B=78,iw=W-L-R,ih=H-T-B;
+    const lg=v=>Math.log10(Math.max(1,v)); const vmax=Math.ceil(lg(Math.max(...t.map(p=>p.nEvac))));
+    const y=v=>T+(vmax-lg(v))/vmax*ih,bw=iw/t.length,bar=bw*.36;const ticks=[];
+    for(let e=0;e<=vmax;e++)ticks.push(`<line x1="${L}" x2="${W-R}" y1="${y(10**e)}" y2="${y(10**e)}" stroke="var(--line)"/><text x="${L-6}" y="${y(10**e)+4}" text-anchor="end" font-size="10" fill="var(--muted)" font-family="var(--mono)">${(10**e).toLocaleString()}</text>`);
+    const bars=t.map((p,i)=>{const x=L+i*bw+bw*.12;const r=(v,xx,c,lab)=>`<rect x="${xx.toFixed(1)}" y="${y(v).toFixed(1)}" width="${bar.toFixed(1)}" height="${(T+ih-y(v)).toFixed(1)}" fill="${c}"><title>${esc(p.name)} ${lab} ${fi(v)}명</title></rect>`;
+      return r(p.nEvac,x,"var(--muted)","대피")+r(p.nCov,x+bar+2,"var(--sun)","보장")+`<text transform="translate(${(L+i*bw+bw/2).toFixed(1)},${H-B+10}) rotate(-60)" text-anchor="end" font-size="9.5" fill="var(--muted)">${esc(p.name)}</text>`;}).join("");
+    $("#schart").innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="min-width:${W}px" role="img" aria-label="대피 인원과 보장 인원">${ticks.join("")}${bars}<g font-size="11" fill="var(--fg)"><rect x="${L}" y="6" width="10" height="10" fill="var(--muted)"/><text x="${L+14}" y="15">대피 인원</text><rect x="${L+84}" y="6" width="10" height="10" fill="var(--sun)"/><text x="${L+98}" y="15">전력 보장 인원</text></g><text x="${L}" y="${T-6}" font-size="10" fill="var(--muted)">명 (로그 눈금)</text></svg>`;}
+  else $("#schart").innerHTML="";
+  const sel=$("#spick");sel.innerHTML=d.slice().sort((a,b)=>a.Srank-b.Srank).map(p=>`<option value="${esc(p.name)}" ${p.name===state.spick?"selected":""}>${p.Srank}. ${esc(p.name)}</option>`).join("");
+  const p=d.find(q=>q.name===state.spick); if(!p){$("#sprose").innerHTML="<p>선택된 유형이 없습니다.</p>";return;}
+  const why=p.kw<1?"이미 숲이거나 너무 작아 PV를 얹을 구조물 자리가 없다":(p.fBld<.8?`주변 건물(평균 ${f1(p.bh)}m)에 둘러싸여 음영 손실 ${pc(1-p.fBld)}`:"");
+  const verdict=p.Sgrade==="상"?"대피 거점 PV 우선 검토":(p.Sgrade==="중"?"소규모 PV(파고라·가로등) 수준":"PV 효과 낮음 — 열·이용성 축으로 판단");
+  $("#sprose").innerHTML=`<p><b>${esc(p.name)}</b> (${esc(p.addr)}, ${fi(p.area)}㎡) — 회복력 <span class="pill p-${p.Sgrade}">${p.Sgrade}</span> · S 순위 <b>${p.Srank}위</b> / ${d.length}</p>
+  <p>시설부지 상한 ${pc(SP.facility[p.type])} 중 PV 구조물 ${pc(SP.pvshare[p.type])}, 수목 ${pc(p.tree)}${p.slope>SP.slopeLimit?`, 경사 ${f1(p.slope)}°(½)`:""}를 빼면 설치 면적 <b class="num">${fi(p.pvArea)}㎡</b> → 용량 <b class="num">${f1(p.kw)} kW</b>${p.capped?" (500 kW 상한)":""} [법 시행규칙 별표4 · WorldCover · 가정].</p>
+  <p>연 발전량 <b class="num">${f1(p.eYear/1000)} MWh</b> (1,300 kWh/kW × 일사 ${(p.ghi/SP.ghiRef).toFixed(2)} × 건물 음영 ${p.fBld.toFixed(2)}) [ERA5 2024 · GHSL 건물높이]. 재난 시 12월 수준으로 하루 <b class="num">${f1(p.eDay)} kWh</b>.${why?` ${why}.`:""}</p>
+  <p>2km 안 ${fi(p.pop2k)}명의 30%와 면적 ÷ 2㎡ 중 작은 쪽인 <b class="num">${fi(p.nEvac)}명</b>(${p.evacLimit} 제한)이 대피하면 필수 부하는 하루 <b class="num">${f1(p.load)} kWh</b>, ESS ${state.sdays}일분 <b class="num">${fi(p.ess)} kWh</b> [ERI 2020 · 일본 대피소 시산].</p>
+  <p>자립률 <b class="num">${pc(p.ss)}</b>, 전력 보장 가능 인원 <b class="num">${fi(p.nCov)}명</b>. 밀도·구조물 비율·음영·가중치를 바꾼 24개 시나리오 중 <b>${p.nHigh}개</b>에서 상 등급 → <b>${p.stab}</b>.</p>
+  <p class="verdict">판정: ${verdict}</p>`;
+}
+
+// ---- 종합 렌더 ----
+function renderBoth(){
+  const H=computeH().ok, S=computeS().d;
+  const byId={}; H.forEach(p=>byId[p.id]={...p}); S.forEach(p=>{if(byId[p.id])Object.assign(byId[p.id],{S:p.S,Srank:p.Srank,Sgrade:p.Sgrade,kw:p.kw,nCov:p.nCov,sStab:p.stab});});
+  const rows=Object.values(byId).filter(p=>p.Sgrade);
+  rows.forEach(p=>{p.combo=p.grade==="상"&&p.Sgrade==="상"?"열·전력 모두 상":(p.grade==="상"?"열만 상":(p.Sgrade==="상"?"전력만 상":"—"));});
+  const both=rows.filter(p=>p.combo==="열·전력 모두 상");
+  kpis("#bkpis",[["열·전력 모두 상",`${both.length}곳`,`그중 두 축 다 확정 ${both.filter(p=>p.stab==="확정"&&p.sStab==="확정").length}곳: `+both.filter(p=>p.stab==="확정"&&p.sStab==="확정").map(p=>p.name).join(", ")],
+    ["열만 상",`${rows.filter(p=>p.combo==="열만 상").length}곳`,"수목형 조성 우선"],["전력만 상",`${rows.filter(p=>p.combo==="전력만 상").length}곳`,"캐노피·시설형 PV"],
+    ["시 1단계 2곳",["근린공원8","문화공원4"].map(n=>{const p=rows.find(q=>q.name===n);return p?`${n} H${p.grade}·S${p.Sgrade}`:n;}).join(" / "),"시 공고 대조"]]);
+  // 산점도
+  const W=560,Hh=520,L=50,R=20,T=24,B=50,iw=W-L-R,ih=Hh-T-B;
+  const hs=rows.map(p=>p.H).sort((a,b)=>a-b),ss=rows.map(p=>p.S).sort((a,b)=>a-b),hq=quantile(hs,.7),sq=quantile(ss,.7);
+  const x=v=>L+v*iw,y=v=>T+(1-v)*ih; const amin=Math.log10(200),amax=Math.log10(3e6);
+  const dots=rows.slice().sort((a,b)=>b.area-a.area).map(p=>{const r=4+10*((Math.log10(p.area)-amin)/(amax-amin));const c=p.combo==="열·전력 모두 상"?"var(--g-high)":(p.combo==="열만 상"?"var(--hot)":(p.combo==="전력만 상"?"var(--sun)":"var(--g-none)"));
+    return `<circle cx="${x(p.H).toFixed(1)}" cy="${y(p.S).toFixed(1)}" r="${r.toFixed(1)}" fill="${c}" fill-opacity=".8" stroke="var(--panel)"><title>${esc(p.name)}\nH ${p.H.toFixed(2)} (${p.grade}, ${p.Hrank}위) · S ${p.S.toFixed(2)} (${p.Sgrade}, ${p.Srank}위)\n${p.combo}</title></circle>`;}).join("");
+  const labels=rows.filter(p=>p.combo==="열·전력 모두 상"||p.name==="근린공원8"||p.name==="문화공원4").map(p=>`<text x="${(x(p.H)+8).toFixed(1)}" y="${(y(p.S)-6).toFixed(1)}" font-size="10" fill="var(--fg)">${esc(p.name)}</text>`).join("");
+  const ticks=[0,.25,.5,.75,1].map(v=>`<text x="${x(v)}" y="${Hh-B+16}" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="var(--mono)">${v}</text><text x="${L-8}" y="${y(v)+4}" text-anchor="end" font-size="10" fill="var(--muted)" font-family="var(--mono)">${v}</text>`).join("");
+  $("#scatter").innerHTML=`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="H 점수와 S 점수 산점도"><rect x="${L}" y="${T}" width="${iw}" height="${ih}" fill="var(--bg)" stroke="var(--line)"/>
+    <rect x="${x(hq)}" y="${T}" width="${(x(1)-x(hq)).toFixed(1)}" height="${(y(sq)-T).toFixed(1)}" fill="var(--accent-soft)" opacity=".6"/>
+    <line x1="${x(hq)}" x2="${x(hq)}" y1="${T}" y2="${T+ih}" stroke="var(--muted)" stroke-dasharray="4 4"/><line x1="${L}" x2="${L+iw}" y1="${y(sq)}" y2="${y(sq)}" stroke="var(--muted)" stroke-dasharray="4 4"/>
+    ${ticks}${dots}${labels}
+    <text x="${L+iw/2}" y="${Hh-6}" text-anchor="middle" font-size="11" fill="var(--muted)">H 점수 (열환경 필요성) →</text>
+    <text transform="translate(14,${T+ih/2}) rotate(-90)" text-anchor="middle" font-size="11" fill="var(--muted)">S 점수 (에너지 자립) →</text>
+    <g font-size="10" fill="var(--fg)"><circle cx="${L+8}" cy="${T+12}" r="5" fill="var(--g-high)"/><text x="${L+18}" y="${T+16}">모두 상</text><circle cx="${L+78}" cy="${T+12}" r="5" fill="var(--hot)"/><text x="${L+88}" y="${T+16}">열만</text><circle cx="${L+128}" cy="${T+12}" r="5" fill="var(--sun)"/><text x="${L+138}" y="${T+16}">전력만</text></g></svg>`;
+  const order={"열·전력 모두 상":0,"열만 상":1,"전력만 상":2,"—":3};
+  $("#brows").innerHTML=rows.slice().sort((a,b)=>order[a.combo]-order[b.combo]||a.Hrank-b.Hrank).map(p=>`<tr><td class="num">${p.id}</td><td>${esc(p.name)}</td><td>${esc(p.type)}</td><td><span class="pill p-${p.grade}">${p.grade}</span></td><td class="num">${p.Hrank}</td><td>${p.stab}</td><td><span class="pill p-${p.Sgrade}">${p.Sgrade}</span></td><td class="num">${p.Srank}</td><td>${p.sStab}</td><td>${p.combo}</td></tr>`).join("");
+}
+
+// ---- 탭 ----
+const VIEWS=["heat","energy","both"];
+function showView(v){ if(!VIEWS.includes(v)) v="heat"; state.view=v;
+  VIEWS.forEach(k=>{$("#view-"+k).hidden=k!==v;}); document.querySelectorAll("#tabs a").forEach(a=>{if(a.dataset.view===v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});
+  if(v==="heat")renderH(); else if(v==="energy")renderS(); else renderBoth(); }
+window.addEventListener("hashchange",()=>showView(location.hash.slice(1)));
+document.querySelectorAll("#tabs a").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();showView(a.dataset.view);try{history.replaceState(null,"","#"+a.dataset.view);}catch(_){}}));
+
 // ---- 제어 ----
-$("#scen").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.scen=b.dataset.v;$("#scen").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));render();});
-$("#b").addEventListener("input",e=>{state.b=+e.target.value;render();});
-$("#wh").addEventListener("input",e=>{state.wh=+e.target.value;render();});
-$("#wp").addEventListener("input",e=>{state.wp=+e.target.value;render();});
-$("#types").innerHTML=TYPES.map(t=>`<button type="button" class="chip" data-t="${esc(t)}" aria-pressed="true">${esc(t)}</button>`).join("");
-$("#types").addEventListener("click",e=>{const c=e.target.closest(".chip");if(!c)return;const t=c.dataset.t;
-  if(state.types.has(t)){ if(state.types.size>1) state.types.delete(t); } else state.types.add(t);
-  c.setAttribute("aria-pressed",state.types.has(t)); render();});
-$("#pick").addEventListener("change",e=>{state.pick=e.target.value;render();});
-render();
+function chips(el,set,rerender){$(el).innerHTML=TYPES.map(t=>`<button type="button" class="chip" data-t="${esc(t)}" aria-pressed="true">${esc(t)}</button>`).join("");
+  $(el).addEventListener("click",e=>{const c=e.target.closest(".chip");if(!c)return;const t=c.dataset.t;if(set.has(t)){if(set.size>1)set.delete(t);}else set.add(t);c.setAttribute("aria-pressed",set.has(t));rerender();});}
+chips("#types",state.types,renderH); chips("#stypes",state.stypes,renderS);
+$("#scen").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.scen=b.dataset.v;$("#scen").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderH();});
+[["#b","b",renderH],["#wh","wh",renderH],["#wp","wp",renderH],["#skw","skw",renderS],["#sload","sload",renderS],["#sdays","sdays",renderS],["#swc","swc",renderS]]
+  .forEach(([sel,key,fn])=>$(sel).addEventListener("input",e=>{state[key]=+e.target.value;fn();}));
+$("#pick").addEventListener("change",e=>{state.pick=e.target.value;renderH();});
+$("#spick").addEventListener("change",e=>{state.spick=e.target.value;renderS();});
+showView(location.hash.slice(1));
 </script>
