@@ -418,6 +418,7 @@ function showView(v){ if(!VIEWS.includes(v)) v="heat"; state.view=v;
   VIEWS.forEach(k=>{$("#view-"+k).hidden=k!==v;}); document.querySelectorAll("#tabs a").forEach(a=>{if(a.dataset.view===v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});
   if(v==="heat")renderH(); else if(v==="energy")renderS(); else renderBoth(); }
 window.addEventListener("hashchange",()=>showView(location.hash.slice(1)));
+document.querySelectorAll("#tabs a").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();showView(a.dataset.view);try{history.replaceState(null,"","#"+a.dataset.view);}catch(_){}}));
 
 // ---- 제어 ----
 function chips(el,set,rerender){$(el).innerHTML=TYPES.map(t=>`<button type="button" class="chip" data-t="${esc(t)}" aria-pressed="true">${esc(t)}</button>`).join("");
