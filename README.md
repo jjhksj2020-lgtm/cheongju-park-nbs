@@ -29,6 +29,7 @@ docs/            ← 공통: 제출물 1·2 (PDF·Word), 공통정의서, 웹판
 evidence/        ← 공통: 근거 대장 (제도·단가·피해·청주 현안, 출처 URL·조사일)
 
 need/            ← 필요성 파트
+  edc/            이용성·연결성(E·D·C) 지표 · EDC_지도.html
 biz/             ← 사업성 파트
   사업성_지도.html  최종본 (한 파일, 더블클릭으로 열림)
   README.md       실행 방법
@@ -42,6 +43,7 @@ energy/          ← 에너지(열저감) 파트 (독립 참고)
   code/           계산 엔진 · 기준값(params.yaml) · GEE 스크립트 2개
   data/gee/       GEE 출력 원본 2개 · 특례사업지 전후 실측
   out/            계산 결과 (미업로드)
+claude-skills/   ← 문서·보고서 작성용 Claude 스킬 3종 (참고)
 ```
 
 ## 3. 파트끼리 주고받는 파일
