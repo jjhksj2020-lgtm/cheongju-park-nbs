@@ -1,0 +1,22 @@
+# 필요성 · H 위해(열환경) 기준값 — 코드의 숫자 상수는 모두 여기서 온다
+gee:
+  landsat: [LANDSAT/LC08/C02/T1_L2, LANDSAT/LC09/C02/T1_L2]   # ST_B10 → ℃ (×0.00341802 + 149 − 273.15)
+  sentinel2: COPERNICUS/S2_SR_HARMONIZED                       # NDVI = (B8−B4)/(B8+B4)
+  years: [2024, 2025]
+  months: [6, 9]                 # 여름 (6~9월) 중앙값 합성
+  landsat_cloud_max: 40
+  s2_cloud_max: 20
+  population: JRC/GHSL/P2023A/GHS_POP/2020        # 명 (100m 격자 합)  · 대체자료 (SGIS 격자 받으면 교체)
+  built_volume: JRC/GHSL/P2023A/GHS_BUILT_V/2020  # ㎥
+  buffer_m: 300                  # 모든 지표 공통 (공원 중심점 기준)
+  city_box: [127.25, 36.42, 127.70, 36.80]        # 청주 평균 LST 계산 범위 (가정: 행정경계 아님)
+
+cooling:
+  b_controlled: -10.135          # ℃ / NDVI, 청주 전역 회귀 (건물부피 통제) · GEE 2026-11-14
+  b_simple: -16.907              # ℃ / NDVI, 단순 회귀 (민감도 상한)
+  ndvi_target: {수목형: 0.863, 잔디형: 0.535}     # 청주 기존 공원 수목·잔디 구역 NDVI 중앙값
+
+score:
+  weights: {heat_now: 0.5, benefit: 0.5}          # 현재 더위 백분위 · 냉각편익(|냉각|×인구) 백분위
+  heat_grade_bins: 5                              # 현재 온도 편차 5분위 (1 = 가장 더움)
+  grade_cuts: [0.30, 0.70]                        # H 점수 하위 30% 하 · 상위 30% 상
