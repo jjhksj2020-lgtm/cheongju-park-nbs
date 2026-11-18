@@ -116,7 +116,6 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--line);bord
           <p class="cap">−2.1 = 녹지 늘어난 곳 실측 · −4.6 = 기준(중간) · −7.0 = 녹지 줄어든 곳 실측 · −10.1 = 공간 회귀(상한)</p></div>
         <div><label for="wh">가중치: 현재 더위 <span class="val" id="whv"></span></label><input type="range" id="wh" min="0" max="1" step="0.05" value="0.5"></div>
         <div><label for="wp"><span id="wpl">가중치: 냉각량 (℃)</span> <span class="val" id="wpv"></span></label><input type="range" id="wp" min="0" max="1" step="0.05" value="0.5"></div>
-        <div><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="usepop"> 인구 반영 (편익 = 냉각 × 300m 인구)</label><p class="cap">기본은 끔 — 인구는 E 노출 축에서 평가하므로 H에 넣으면 이중 계산</p></div>
         <div><label>공원 유형</label><div class="types" id="types"></div></div>
       </div>
       <div class="panel mapbox">
@@ -126,7 +125,7 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--line);bord
       </div>
       <div class="panel">
         <h2>필요성(H) 순위</h2>
-        <div class="tbl"><table><thead><tr><th>순위</th><th>공원</th><th>유형</th><th>등급</th><th>안정성</th><th>일대 ℃</th><th>냉각 ℃</th><th id="benh">인구(참고)</th><th>열등급</th></tr></thead><tbody id="rows"></tbody></table></div>
+        <div class="tbl"><table><thead><tr><th>순위</th><th>공원</th><th>유형</th><th>등급</th><th>안정성</th><th>일대 ℃</th><th>냉각 ℃</th><th>열등급</th></tr></thead><tbody id="rows"></tbody></table></div>
       </div>
     </div>
     <div class="panel chartbox"><h2>조성 전 → 후 공원 땅 예상 온도 (청주 평균 대비 ℃)</h2><div id="chart"></div></div>
@@ -150,17 +149,17 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--line);bord
           <input type="range" id="phones" min="3" max="12" step="1" value="7">
           <p class="cap">배터리 160 Wh 중 조명 뒤 남는 몫 · USB 2포트</p></div>
         <div><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="hubon" checked> 충전 허브 (근린·역사·문화공원 1기, PV 600 W + ESS 5 kWh)</label></div>
-        <div><label for="swc">가중치: 조명 보장 인원 (나머지 = 조명 자립률) <span class="val" id="swcv"></span></label><input type="range" id="swc" min="0" max="1" step="0.05" value="0.6"></div>
+        <div><label for="swc">가중치: 조명 수용 인원 (나머지 = 충전 대수) <span class="val" id="swcv"></span></label><input type="range" id="swc" min="0" max="1" step="0.05" value="0.6"></div>
         <div><label>공원 유형</label><div class="types" id="stypes"></div></div>
       </div>
       <div class="panel mapbox">
-        <h2>지도 — 색: 조명 자립률, 크기: 밤 조명 아래 보장 인원</h2>
+        <h2>지도 — 색: 수용 인원 대비 충전 대수, 크기: 밤 조명 아래 수용 인원</h2>
         <div id="smap"></div>
-        <div class="legend"><span>0% <span class="grad s"></span> 100%</span><span>● 크기 = 조명 보장 인원</span><span>점을 누르면 근거 문단이 바뀝니다</span></div>
+        <div class="legend"><span>충전 적음 <span class="grad s"></span> 많음</span><span>● 크기 = 조명 수용 인원</span><span>점을 누르면 근거 문단이 바뀝니다</span></div>
       </div>
       <div class="panel">
         <h2>회복력(S) 순위</h2>
-        <div class="tbl"><table><thead><tr><th>순위</th><th>공원</th><th>유형</th><th>등급</th><th>안정성</th><th>공원등</th><th>ESS kWh</th><th>허브</th><th>대피 인원</th><th>조명 수용</th><th>충전/밤</th><th>조명 자립률</th></tr></thead><tbody id="srows"></tbody></table></div>
+        <div class="tbl"><table><thead><tr><th>순위</th><th>공원</th><th>유형</th><th>등급</th><th>안정성</th><th>공원등</th><th>ESS kWh</th><th>허브</th><th>조명 수용</th><th>충전/밤</th><th>대피 인원(참고)</th><th>자립률(참고)</th></tr></thead><tbody id="srows"></tbody></table></div>
       </div>
     </div>
     <div class="panel chartbox"><h2>대피 인원 vs 밤 조명 아래 수용 가능 인원</h2><div id="schart"></div></div>
@@ -168,7 +167,7 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--line);bord
       <div><h2>시설별 근거 문단</h2><label class="cap" for="spick">공원 선택</label><select id="spick"></select></div>
       <div class="prose" id="sprose"></div>
     </div>
-    <p class="note"><b>계산 방식 (S v3, 2026-11-18).</b> 공원등 기수 = 시설부지(공원면적 × 법 상한: 소공원 20·어린이 60·근린 40%, 주제공원 40% 가정) ÷ 1기 담당 면적, 최소 1·최대 200기 · 분산 ESS = 기수 × 160 Wh · 조명 수용 = 기수 × 담당 면적 ÷ 2㎡ · 충전 = 기수 × 2포트 × 대수 + 허브 5 kWh × 80% ÷ 10 Wh · 대피 인원 = min(2km 인구 × 30%, 면적 ÷ 2㎡) · 조명 자립률 = 조명 수용 ÷ 대피 인원(상한 1) · S 점수 = 조명 보장 인원 백분위 × w + 자립률 백분위 × (1 − w) · 안정성 = 담당 면적(120/200) × 충전(5/10) × 가중치(0.4/0.6/0.8) × 허브(켬/끔) 24개 시나리오. 제품 사양: 올인원 태양광 공원등(PV 20 Wp, LiFePO4 160 Wh, 2,000 lm, 흐린 날 2~3일). 대용량 PV(캐노피형) 버전은 저장소 need/s README의 옵션 B.</p>
+    <p class="note"><b>계산 방식 (S v3, 2026-11-18).</b> 공원등 기수 = 시설부지(공원면적 × 법 상한: 소공원 20·어린이 60·근린 40%, 주제공원 40% 가정) ÷ 1기 담당 면적, 최소 1·최대 200기 · 분산 ESS = 기수 × 160 Wh · 조명 수용 = 기수 × 담당 면적 ÷ 2㎡ · 충전 = 기수 × 2포트 × 대수 + 허브 5 kWh × 80% ÷ 10 Wh · S 점수 = 조명 수용 인원 백분위 × w + 충전 대수 백분위 × (1 − w) — <b>인구는 E 노출 축에서만 평가하므로 H·S 점수 어디에도 넣지 않음</b>; 대피 인원 = min(2km 인구 × 30%, 면적 ÷ 2㎡)과 자립률은 참고 열 · 안정성 = 담당 면적(120/200) × 충전(5/10) × 가중치(0.4/0.6/0.8) × 허브(켬/끔) 24개 시나리오. 제품 사양: 올인원 태양광 공원등(PV 20 Wp, LiFePO4 160 Wh, 2,000 lm, 흐린 날 2~3일). 대용량 PV(캐노피형) 버전은 저장소 need/s README의 옵션 B.</p>
   </section>
 
   <!-- ================= BOTH ================= -->
@@ -284,7 +283,8 @@ function computeS(o){ o=o||{}; const cov=o.cov??state.cov, ph=o.phones??state.ph
     p.shade=p.tree>.5;
   });
   const n=d.length; if(!n) return {d};
-  const pc=rankAvg(d.map(p=>p.covered)),pl=rankAvg(d.map(p=>p.lightRatio));
+  // 인구(대피 수요)는 E 노출 축에서만 평가 → S 점수는 공급 능력만: 조명 수용 인원 + 충전 대수. 대피 인원·자립률은 참고
+  const pc=rankAvg(d.map(p=>p.litCap)),pl=rankAvg(d.map(p=>p.phones));
   d.forEach((p,i)=>{p.S=swc*pc[i]/n+(1-swc)*pl[i]/n;});
   const sr=rankFirstDesc(d.map(p=>p.S)); d.forEach((p,i)=>p.Srank=sr[i]);
   d.forEach(p=>{const pct=1-(p.Srank-1)/n; p.Sgrade=pct>=SP.cuts[1]?"상":(pct>=SP.cuts[0]?"중":"하");});
@@ -338,7 +338,7 @@ function renderH(){
   const lmin=Math.min(...ok.map(p=>p.lsta)),lmax=Math.max(...ok.map(p=>p.lsta));
   drawMap("#map",ok,{size:p=>p.benefit,color:p=>heatColor((p.lsta-lmin)/((lmax-lmin)||1)),pick:state.pick,onPick:n=>{state.pick=n;renderH();},
     tip:p=>`${esc(p.name)} · ${esc(p.addr)}\n현재 ${fs(p.lsta)}℃ · NDVI ${p.ndvi.toFixed(2)}\n조성 시 ${f1(p.cool)}℃${state.usePop?` · 편익 ${fi(p.benefit)} 명·℃`:""}\n등급 ${p.grade} · H ${p.Hrank}위`});
-  $("#rows").innerHTML=ok.slice().sort((a,b)=>a.Hrank-b.Hrank).map(p=>`<tr data-n="${esc(p.name)}" class="${p.name===state.pick?'sel':''}"><td class="num">${p.Hrank}</td><td>${esc(p.name)}</td><td>${esc(p.type)}</td><td><span class="pill p-${p.grade}">${p.grade}</span></td><td>${p.stab} <span class="num">${p.nHigh}/12</span></td><td class="num">${fs(p.lsta)}</td><td class="num">${f1(p.cool)}</td><td class="num">${state.usePop?fi(p.benefit):fi(p.pop)}</td><td class="num">${p.heatGrade}</td></tr>`).join("")||`<tr><td colspan="9">선택된 유형이 없습니다</td></tr>`;
+  $("#rows").innerHTML=ok.slice().sort((a,b)=>a.Hrank-b.Hrank).map(p=>`<tr data-n="${esc(p.name)}" class="${p.name===state.pick?'sel':''}"><td class="num">${p.Hrank}</td><td>${esc(p.name)}</td><td>${esc(p.type)}</td><td><span class="pill p-${p.grade}">${p.grade}</span></td><td>${p.stab} <span class="num">${p.nHigh}/12</span></td><td class="num">${fs(p.lsta)}</td><td class="num">${f1(p.cool)}</td><td class="num">${p.heatGrade}</td></tr>`).join("")||`<tr><td colspan="8">선택된 유형이 없습니다</td></tr>`;
   $("#rows").querySelectorAll("tr[data-n]").forEach(tr=>tr.addEventListener("click",()=>{state.pick=tr.dataset.n;renderH();}));
   // 차트
   const t=ok.slice().sort((a,b)=>b.lsta-a.lsta);
@@ -357,7 +357,7 @@ function renderH(){
   $("#prose").innerHTML=`<p><b>${esc(p.name)}</b> (${esc(p.addr)}, ${p.expire} 실효) — 필요성 <span class="pill p-${p.grade}">${p.grade}</span> · 열환경 ${p.heatGrade}등급 · H 순위 <b>${p.Hrank}위</b> / ${ok.length}</p>
   <p>공원 일대(경계+300m) 여름 지표온도는 청주 평균보다 <b class="num">${fs(p.lsta)}℃</b>, 공원 땅 자체는 <b class="num">${fs(p.lstaIn)}℃</b> 이고 땅의 녹지 정도(NDVI)는 <b class="num">${p.ndvi.toFixed(2)}</b> 이다 [Landsat/S2 2024–25, V-World 공원 경계, GEE 2026-11-16].</p>
   <p>${SCEN_KO[state.scen]} 공원으로 조성하면 녹지가 ${p.ndvi.toFixed(2)} → ${target.toFixed(2)} 로 올라 공원 땅이 <b class="num">약 ${f1(Math.abs(p.cool))}℃</b> 내려갈 것으로 추정된다 (계수 ${f1(state.b)}℃/NDVI — 청주 2013–16→2023–25 녹지 변화 실측 −2.1~−7.0의 ${state.b===HC.def?"중간값":"범위 안"})${p.dndvi===0?" — 이미 목표 녹지 수준 이상이라 추가 냉각 효과는 없다":""}.</p>
-  <p>${state.usePop?`300m 안에 <b class="num">${fi(p.pop)}명</b> 이 살아 냉각 편익은 <b class="num">${fi(p.benefit)} 명·℃</b> 로 ${ok.length}곳 중 <b>${p.benRank}위</b> 다 [WorldPop 2020 · 경계+300m].`:`냉각량 <b class="num">${f1(Math.abs(p.cool))}℃</b> 는 ${ok.length}곳 중 <b>${p.benRank}위</b> 다. 주변 300m 인구 ${fi(p.pop)}명은 E 노출 축에서 따로 평가하므로 H에는 넣지 않았다.`} 계수·목표·가중치를 바꾼 12개 시나리오 중 <b>${p.nHigh}개</b>에서 상 등급 → <b>${p.stab}</b>.</p>
+  <p>${state.usePop?`300m 안에 <b class="num">${fi(p.pop)}명</b> 이 살아 냉각 편익은 <b class="num">${fi(p.benefit)} 명·℃</b> 로 ${ok.length}곳 중 <b>${p.benRank}위</b> 다 [WorldPop 2020 · 경계+300m].`:`냉각량 <b class="num">${f1(Math.abs(p.cool))}℃</b> 는 ${ok.length}곳 중 <b>${p.benRank}위</b> 다. 인구는 E 노출 축에서 평가하므로 H에는 넣지 않았다.`} 계수·목표·가중치를 바꾼 12개 시나리오 중 <b>${p.nHigh}개</b>에서 상 등급 → <b>${p.stab}</b>.</p>
   <p class="verdict">판정: ${verdict}</p>`;
 }
 
@@ -366,14 +366,14 @@ function renderS(){
   const {d}=computeS();
   if(state.spick==null||!d.some(p=>p.name===state.spick)){const t=d.slice().sort((a,b)=>a.Srank-b.Srank)[0];state.spick=t?t.name:null;}
   $("#covv").textContent=state.cov+" ㎡";$("#phv").textContent=state.phones+"대";$("#swcv").textContent=state.swc.toFixed(2);
-  const top=d.slice().sort((a,b)=>b.covered-a.covered)[0];
+  const top=d.slice().sort((a,b)=>b.litCap-a.litCap)[0];
   kpis("#skpis",[["태양광 공원등 합계",`${fi(d.reduce((s,p)=>s+p.lamps,0))} 기`,`분산 ESS ${f1(d.reduce((s,p)=>s+p.essKwh,0))} kWh (1기 160 Wh)`],
     ["충전 허브",`${d.reduce((s,p)=>s+p.hub,0)} 기`,state.hubOn?"근린·역사·문화공원 각 5 kWh":"끔"],
-    ["밤 조명 아래 수용 인원 합계",`${fi(d.reduce((s,p)=>s+p.covered,0))} 명`,`대피 인원 ${fi(d.reduce((s,p)=>s+p.nEvac,0))}명 중`],
-    ["조명 보장 인원 1위",top?top.name:"–",top?`${fi(top.covered)}명 · ${top.lamps}기`:""]]);
-  drawMap("#smap",d,{size:p=>p.covered,color:p=>sunColor(p.lightRatio),pick:state.spick,onPick:n=>{state.spick=n;renderS();},
-    tip:p=>`${esc(p.name)} · ${esc(p.addr)}\n공원등 ${p.lamps}기 · ESS ${f1(p.essKwh)} kWh${p.hub?" · 허브 1":""}\n대피 ${fi(p.nEvac)}명 · 조명 수용 ${fi(p.litCap)}명 · 충전 ${fi(p.phones)}대/밤\n조명 자립률 ${pc(p.lightRatio)} · 등급 ${p.Sgrade} · S ${p.Srank}위`});
-  $("#srows").innerHTML=d.slice().sort((a,b)=>a.Srank-b.Srank).map(p=>`<tr data-n="${esc(p.name)}" class="${p.name===state.spick?'sel':''}"><td class="num">${p.Srank}</td><td>${esc(p.name)}</td><td>${esc(p.type)}</td><td><span class="pill p-${p.Sgrade}">${p.Sgrade}</span></td><td>${p.stab} <span class="num">${p.nHigh}/24</span></td><td class="num">${p.lamps}</td><td class="num">${f1(p.essKwh)}</td><td class="num">${p.hub}</td><td class="num">${fi(p.nEvac)}</td><td class="num">${fi(p.litCap)}</td><td class="num">${fi(p.phones)}</td><td class="num">${pc(p.lightRatio)}</td></tr>`).join("")||`<tr><td colspan="12">선택된 유형이 없습니다</td></tr>`;
+    ["밤 조명 아래 수용 인원 합계",`${fi(d.reduce((s,p)=>s+p.litCap,0))} 명`,`밤새 충전 ${fi(d.reduce((s,p)=>s+p.phones,0))}대`],
+    ["조명 수용 1위",top?top.name:"–",top?`${fi(top.litCap)}명 · ${top.lamps}기`:""]]);
+  drawMap("#smap",d,{size:p=>p.litCap,color:p=>sunColor(Math.min(1,p.phones/Math.max(1,p.litCap))),pick:state.spick,onPick:n=>{state.spick=n;renderS();},
+    tip:p=>`${esc(p.name)} · ${esc(p.addr)}\n공원등 ${p.lamps}기 · ESS ${f1(p.essKwh)} kWh${p.hub?" · 허브 1":""}\n대피 ${fi(p.nEvac)}명 · 조명 수용 ${fi(p.litCap)}명 · 충전 ${fi(p.phones)}대/밤\n등급 ${p.Sgrade} · S ${p.Srank}위 (대피 ${fi(p.nEvac)}명·자립률 ${pc(p.lightRatio)}는 참고)`});
+  $("#srows").innerHTML=d.slice().sort((a,b)=>a.Srank-b.Srank).map(p=>`<tr data-n="${esc(p.name)}" class="${p.name===state.spick?'sel':''}"><td class="num">${p.Srank}</td><td>${esc(p.name)}</td><td>${esc(p.type)}</td><td><span class="pill p-${p.Sgrade}">${p.Sgrade}</span></td><td>${p.stab} <span class="num">${p.nHigh}/24</span></td><td class="num">${p.lamps}</td><td class="num">${f1(p.essKwh)}</td><td class="num">${p.hub}</td><td class="num">${fi(p.litCap)}</td><td class="num">${fi(p.phones)}</td><td class="num" style="color:var(--muted)">${fi(p.nEvac)}</td><td class="num" style="color:var(--muted)">${pc(p.lightRatio)}</td></tr>`).join("")||`<tr><td colspan="12">선택된 유형이 없습니다</td></tr>`;
   $("#srows").querySelectorAll("tr[data-n]").forEach(tr=>tr.addEventListener("click",()=>{state.spick=tr.dataset.n;renderS();}));
   const t=d.slice().sort((a,b)=>b.nEvac-a.nEvac);
   if(t.length){const W=Math.max(900,t.length*26),H=360,L=52,R=12,T=28,B=78,iw=W-L-R,ih=H-T-B;
@@ -390,14 +390,14 @@ function renderS(){
   $("#sprose").innerHTML=`<p><b>${esc(p.name)}</b> (${esc(p.addr)}, ${fi(p.area)}㎡) — 회복력 <span class="pill p-${p.Sgrade}">${p.Sgrade}</span> · S 순위 <b>${p.Srank}위</b> / ${d.length}</p>
   <p>시설부지(상한 ${pc(SP.facility[p.type])}) <b class="num">${fi(p.fac)}㎡</b>에 1기당 ${state.cov}㎡ 기준으로 자립형 태양광 공원등 <b class="num">${p.lamps}기</b>${p.lamps>=SP.lamp.max?" (상한 200기)":""}를 세우면 분산 ESS <b class="num">${f1(p.essKwh)} kWh</b>(1기 PV 20 Wp·배터리 160 Wh·2,000 lm)가 생기고 흐린 날 ${SP.lamp.autonomy}일을 버틴다 [법 시행규칙 별표4 · 제품 사양].${p.shade?" 공원 안 수목이 "+pc(p.tree)+"라 산책로 위 음영을 피해 배치해야 한다.":""}</p>
   <p>${p.hub?`근린공원급이라 충전 허브 1기(PV 600 W + ESS 5 kWh)를 더해 통신·방송 같은 공용 부하를 맡긴다. `:""}밤 조명 아래 <b class="num">${fi(p.litCap)}명</b>(2㎡/인)을 수용하고, 밤새 휴대폰 <b class="num">${fi(p.phones)}대</b>를 충전할 수 있다 (공원등 ${fi(p.phonesLamp)} + 허브 ${fi(p.phonesHub)}).</p>
-  <p>2km 안 ${fi(p.pop2k)}명의 30%와 면적 ÷ 2㎡ 중 작은 쪽인 <b class="num">${fi(p.nEvac)}명</b>(${p.evacLimit} 제한)이 대피하면 조명 자립률 <b class="num">${pc(p.lightRatio)}</b>, 충전 자립률 <b class="num">${pc(p.chargeRatio)}</b> [ERI 2020 · WorldPop 2020]. 담당면적·충전 대수·가중치·허브를 바꾼 24개 시나리오 중 <b>${p.nHigh}개</b>에서 상 등급 → <b>${p.stab}</b>.</p>
+  <p>참고로 2km 안 ${fi(p.pop2k)}명의 30%와 면적 ÷ 2㎡ 중 작은 쪽인 ${fi(p.nEvac)}명(${p.evacLimit} 제한)이 대피한다고 보면 조명 자립률 ${pc(p.lightRatio)}, 충전 자립률 ${pc(p.chargeRatio)}다 [ERI 2020 · WorldPop 2020] — 인구는 E 노출 축에서 평가하므로 <b>S 점수에는 넣지 않았다</b>. 담당면적·충전 대수·가중치·허브를 바꾼 24개 시나리오 중 <b>${p.nHigh}개</b>에서 상 등급 → <b>${p.stab}</b>.</p>
   <p class="verdict">판정: ${verdict}</p>`;
 }
 
 // ---- 종합 렌더 ----
 function renderBoth(){
   const H=computeH().ok, S=computeS().d;
-  const byId={}; H.forEach(p=>byId[p.id]={...p}); S.forEach(p=>{if(byId[p.id])Object.assign(byId[p.id],{S:p.S,Srank:p.Srank,Sgrade:p.Sgrade,lamps:p.lamps,covered:p.covered,sStab:p.stab});});
+  const byId={}; H.forEach(p=>byId[p.id]={...p}); S.forEach(p=>{if(byId[p.id])Object.assign(byId[p.id],{S:p.S,Srank:p.Srank,Sgrade:p.Sgrade,lamps:p.lamps,litCap:p.litCap,sStab:p.stab});});
   const rows=Object.values(byId).filter(p=>p.Sgrade);
   rows.forEach(p=>{p.combo=p.grade==="상"&&p.Sgrade==="상"?"열·전력 모두 상":(p.grade==="상"?"열만 상":(p.Sgrade==="상"?"전력만 상":"—"));});
   const both=rows.filter(p=>p.combo==="열·전력 모두 상");
@@ -439,7 +439,6 @@ $("#scen").addEventListener("click",e=>{const b=e.target.closest("button");if(!b
 [["#b","b",renderH],["#wh","wh",renderH],["#wp","wp",renderH],["#cov","cov",renderS],["#phones","phones",renderS],["#swc","swc",renderS]]
   .forEach(([sel,key,fn])=>$(sel).addEventListener("input",e=>{state[key]=+e.target.value;fn();}));
 $("#pick").addEventListener("change",e=>{state.pick=e.target.value;renderH();});
-$("#usepop").addEventListener("change",e=>{state.usePop=e.target.checked;$("#wpl").textContent=state.usePop?"가중치: 냉각 편익 (냉각 × 인구)":"가중치: 냉각량 (℃)";$("#benh").textContent=state.usePop?"편익":"인구(참고)";renderH();});
 $("#spick").addEventListener("change",e=>{state.spick=e.target.value;renderS();});
 $("#hubon").addEventListener("change",e=>{state.hubOn=e.target.checked;renderS();});
 showView(location.hash.slice(1));
