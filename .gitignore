@@ -6,3 +6,4 @@ data/raw/*.json
 data/raw/*.zip
 .DS_Store
 .env
+energy/out/
