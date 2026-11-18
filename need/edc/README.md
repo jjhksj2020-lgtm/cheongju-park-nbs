@@ -22,7 +22,7 @@
 
 | 출처키 | 자료 | 위치 | 비고 |
 |---|---|---|---|
-| WP-2020 | WorldPop 2020 100m constrained 총인구 | `data/raw/worldpop/` (저장소 제외, 아래 명령으로 받음) | 청주 합계 90.2만 명, 주민등록 86.2만 명과 약 5% 차이. SGIS 격자를 받으면 교체 |
+| WP-2020 | WorldPop 2020 100m constrained 총인구 | `data/raw/worldpop/kor_ppp_2020_UNadj_constrained.tif` | 청주 합계 90.2만 명, 주민등록 86.2만 명과 약 5% 차이. SGIS 격자를 받으면 교체 |
 | MOIS-2026-10 | 행정안전부 행정동별 성별·연령별 주민등록인구, 2026-10-31 (data.go.kr 15097972) | `data/raw/mois/cheongju_age_dong_20261031.csv` (청주 43개 동만 추림) | 1세 단위 → 0~9세, 65세 이상 합산 |
 | — | 행정동 경계 2026-10-01 (github.com/vuski/admdongkor) | `data/raw/dong/cheongju_dong_20261001.geojson` (청주만) | |
 | PARK2030-T11-2 | 2030 청주시 공원녹지기본계획(2020) 표 11-2 생활권별 공원현황 (2040 청주도시기본계획 제11장 p.421에 재인용, cheongju.go.kr cts17053_n12.pdf) | `code/params.yaml` living_zone_park | 1인당 조성면적: 도심 1.7 · 서원 2.6 · 흥덕 5.2 · 상당 6.0 · 청원 7.4 |
@@ -46,7 +46,7 @@
 |---|---|---|---|---|
 | 행정동별 연령별 주민등록인구 (2026-10-31) | 행정안전부, 공공데이터포털 15097972 | `data/raw/mois/cheongju_age_dong_20261031.csv` | 청주 43개 동의 총인구, 0~9세, 65세 이상 | E2 |
 | 행정동 경계 (2026-10-01) | github.com/vuski/admdongkor | `data/raw/dong/cheongju_dong_20261001.geojson` | 청주 43개 동 경계 (250KB) | E2, D2 생활권 배정, 대시보드 구 경계 |
-| 100m 격자 인구 (2020) | WorldPop constrained | `data/raw/worldpop/kor_ppp_2020_UNadj_constrained.tif` (용량 때문에 저장소 제외, 아래 명령으로 받음) | 전국 100m 격자 총인구 (10MB) | E1, E2, D1, 지역 유형 |
+| 100m 격자 인구 (2020) | WorldPop constrained | `data/raw/worldpop/kor_ppp_2020_UNadj_constrained.tif` | 전국 100m 격자 총인구 (10MB) | E1, E2, D1, 지역 유형 |
 | 생활권별 1인당 공원면적 | 2030 청주시 공원녹지기본계획 표 11-2 (2040 청주도시기본계획 p.421 재인용) | `code/params.yaml` living_zone_park | 5개 생활권의 조성·결정 면적 (㎡/인) | D2 |
 | 도심생활권 동 목록 | 청주형 15분 도시 일상생활권 구축계획(1차, 2025) 보도 | `code/params.yaml` downtown_dongs | 8개 동 | D2 생활권 배정 |
 | 기존 공원·놀이터 | OpenStreetMap (2026-11-15) | `data/raw/osm/parks.json` | 963개 요소 | D1 |
@@ -79,7 +79,7 @@ cd need/edc/code && python build_edc.py && python build_page.py
 ```
 
 결과는 `need/out/indicators_edc.csv`(긴 표, 점수 계산용)와 `need/out/edc_wide.csv`(공원별 가로표, 검토용)이다.
-`data/raw/worldpop/`이 비어 있으면 먼저 받는다(10MB).
+WorldPop 원본(10MB)은 저장소에 들어 있다. 새로 받아야 할 때만 아래 명령을 쓴다.
 
 ```bash
 cd need/edc/data/raw/worldpop && curl -O https://data.worldpop.org/GIS/Population/Global_2000_2020_Constrained/2020/BSGM/KOR/kor_ppp_2020_UNadj_constrained.tif
