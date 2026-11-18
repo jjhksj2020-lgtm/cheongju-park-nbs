@@ -115,17 +115,18 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--line);bord
           <input type="range" id="b" min="-10.1" max="-2.1" step="0.1" value="-4.6">
           <p class="cap">−2.1 = 녹지 늘어난 곳 실측 · −4.6 = 기준(중간) · −7.0 = 녹지 줄어든 곳 실측 · −10.1 = 공간 회귀(상한)</p></div>
         <div><label for="wh">가중치: 현재 더위 <span class="val" id="whv"></span></label><input type="range" id="wh" min="0" max="1" step="0.05" value="0.5"></div>
-        <div><label for="wp">가중치: 주변 인구(편익) <span class="val" id="wpv"></span></label><input type="range" id="wp" min="0" max="1" step="0.05" value="0.5"></div>
+        <div><label for="wp"><span id="wpl">가중치: 냉각량 (℃)</span> <span class="val" id="wpv"></span></label><input type="range" id="wp" min="0" max="1" step="0.05" value="0.5"></div>
+        <div><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="usepop"> 인구 반영 (편익 = 냉각 × 300m 인구)</label><p class="cap">기본은 끔 — 인구는 E 노출 축에서 평가하므로 H에 넣으면 이중 계산</p></div>
         <div><label>공원 유형</label><div class="types" id="types"></div></div>
       </div>
       <div class="panel mapbox">
-        <h2>지도 — 색: 공원 일대 온도 편차, 크기: 냉각 편익</h2>
+        <h2>지도 — 색: 공원 일대 온도 편차, 크기: 냉각량(인구 반영 시 편익)</h2>
         <div id="map"></div>
-        <div class="legend"><span>시원 <span class="grad"></span> 더움</span><span>● 크기 = 명·℃</span><span>점을 누르면 근거 문단이 바뀝니다</span></div>
+        <div class="legend"><span>시원 <span class="grad"></span> 더움</span><span>● 크기 = 냉각 ℃ (인구 반영 시 명·℃)</span><span>점을 누르면 근거 문단이 바뀝니다</span></div>
       </div>
       <div class="panel">
         <h2>필요성(H) 순위</h2>
-        <div class="tbl"><table><thead><tr><th>순위</th><th>공원</th><th>유형</th><th>등급</th><th>안정성</th><th>일대 ℃</th><th>냉각 ℃</th><th>편익</th><th>열등급</th></tr></thead><tbody id="rows"></tbody></table></div>
+        <div class="tbl"><table><thead><tr><th>순위</th><th>공원</th><th>유형</th><th>등급</th><th>안정성</th><th>일대 ℃</th><th>냉각 ℃</th><th id="benh">인구(참고)</th><th>열등급</th></tr></thead><tbody id="rows"></tbody></table></div>
       </div>
     </div>
     <div class="panel chartbox"><h2>조성 전 → 후 공원 땅 예상 온도 (청주 평균 대비 ℃)</h2><div id="chart"></div></div>
@@ -133,7 +134,7 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--line);bord
       <div><h2>시설별 근거 문단</h2><label class="cap" for="pick">공원 선택</label><select id="pick"></select></div>
       <div class="prose" id="prose"></div>
     </div>
-    <p class="note"><b>계산 방식 (v2, 2026-11-16).</b> 공원 경계는 V-World 폴리곤 39곳(어린이공원152만 등가원) · 현재 더위 = 경계+300m 일대 온도 편차 · 냉각 = 계수 × max(0, 목표 NDVI − 공원 땅 NDVI) · 편익 = |냉각| × 경계+300m 인구(WorldPop 2020, 이용성 파트와 같은 자료) · 열등급 = 일대 온도 5분위(1 = 가장 더움) · H 점수 = 가중 백분위 · 등급 = 상위 30% 상, 하위 30% 하 · 안정성 = 계수(−2.1/−7.0) × 목표(수목/잔디) × 가중치(5:5, 7:3, 3:7) 12개 시나리오에서 등급이 모두 같으면 확정. 계수 기본값은 청주 2013–16→2023–25 녹지 변화 실측의 중간값(에너지 파트와 동일), 공간 회귀 −10.1은 상한 참고.</p>
+    <p class="note"><b>계산 방식 (v2, 2026-11-16).</b> 공원 경계는 V-World 폴리곤 39곳(어린이공원152만 등가원) · 현재 더위 = 경계+300m 일대 온도 편차 · 냉각 = 계수 × max(0, 목표 NDVI − 공원 땅 NDVI) · H 점수는 현재 더위와 냉각량(℃)의 백분위 평균 — 인구는 E 노출 축이 맡으므로 기본 제외('인구 반영'을 켜면 편익 = |냉각| × 경계+300m 인구, WorldPop 2020) · 열등급 = 일대 온도 5분위(1 = 가장 더움) · H 점수 = 가중 백분위 · 등급 = 상위 30% 상, 하위 30% 하 · 안정성 = 계수(−2.1/−7.0) × 목표(수목/잔디) × 가중치(5:5, 7:3, 3:7) 12개 시나리오에서 등급이 모두 같으면 확정. 계수 기본값은 청주 2013–16→2023–25 녹지 변화 실측의 중간값(에너지 파트와 동일), 공간 회귀 −10.1은 상한 참고.</p>
   </section>
 
   <!-- ================= S ================= -->
@@ -239,7 +240,7 @@ const SP={ // S 기준값 (need/s/code/params.yaml과 동일)
   pvshare:{소공원:.15,어린이공원:.10,근린공원:.25,역사공원:.20,문화공원:.20,생태공원:.10},
   slopeLimit:15, slopePenalty:.5, capKw:500, baseYield:1300, ghiRef:1463, bldLossPerM:.01, bldLossMax:.35, worst:.70,
   evacRate:.30, m2PerPerson:2, ssRankCap:1, cuts:[.3,.7]};
-const state={scen:"tree",b:HC.def,wh:.5,wp:.5,types:new Set(TYPES),pick:null,
+const state={scen:"tree",b:HC.def,wh:.5,wp:.5,usePop:false,types:new Set(TYPES),pick:null,
   skw:.15,sload:.05,sdays:2,swc:.6,stypes:new Set(TYPES),spick:null,view:"heat"};
 
 // ---- 통계 도우미 ----
@@ -250,10 +251,10 @@ function quantile(sorted,q){const pos=(sorted.length-1)*q,lo=Math.floor(pos),hi=
 function gradeOf(scores){const s=scores.slice().sort((a,b)=>a-b),q7=quantile(s,.7),q3=quantile(s,.3);return v=>v>=q7?"상":(v>=q3?"중":"하");}
 
 // ---- H 계산 ----
-function computeH(o){ o=o||{}; const b=o.b??state.b, scen=o.scen??state.scen, wh=o.wh??state.wh, wp=o.wp??state.wp;
+function computeH(o){ o=o||{}; const b=o.b??state.b, scen=o.scen??state.scen, wh=o.wh??state.wh, wp=o.wp??state.wp, usePop=o.usePop??state.usePop;
   const target=NDVI[scen];
   const d=parks.filter(p=>state.types.has(p.type)).map(p=>({...p}));
-  d.forEach(p=>{p.ok=true;p.dndvi=Math.max(0,target-p.ndvi);p.cool=b*p.dndvi;p.after=p.lstaIn+p.cool;p.benefit=Math.abs(p.cool)*p.pop;});
+  d.forEach(p=>{p.ok=true;p.dndvi=Math.max(0,target-p.ndvi);p.cool=b*p.dndvi;p.after=p.lstaIn+p.cool;p.benefit=Math.abs(p.cool)*(usePop?p.pop:1);});
   const ok=d, n=ok.length; if(!n) return {d,ok};
   const rf=rankFirstDesc(ok.map(p=>p.lsta)); ok.forEach((p,i)=>{p.heatRankFirst=rf[i];p.heatGrade=1+Math.min(4,Math.floor(((rf[i]-1)/n)*5));});
   const rh=rankAvg(ok.map(p=>p.lsta)),rb=rankAvg(ok.map(p=>p.benefit)),ws=Math.max(wh+wp,1e-9);
@@ -333,11 +334,11 @@ function renderH(){
   const hottest=ok.slice().sort((a,b)=>b.lsta-a.lsta)[0],top=ok.slice().sort((a,b)=>b.benefit-a.benefit)[0];
   const mean=ok.length?ok.reduce((s,p)=>s+p.cool,0)/ok.length:0;
   kpis("#kpis",[["분석 공원",`${ok.length} / ${parks.length}`,"선택된 유형"],["평균 예상 냉각",ok.length?`${f1(mean)} ℃`:"–",`${SCEN_KO[state.scen]} 조성 시`],
-    ["현재 가장 더운 곳",hottest?hottest.name:"–",hottest?`청주 평균 대비 ${fs(hottest.lsta)}℃`:""],["냉각 편익 1위",top?top.name:"–",top?`${fi(top.benefit)} 명·℃`:""]]);
+    ["현재 가장 더운 곳",hottest?hottest.name:"–",hottest?`청주 평균 대비 ${fs(hottest.lsta)}℃`:""],[state.usePop?"냉각 편익 1위":"냉각량 1위",top?top.name:"–",top?(state.usePop?`${fi(top.benefit)} 명·℃`:`${f1(top.cool)} ℃ (${fi(top.pop)}명 주변, 참고)`):""]]);
   const lmin=Math.min(...ok.map(p=>p.lsta)),lmax=Math.max(...ok.map(p=>p.lsta));
   drawMap("#map",ok,{size:p=>p.benefit,color:p=>heatColor((p.lsta-lmin)/((lmax-lmin)||1)),pick:state.pick,onPick:n=>{state.pick=n;renderH();},
-    tip:p=>`${esc(p.name)} · ${esc(p.addr)}\n현재 ${fs(p.lsta)}℃ · NDVI ${p.ndvi.toFixed(2)}\n조성 시 ${f1(p.cool)}℃ · 편익 ${fi(p.benefit)} 명·℃\n등급 ${p.grade} · H ${p.Hrank}위`});
-  $("#rows").innerHTML=ok.slice().sort((a,b)=>a.Hrank-b.Hrank).map(p=>`<tr data-n="${esc(p.name)}" class="${p.name===state.pick?'sel':''}"><td class="num">${p.Hrank}</td><td>${esc(p.name)}</td><td>${esc(p.type)}</td><td><span class="pill p-${p.grade}">${p.grade}</span></td><td>${p.stab} <span class="num">${p.nHigh}/12</span></td><td class="num">${fs(p.lsta)}</td><td class="num">${f1(p.cool)}</td><td class="num">${fi(p.benefit)}</td><td class="num">${p.heatGrade}</td></tr>`).join("")||`<tr><td colspan="9">선택된 유형이 없습니다</td></tr>`;
+    tip:p=>`${esc(p.name)} · ${esc(p.addr)}\n현재 ${fs(p.lsta)}℃ · NDVI ${p.ndvi.toFixed(2)}\n조성 시 ${f1(p.cool)}℃${state.usePop?` · 편익 ${fi(p.benefit)} 명·℃`:""}\n등급 ${p.grade} · H ${p.Hrank}위`});
+  $("#rows").innerHTML=ok.slice().sort((a,b)=>a.Hrank-b.Hrank).map(p=>`<tr data-n="${esc(p.name)}" class="${p.name===state.pick?'sel':''}"><td class="num">${p.Hrank}</td><td>${esc(p.name)}</td><td>${esc(p.type)}</td><td><span class="pill p-${p.grade}">${p.grade}</span></td><td>${p.stab} <span class="num">${p.nHigh}/12</span></td><td class="num">${fs(p.lsta)}</td><td class="num">${f1(p.cool)}</td><td class="num">${state.usePop?fi(p.benefit):fi(p.pop)}</td><td class="num">${p.heatGrade}</td></tr>`).join("")||`<tr><td colspan="9">선택된 유형이 없습니다</td></tr>`;
   $("#rows").querySelectorAll("tr[data-n]").forEach(tr=>tr.addEventListener("click",()=>{state.pick=tr.dataset.n;renderH();}));
   // 차트
   const t=ok.slice().sort((a,b)=>b.lsta-a.lsta);
@@ -356,7 +357,7 @@ function renderH(){
   $("#prose").innerHTML=`<p><b>${esc(p.name)}</b> (${esc(p.addr)}, ${p.expire} 실효) — 필요성 <span class="pill p-${p.grade}">${p.grade}</span> · 열환경 ${p.heatGrade}등급 · H 순위 <b>${p.Hrank}위</b> / ${ok.length}</p>
   <p>공원 일대(경계+300m) 여름 지표온도는 청주 평균보다 <b class="num">${fs(p.lsta)}℃</b>, 공원 땅 자체는 <b class="num">${fs(p.lstaIn)}℃</b> 이고 땅의 녹지 정도(NDVI)는 <b class="num">${p.ndvi.toFixed(2)}</b> 이다 [Landsat/S2 2024–25, V-World 공원 경계, GEE 2026-11-16].</p>
   <p>${SCEN_KO[state.scen]} 공원으로 조성하면 녹지가 ${p.ndvi.toFixed(2)} → ${target.toFixed(2)} 로 올라 공원 땅이 <b class="num">약 ${f1(Math.abs(p.cool))}℃</b> 내려갈 것으로 추정된다 (계수 ${f1(state.b)}℃/NDVI — 청주 2013–16→2023–25 녹지 변화 실측 −2.1~−7.0의 ${state.b===HC.def?"중간값":"범위 안"})${p.dndvi===0?" — 이미 목표 녹지 수준 이상이라 추가 냉각 효과는 없다":""}.</p>
-  <p>300m 안에 <b class="num">${fi(p.pop)}명</b> 이 살아 냉각 편익은 <b class="num">${fi(p.benefit)} 명·℃</b> 로 ${ok.length}곳 중 <b>${p.benRank}위</b> 다 [WorldPop 2020 · 경계+300m]. 계수·목표·가중치를 바꾼 12개 시나리오 중 <b>${p.nHigh}개</b>에서 상 등급 → <b>${p.stab}</b>.</p>
+  <p>${state.usePop?`300m 안에 <b class="num">${fi(p.pop)}명</b> 이 살아 냉각 편익은 <b class="num">${fi(p.benefit)} 명·℃</b> 로 ${ok.length}곳 중 <b>${p.benRank}위</b> 다 [WorldPop 2020 · 경계+300m].`:`냉각량 <b class="num">${f1(Math.abs(p.cool))}℃</b> 는 ${ok.length}곳 중 <b>${p.benRank}위</b> 다. 주변 300m 인구 ${fi(p.pop)}명은 E 노출 축에서 따로 평가하므로 H에는 넣지 않았다.`} 계수·목표·가중치를 바꾼 12개 시나리오 중 <b>${p.nHigh}개</b>에서 상 등급 → <b>${p.stab}</b>.</p>
   <p class="verdict">판정: ${verdict}</p>`;
 }
 
@@ -441,6 +442,7 @@ $("#scen").addEventListener("click",e=>{const b=e.target.closest("button");if(!b
 [["#b","b",renderH],["#wh","wh",renderH],["#wp","wp",renderH],["#skw","skw",renderS],["#sload","sload",renderS],["#sdays","sdays",renderS],["#swc","swc",renderS]]
   .forEach(([sel,key,fn])=>$(sel).addEventListener("input",e=>{state[key]=+e.target.value;fn();}));
 $("#pick").addEventListener("change",e=>{state.pick=e.target.value;renderH();});
+$("#usepop").addEventListener("change",e=>{state.usePop=e.target.checked;$("#wpl").textContent=state.usePop?"가중치: 냉각 편익 (냉각 × 인구)":"가중치: 냉각량 (℃)";$("#benh").textContent=state.usePop?"편익":"인구(참고)";renderH();});
 $("#spick").addEventListener("change",e=>{state.spick=e.target.value;renderS();});
 showView(location.hash.slice(1));
 </script>
