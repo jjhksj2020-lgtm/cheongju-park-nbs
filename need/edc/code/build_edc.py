@@ -109,6 +109,15 @@ def dongs():
 def existing_service(targets):
     R = EDC_P['service_radius_m']; small = EDC_P['small_park_m2']; tgt = unary_union(list(targets))
     parks, zones = [], []
+    if EDC_P['existing_parks_source'] == 'city':          # 청주시 공식 공원 목록(미조성 제외), 공원구분별 유치거리
+        import parks_city
+        lst, n = parks_city.existing()
+        print('기존 공원(청주시 목록)', {k: v for k, v in n.items() if k != '못 찾은 공원'}, '못 찾음:', n['못 찾은 공원'])
+        for name, kind, a, g, how in lst:
+            if tgt.contains(g.centroid):                  # 평가 대상 40개소 자신은 뺀다
+                continue
+            parks.append(g); zones.append(g.buffer(R.get(kind, R['default'])))
+        return unary_union(parks), unary_union(zones), len(parks)
     for tags, g in osm.areas('parks'):
         if g.intersection(tgt).area > 0:          # 평가 대상 40개소 자신은 '기존 공원'에서 뺀다
             continue
@@ -184,7 +193,7 @@ def main():
     total = sgis() if EDC_P['pop_source'] == 'sgis' else worldpop()
     print(total.name, '격자', len(total.cells), '칸, 합계', round(sum(total.vals)))
     dgeo, dratio, dgu = dongs(); total.set_ratio(dgeo, dratio)
-    ex_parks, served, n_ex = existing_service(g for g, _, _ in B.values()); print('기존 공원(OSM)', n_ex)
+    ex_parks, served, n_ex = existing_service(g for g, _, _ in B.values()); print('기존 공원 사용', n_ex)
     LCP = EDC_P['landcover']
     if LCP['source'] == 'egis':
         import landcover
@@ -198,6 +207,7 @@ def main():
     rows, wide, geo_out = [], [], {}
     OS, MO, LZK = 'OSM-2026-11', 'MOIS-2026-10', 'PARK2030-T11-2'
     LCK = 'EGIS-LC-2025' if LC else OS
+    PK, PKT = ('CJ-PARK-2025', '실자료') if EDC_P['existing_parks_source'] == 'city' else (OS, '대체자료')
     WP, WPT = ('SGIS-2024', '실자료') if EDC_P['pop_source'] == 'sgis' else ('WP-2020', '대체자료')
     def add(sid, ind, val, unit, src, tag):
         rows.append({'site_id': sid, 'indicator': ind, 'value': '' if val is None else val, 'unit': unit, 'source_key': src, 'tag': tag})
@@ -228,12 +238,12 @@ def main():
         atype = area_type(dens, sh['res'], sh['ind'])
         add(sid, 'E1', round(e1), '명', WP, WPT)
         add(sid, 'E2', round(e2, 4), '비율(0~1)', f'{MO};{WP}', '실자료')
-        add(sid, 'D1', None if d1 is None else round(d1, 4), '비율(0~1)', f'{WP};{OS}', '대체자료')
+        add(sid, 'D1', None if d1 is None else round(d1, 4), '비율(0~1)', f'{WP};{PK}', PKT)
         add(sid, 'D2', d2, '㎡/인', LZK, '실자료' if zone != '도심생활권' else '가정')
         add(sid, 'C1', round(c1), 'm', f'{OS};{LCK}' if LC else OS, '대체자료')
         add(sid, 'C1_near', int(c1 <= EDC_P['c1_near_m']), '1/0', f'{OS};{LCK}' if LC else OS, '가정')
         add(sid, 'river_adjacent', radj, '1/0', OS, '가정')
-        add(sid, 'new_served_pop', round(new), '명', f'{WP};{OS}', '대체자료')
+        add(sid, 'new_served_pop', round(new), '명', f'{WP};{PK}', PKT)
         wide.append({'site_id': sid, 'name': s['name'], 'type': s['type'], 'dong': dong, 'living_zone': zone, 'buffer_m': rad,
                      'E1_pop': round(e1), 'E2_vulnerable': round(e2, 3), 'E2_basis': e2_src,
                      'D1_unserved': None if d1 is None else round(d1, 3), 'new_served_pop': round(new),
@@ -259,7 +269,7 @@ def main():
             x, y = transform(to4326, c.centroid).coords[0]
             cells.append([round(x, 5), round(y, 5), round(float(v), 1), None if w is None else round(w, 3)])
     big_parks = unary_union([p for p in getattr(ex_parks, 'geoms', [ex_parks]) if p.intersects(near)])
-    mapd = {'asof': '2026-11-18', 'pop_source': total.name, 'landcover': LCK, 'sites': wide, 'geo': geo_out,
+    mapd = {'asof': '2026-11-18', 'pop_source': total.name, 'landcover': LCK, 'existing_parks': PK, 'sites': wide, 'geo': geo_out,
             'served': _geo(served.intersection(near), 10), 'existing': _geo(big_parks, 4),
             'water': _geo(water.intersection(view), 15), 'forest': _geo(green.intersection(view), 60),
             'gu': {k: _geo(g, 30) for k, g in gu.items()}, 'cells': cells,

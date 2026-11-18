@@ -134,8 +134,8 @@ const pct = v => v == null || v === '' ? '–' : (Number(v) * 100).toFixed(0) + 
 const M = [
   { k: 'E1_pop', label: 'E1 버퍼 인구', unit: '명', f: v => fmt(v), tag: '실자료', src: 'SGIS 2024 100m 격자', hi: '많을수록 이용자 많음' },
   { k: 'E2_vulnerable', label: 'E2 아동·고령 비율', unit: '', f: pct, tag: '실자료', src: '행안부 주민등록 2026.10', hi: '높을수록 취약' },
-  { k: 'D1_unserved', label: 'D1 서비스권 밖 비율', unit: '', f: pct, tag: '대체자료', src: 'SGIS 격자 + OSM 기존 공원', hi: '높을수록 공원 부족' },
-  { k: 'new_served_pop', label: '신규 수혜 인구', unit: '명', f: v => fmt(v), tag: '대체자료', src: 'E1 × D1', hi: '조성 시 새로 혜택' },
+  { k: 'D1_unserved', label: 'D1 서비스권 밖 비율', unit: '', f: pct, tag: '실자료', src: 'SGIS 격자 + 청주시 공원 목록(미조성 제외)', hi: '높을수록 공원 부족' },
+  { k: 'new_served_pop', label: '신규 수혜 인구', unit: '명', f: v => fmt(v), tag: '실자료', src: 'E1 × D1', hi: '조성 시 새로 혜택' },
   { k: 'D2_built_m2_per_cap', label: 'D2 생활권 1인당 조성면적', unit: '㎡/인', f: v => fmt(v, 1), tag: '실자료', src: '2030 공원녹지기본계획 표 11-2', hi: '낮을수록 부족', invert: true },
   { k: 'C1_m', label: 'C1 녹지·수변축 거리', unit: 'm', f: v => fmt(v), tag: '대체자료', src: 'OSM 하천 + 토지피복지도 300ha 산림', hi: '가까울수록 연결', invert: true },
 ];
@@ -170,7 +170,7 @@ function cellsLayer() {
 layer.cells = { name: '인구 격자 (100m)', sw: '--s3', on: false, make: cellsLayer };
 layer.served = { name: '기존 공원 서비스권', sw: '--served', on: true,
   make: () => L.polygon(polys(D.served), { color: css('--served'), weight: 0, fillOpacity: 0.18, interactive: false }) };
-layer.existing = { name: '기존 공원 (OSM)', sw: '--forest', on: false,
+layer.existing = { name: '기존 공원 (청주시 목록)', sw: '--forest', on: false,
   make: () => L.polygon(polys(D.existing), { color: css('--forest'), weight: 1, fillOpacity: 0.35, interactive: false }) };
 layer.buffer = { name: '유치거리 버퍼', sw: '--accent', on: true,
   make: () => L.layerGroup(Object.entries(D.geo).map(([id, g]) => L.polygon(polys(g.buffer), { color: css('--accent'), weight: 1, dashArray: '4 3', fill: false, interactive: false }))) };
@@ -301,7 +301,7 @@ function refresh() { drawParks(); drawTable(); }
 refresh();
 
 $('#foot').innerHTML = `<b>자료</b> 인구: SGIS 2024 100m 격자 총인구(등록센서스, 국가데이터처) · 연령: 행정안전부 행정동별 주민등록인구 2026-10-31 ·
-  기존 공원·하천: OpenStreetMap 2026-11-15 · 산림·주거·공업지역: 환경부 토지피복지도 중분류 2025 · 생활권 1인당 공원면적: 2030 청주시 공원녹지기본계획(2020) 표 11-2 ·
+  기존 공원: 청주시 도시공원정보(2025-11-20)에서 미조성공원 현황(2026-09-29) 제외, 위치 일부는 V-World 주소 검색, 면적이 같은 원으로 표시 · 하천: OpenStreetMap 2026-11-15 · 산림·주거·공업지역: 환경부 토지피복지도 중분류 2025 · 생활권 1인당 공원면적: 2030 청주시 공원녹지기본계획(2020) 표 11-2 ·
   공원 경계: V-World(사업성 파트 수집분). <b>규칙</b> 버퍼 = 공원 경계 + 도시공원법 시행규칙 별표3 유치거리(어린이·소공원 250m, 그 외 500m).
   지역 유형은 버퍼 인구밀도(밀집 ≥ ${fmt(D.params.area_type.dense_per_km2)}명/㎢, 주거 ≥ ${fmt(D.params.area_type.residential_per_km2)}명/㎢)와 토지피복지도 공업지역 비율(≥ ${pct(D.params.area_type.industrial_share)})로 나눈 표시용 라벨이며 점수에 넣지 않습니다.
   태그: <span class="tag 실자료">실자료</span> <span class="tag 대체자료">대체자료</span> <span class="tag 가정">가정</span> <span class="tag 미산정">미산정</span>. 기준일 ${D.asof}.`;

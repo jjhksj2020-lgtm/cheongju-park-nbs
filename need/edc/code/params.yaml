@@ -46,3 +46,7 @@ landcover:
   residential: [110]           # 주거지역
   industrial: [120]            # 공업지역
   commercial: [130]            # 상업지역
+# D1 기존 공원 — city: 청주시 도시공원정보(2025-11-20) − 미조성공원 현황(2026-09-29, '미조성'만 제외, 부분조성은 기존으로 봄)
+#   좌표가 주소의 구 밖이면 V-World 주소 검색 좌표(geocoded_vworld.csv), 그래도 없으면 OSM 같은 이름. 점 위치라 면적이 같은 원으로 본다(가정)
+#   유치거리는 공원구분으로 service_radius_m 을 고른다(수변·역사·체육·문화·묘지·기타는 default). osm: 예전 OSM 공원·놀이터
+existing_parks_source: city
