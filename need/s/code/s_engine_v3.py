@@ -32,7 +32,7 @@ def compute(coverage=None, phones=None, w_cov=None, hub_on=True, use_demand=None
         fac = area * P["facility_share"][typ]
         lamps = min(L["max_lamps"], max(L["min_lamps"], math.floor(fac / coverage)))
         ess_wh = lamps * L["battery_wh"]
-        lit_m2 = lamps * coverage
+        lit_m2 = lamps * 150                                       # 실제 밝히는 면적은 1기 150 ㎡
         lit_cap = lit_m2 / E["m2_per_person"]                      # 조명 아래 수용 인원
         phones_lamp = lamps * L["usb_ports"] * phones
         hub = 1 if (hub_on and typ in H["types"]) else 0
