@@ -16,6 +16,7 @@ from common import EDC_P, OUT, RAW, ROOT, _dec, buffers, sites, to4326, to5186, 
 import osm
 
 BBOX = None  # 청주시 경계(구 4개)의 범위로 채운다
+LC = None    # 토지피복지도 분류별 도형 (params landcover.source = egis일 때)
 
 
 # ---------- 인구 ----------
@@ -129,12 +130,14 @@ def axes():
     names = set(EDC_P['axis_rivers']); ww = osm.waterways()
     water = unary_union([g for t, g in ww if t.get('name') in names])
     anyriver = unary_union([g for t, g in ww if t.get('waterway') in ('river', 'stream')])
-    forest = unary_union([g for t, g in osm.areas('forests')])
+    forest = LC['forest'] if LC else unary_union([g for t, g in osm.areas('forests')])
     big = [p for p in getattr(forest, 'geoms', [forest]) if p.area >= EDC_P['axis_forest_min_ha'] * 1e4]
     return water, unary_union(big), anyriver
 
 
 def landuse():
+    if LC:
+        return {'res': LC['residential'], 'ind': LC['industrial'], 'com': LC['commercial']}
     L = osm.areas('landuse')
     return {k: unary_union([g for t, g in L if t.get('landuse') in v])
             for k, v in {'res': ['residential'], 'ind': ['industrial'], 'com': ['commercial', 'retail']}.items()}
@@ -170,7 +173,7 @@ def _geo(g, tol=8):
 
 
 def main():
-    global BBOX
+    global BBOX, LC
     gu_lines = [l for l in open(f'{ROOT}/biz/data/vworld/gu.txt', encoding='utf-8').read().split('\n') if l]
     gu4326 = {l.split('~')[0]: _dec(l.split('~')[1]) for l in gu_lines}
     BBOX = unary_union(list(gu4326.values())).bounds
@@ -182,6 +185,11 @@ def main():
     print(total.name, '격자', len(total.cells), '칸, 합계', round(sum(total.vals)))
     dgeo, dratio, dgu = dongs(); total.set_ratio(dgeo, dratio)
     ex_parks, served, n_ex = existing_service(g for g, _, _ in B.values()); print('기존 공원(OSM)', n_ex)
+    LCP = EDC_P['landcover']
+    if LCP['source'] == 'egis':
+        import landcover
+        LC = landcover.classes({k: LCP[k] for k in ('forest', 'residential', 'industrial', 'commercial')})
+        print('토지피복지도', {k: round(v.area / 1e6, 1) for k, v in LC.items()}, '㎢')
     water, green, anyriver = axes()
     LU = landuse()
     LZ = EDC_P['living_zone_park']; DT = set(EDC_P['downtown_dongs'])
@@ -189,6 +197,7 @@ def main():
 
     rows, wide, geo_out = [], [], {}
     OS, MO, LZK = 'OSM-2026-11', 'MOIS-2026-10', 'PARK2030-T11-2'
+    LCK = 'EGIS-LC-2025' if LC else OS
     WP, WPT = ('SGIS-2024', '실자료') if EDC_P['pop_source'] == 'sgis' else ('WP-2020', '대체자료')
     def add(sid, ind, val, unit, src, tag):
         rows.append({'site_id': sid, 'indicator': ind, 'value': '' if val is None else val, 'unit': unit, 'source_key': src, 'tag': tag})
@@ -221,8 +230,8 @@ def main():
         add(sid, 'E2', round(e2, 4), '비율(0~1)', f'{MO};{WP}', '실자료')
         add(sid, 'D1', None if d1 is None else round(d1, 4), '비율(0~1)', f'{WP};{OS}', '대체자료')
         add(sid, 'D2', d2, '㎡/인', LZK, '실자료' if zone != '도심생활권' else '가정')
-        add(sid, 'C1', round(c1), 'm', OS, '대체자료')
-        add(sid, 'C1_near', int(c1 <= EDC_P['c1_near_m']), '1/0', OS, '가정')
+        add(sid, 'C1', round(c1), 'm', f'{OS};{LCK}' if LC else OS, '대체자료')
+        add(sid, 'C1_near', int(c1 <= EDC_P['c1_near_m']), '1/0', f'{OS};{LCK}' if LC else OS, '가정')
         add(sid, 'river_adjacent', radj, '1/0', OS, '가정')
         add(sid, 'new_served_pop', round(new), '명', f'{WP};{OS}', '대체자료')
         wide.append({'site_id': sid, 'name': s['name'], 'type': s['type'], 'dong': dong, 'living_zone': zone, 'buffer_m': rad,
@@ -231,8 +240,8 @@ def main():
                      'D2_built_m2_per_cap': d2, 'D2_decided_m2_per_cap': LZ['per_cap_decided'][zone],
                      'C1_m': round(c1), 'C1_water_m': round(cw), 'C1_green_m': round(cg),
                      'C1_near': int(c1 <= EDC_P['c1_near_m']), 'river_adjacent': radj,
-                     'area_type': atype, 'pop_density_km2': round(dens), 'osm_res_share': round(sh['res'], 3),
-                     'osm_ind_share': round(sh['ind'], 3), 'osm_com_share': round(sh['com'], 3), 'note': ''})
+                     'area_type': atype, 'pop_density_km2': round(dens), 'res_share': round(sh['res'], 3),
+                     'ind_share': round(sh['ind'], 3), 'com_share': round(sh['com'], 3), 'note': ''})
         geo_out[sid] = {'park': _geo(park, 2), 'buffer': _geo(buf, 8)}
 
     write_rows(f'{OUT}/indicators_edc.csv', rows)
@@ -250,9 +259,9 @@ def main():
             x, y = transform(to4326, c.centroid).coords[0]
             cells.append([round(x, 5), round(y, 5), round(float(v), 1), None if w is None else round(w, 3)])
     big_parks = unary_union([p for p in getattr(ex_parks, 'geoms', [ex_parks]) if p.intersects(near)])
-    mapd = {'asof': '2026-11-18', 'pop_source': total.name, 'sites': wide, 'geo': geo_out,
+    mapd = {'asof': '2026-11-18', 'pop_source': total.name, 'landcover': LCK, 'sites': wide, 'geo': geo_out,
             'served': _geo(served.intersection(near), 10), 'existing': _geo(big_parks, 4),
-            'water': _geo(water.intersection(view), 15), 'forest': _geo(green.intersection(view), 25),
+            'water': _geo(water.intersection(view), 15), 'forest': _geo(green.intersection(view), 60),
             'gu': {k: _geo(g, 30) for k, g in gu.items()}, 'cells': cells,
             'zones': EDC_P['living_zone_park'], 'params': {k: EDC_P[k] for k in ('area_type', 'c1_near_m', 'river_adjacent_m', 'axis_forest_min_ha', 'axis_rivers')},
             'buffer_m': {k: v for k, v in __import__('common').PRESETS['buffer_m'].items()}}

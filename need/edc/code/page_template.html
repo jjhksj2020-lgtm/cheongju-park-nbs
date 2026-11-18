@@ -137,7 +137,7 @@ const M = [
   { k: 'D1_unserved', label: 'D1 서비스권 밖 비율', unit: '', f: pct, tag: '대체자료', src: 'SGIS 격자 + OSM 기존 공원', hi: '높을수록 공원 부족' },
   { k: 'new_served_pop', label: '신규 수혜 인구', unit: '명', f: v => fmt(v), tag: '대체자료', src: 'E1 × D1', hi: '조성 시 새로 혜택' },
   { k: 'D2_built_m2_per_cap', label: 'D2 생활권 1인당 조성면적', unit: '㎡/인', f: v => fmt(v, 1), tag: '실자료', src: '2030 공원녹지기본계획 표 11-2', hi: '낮을수록 부족', invert: true },
-  { k: 'C1_m', label: 'C1 녹지·수변축 거리', unit: 'm', f: v => fmt(v), tag: '대체자료', src: 'OSM 하천·300ha 산림', hi: '가까울수록 연결', invert: true },
+  { k: 'C1_m', label: 'C1 녹지·수변축 거리', unit: 'm', f: v => fmt(v), tag: '대체자료', src: 'OSM 하천 + 토지피복지도 300ha 산림', hi: '가까울수록 연결', invert: true },
 ];
 const TYPES = [
   { k: '밀집', c: '--c-dense' }, { k: '주거', c: '--c-res' }, { k: '산업', c: '--c-ind' }, { k: '기타', c: '--c-etc' },
@@ -301,9 +301,9 @@ function refresh() { drawParks(); drawTable(); }
 refresh();
 
 $('#foot').innerHTML = `<b>자료</b> 인구: SGIS 2024 100m 격자 총인구(등록센서스, 국가데이터처) · 연령: 행정안전부 행정동별 주민등록인구 2026-10-31 ·
-  기존 공원·하천·산림·토지이용: OpenStreetMap 2026-11-15 · 생활권 1인당 공원면적: 2030 청주시 공원녹지기본계획(2020) 표 11-2 ·
+  기존 공원·하천: OpenStreetMap 2026-11-15 · 산림·주거·공업지역: 환경부 토지피복지도 중분류 2025 · 생활권 1인당 공원면적: 2030 청주시 공원녹지기본계획(2020) 표 11-2 ·
   공원 경계: V-World(사업성 파트 수집분). <b>규칙</b> 버퍼 = 공원 경계 + 도시공원법 시행규칙 별표3 유치거리(어린이·소공원 250m, 그 외 500m).
-  지역 유형은 버퍼 인구밀도(밀집 ≥ ${fmt(D.params.area_type.dense_per_km2)}명/㎢, 주거 ≥ ${fmt(D.params.area_type.residential_per_km2)}명/㎢)와 OSM 산업용지 비율(≥ ${pct(D.params.area_type.industrial_share)})로 나눈 표시용 라벨이며 점수에 넣지 않습니다.
+  지역 유형은 버퍼 인구밀도(밀집 ≥ ${fmt(D.params.area_type.dense_per_km2)}명/㎢, 주거 ≥ ${fmt(D.params.area_type.residential_per_km2)}명/㎢)와 토지피복지도 공업지역 비율(≥ ${pct(D.params.area_type.industrial_share)})로 나눈 표시용 라벨이며 점수에 넣지 않습니다.
   태그: <span class="tag 실자료">실자료</span> <span class="tag 대체자료">대체자료</span> <span class="tag 가정">가정</span> <span class="tag 미산정">미산정</span>. 기준일 ${D.asof}.`;
 </script>
 </body>
