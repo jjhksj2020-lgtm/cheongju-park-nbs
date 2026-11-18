@@ -143,32 +143,32 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--line);bord
     <div class="main">
       <div class="panel ctl">
         <h2>시나리오</h2>
-        <div><label for="skw">설치 밀도 (kW / ㎡) <span class="val" id="skwv"></span></label>
-          <input type="range" id="skw" min="0.11" max="0.18" step="0.01" value="0.15">
-          <p class="cap">0.11 = 지상 이격형(보고서) · 0.15 = 캐노피·지붕형 · 0.18 = 빽빽한 캐노피</p></div>
-        <div><label for="sload">1인 필수 부하 (kWh / 일) <span class="val" id="sloadv"></span></label>
-          <input type="range" id="sload" min="0.03" max="0.15" step="0.01" value="0.05">
-          <p class="cap">0.03 = LED 조명+충전만 · 0.05 = 일본 대피소 시산 · 0.15 = 환기·냉장·급수펌프 추가</p></div>
-        <div><label for="sdays">ESS 자립 일수 <span class="val" id="sdaysv"></span></label><input type="range" id="sdays" min="1" max="3" step="0.5" value="2"></div>
-        <div><label for="swc">가중치: 보장 인원 (나머지 = 자립률) <span class="val" id="swcv"></span></label><input type="range" id="swc" min="0" max="1" step="0.05" value="0.6"></div>
+        <div><label for="cov">공원등 1기 담당 면적 (㎡) <span class="val" id="covv"></span></label>
+          <input type="range" id="cov" min="100" max="250" step="10" value="150">
+          <p class="cap">기둥 3~4 m · 간격 12~15 m 보행로 조명 → 약 150 ㎡</p></div>
+        <div><label for="phones">1포트 밤새 충전 대수 <span class="val" id="phv"></span></label>
+          <input type="range" id="phones" min="3" max="12" step="1" value="7">
+          <p class="cap">배터리 160 Wh 중 조명 뒤 남는 몫 · USB 2포트</p></div>
+        <div><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="hubon" checked> 충전 허브 (근린·역사·문화공원 1기, PV 600 W + ESS 5 kWh)</label></div>
+        <div><label for="swc">가중치: 조명 보장 인원 (나머지 = 조명 자립률) <span class="val" id="swcv"></span></label><input type="range" id="swc" min="0" max="1" step="0.05" value="0.6"></div>
         <div><label>공원 유형</label><div class="types" id="stypes"></div></div>
       </div>
       <div class="panel mapbox">
-        <h2>지도 — 색: 자립률, 크기: 전력 보장 대피 인원</h2>
+        <h2>지도 — 색: 조명 자립률, 크기: 밤 조명 아래 보장 인원</h2>
         <div id="smap"></div>
-        <div class="legend"><span>0% <span class="grad s"></span> 100%</span><span>● 크기 = 보장 인원</span><span>점을 누르면 근거 문단이 바뀝니다</span></div>
+        <div class="legend"><span>0% <span class="grad s"></span> 100%</span><span>● 크기 = 조명 보장 인원</span><span>점을 누르면 근거 문단이 바뀝니다</span></div>
       </div>
       <div class="panel">
         <h2>회복력(S) 순위</h2>
-        <div class="tbl"><table><thead><tr><th>순위</th><th>공원</th><th>유형</th><th>등급</th><th>안정성</th><th>용량 kW</th><th>MWh/yr</th><th>대피 인원</th><th>보장 인원</th><th>자립률</th></tr></thead><tbody id="srows"></tbody></table></div>
+        <div class="tbl"><table><thead><tr><th>순위</th><th>공원</th><th>유형</th><th>등급</th><th>안정성</th><th>공원등</th><th>ESS kWh</th><th>허브</th><th>대피 인원</th><th>조명 수용</th><th>충전/밤</th><th>조명 자립률</th></tr></thead><tbody id="srows"></tbody></table></div>
       </div>
     </div>
-    <div class="panel chartbox"><h2>대피 인원 vs 전력 보장 가능 인원 (재난 시 12월 수준 발전)</h2><div id="schart"></div></div>
+    <div class="panel chartbox"><h2>대피 인원 vs 밤 조명 아래 수용 가능 인원</h2><div id="schart"></div></div>
     <div class="panel card">
       <div><h2>시설별 근거 문단</h2><label class="cap" for="spick">공원 선택</label><select id="spick"></select></div>
       <div class="prose" id="sprose"></div>
     </div>
-    <p class="note"><b>계산 방식.</b> 설치 면적 = 공원면적 × 시설부지 상한(소공원 20·어린이 60·근린 40%, 주제공원 40% 가정) × PV 구조물 비율(소 15·어린이 10·근린 25·역사·문화 20·생태 10%, 가정) × (1 − 수목 비율) × 경사 15° 초과 시 ½ · 용량 상한 500 kW · 발전 = 용량 × 1,300 kWh/kW × (일사 ÷ 1,463) × (1 − 건물높이 × 1%/m, 최대 35%) · 재난 시 일 발전 = 연 ÷ 365 × 0.70 · 대피 인원 = min(2km 인구 × 30%, 면적 ÷ 2㎡) · 자립률 = 일 발전 ÷ (대피 인원 × 1인 부하) · 보장 인원 = min(대피 인원, 일 발전 ÷ 1인 부하) · S 점수 = 보장 인원 백분위 × w + 자립률(상한 1) 백분위 × (1 − w) · 안정성 = 밀도(0.11/0.18) × 구조물 비율(×0.6/×1.4) × 음영(0.5/1.5%/m) × 가중치(0.4/0.6/0.8) 24개 시나리오에서 등급이 모두 같으면 확정. 수목·경사는 공원 폴리곤 안, 인구는 WorldPop 2020. 지형 그늘은 GEE 검사에서 40곳 모두 0.</p>
+    <p class="note"><b>계산 방식 (S v3, 2026-11-18).</b> 공원등 기수 = 시설부지(공원면적 × 법 상한: 소공원 20·어린이 60·근린 40%, 주제공원 40% 가정) ÷ 1기 담당 면적, 최소 1·최대 200기 · 분산 ESS = 기수 × 160 Wh · 조명 수용 = 기수 × 담당 면적 ÷ 2㎡ · 충전 = 기수 × 2포트 × 대수 + 허브 5 kWh × 80% ÷ 10 Wh · 대피 인원 = min(2km 인구 × 30%, 면적 ÷ 2㎡) · 조명 자립률 = 조명 수용 ÷ 대피 인원(상한 1) · S 점수 = 조명 보장 인원 백분위 × w + 자립률 백분위 × (1 − w) · 안정성 = 담당 면적(120/200) × 충전(5/10) × 가중치(0.4/0.6/0.8) × 허브(켬/끔) 24개 시나리오. 제품 사양: 올인원 태양광 공원등(PV 20 Wp, LiFePO4 160 Wh, 2,000 lm, 흐린 날 2~3일). 대용량 PV(캐노피형) 버전은 저장소 need/s README의 옵션 B.</p>
   </section>
 
   <!-- ================= BOTH ================= -->
@@ -185,7 +185,7 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--line);bord
         <div class="tbl"><table><thead><tr><th>#</th><th>공원</th><th>유형</th><th>H 등급</th><th>H 순위</th><th>H 안정성</th><th>S 등급</th><th>S 순위</th><th>S 안정성</th><th>종합</th></tr></thead><tbody id="brows"></tbody></table></div>
       </div>
     </div>
-    <p class="note"><b>종합 읽는 법.</b> "열·전력 모두 상"은 조성하면 더위도 줄고 정전 시 대피 거점도 되는 곳. "열만 상"은 수목형 조성 우선(PV 자리 적음), "전력만 상"은 캐노피·시설 위주 공원. 두 축은 서로 밀고 당긴다 — 나무를 많이 심을수록 PV 자리는 줄어든다 (S 계산의 (1 − 수목 비율)). 합산 점수에는 H만 들어가고 S는 표시용.</p>
+    <p class="note"><b>종합 읽는 법.</b> "열·전력 모두 상"은 조성하면 더위도 줄고 정전 시 대피 거점도 되는 곳. "열만 상"은 수목형 조성 우선, "전력만 상"은 산책로·광장이 넓어 공원등·허브 패키지가 잘 맞는 공원. 수목이 많은 공원은 공원등을 산책로 위 음영을 피해 배치해야 한다. 합산 점수에는 H만 들어가고 S는 표시용.</p>
   </section>
 </div>
 <script>
@@ -235,13 +235,13 @@ const parks=RAW.map(r=>({id:r[0],type:r[1],name:r[2],addr:r[3],expire:r[4],area:
 const HC={green:-2.141,loss:-7.013,spatial:-10.135,def:-4.577};
 const NDVI={tree:0.863,grass:0.535}, SCEN_KO={tree:"수목형",grass:"잔디형"};
 const TYPES=[...new Set(parks.map(p=>p.type))];
-const SP={ // S 기준값 (need/s/code/params.yaml과 동일)
+const SP={ // S v3 기준값 (need/s/code/params.yaml과 동일): 태양광 공원등 + 충전 허브
   facility:{소공원:.20,어린이공원:.60,근린공원:.40,역사공원:.40,문화공원:.40,생태공원:.10},
-  pvshare:{소공원:.15,어린이공원:.10,근린공원:.25,역사공원:.20,문화공원:.20,생태공원:.10},
-  slopeLimit:15, slopePenalty:.5, capKw:500, baseYield:1300, ghiRef:1463, bldLossPerM:.01, bldLossMax:.35, worst:.70,
-  evacRate:.30, m2PerPerson:2, ssRankCap:1, cuts:[.3,.7]};
+  lamp:{pvWp:20,battWh:160,lumen:2000,ports:2,autonomy:2.5,min:1,max:200},
+  hub:{types:["근린공원","역사공원","문화공원"],essKwh:5,usable:.8,phoneWh:10,pvW:600},
+  evacRate:.30, m2PerPerson:2, cuts:[.3,.7]};
 const state={scen:"tree",b:HC.def,wh:.5,wp:.5,usePop:false,types:new Set(TYPES),pick:null,
-  skw:.15,sload:.05,sdays:2,swc:.6,stypes:new Set(TYPES),spick:null,view:"heat"};
+  cov:150,phones:7,hubOn:true,swc:.6,stypes:new Set(TYPES),spick:null,view:"heat"};
 
 // ---- 통계 도우미 ----
 function rankAvg(vals){const idx=vals.map((v,i)=>[v,i]).sort((a,b)=>a[0]-b[0]);const r=new Array(vals.length);
@@ -270,28 +270,28 @@ function computeH(o){ o=o||{}; const b=o.b??state.b, scen=o.scen??state.scen, wh
   }
   return {d,ok};
 }
-// ---- S 계산 ----
-function computeS(o){ o=o||{}; const skw=o.skw??state.skw, sc=o.sc??1, bl=o.bl??SP.bldLossPerM, swc=o.swc??state.swc;
+// ---- S 계산 (v3: 공원등 + 허브) ----
+function computeS(o){ o=o||{}; const cov=o.cov??state.cov, ph=o.phones??state.phones, hubOn=o.hubOn??state.hubOn, swc=o.swc??state.swc;
   const d=parks.filter(p=>state.stypes.has(p.type)).map(p=>({...p}));
   d.forEach(p=>{
-    const fs=p.slope>SP.slopeLimit?SP.slopePenalty:1;
-    p.pvArea=p.area*SP.facility[p.type]*Math.min(1,SP.pvshare[p.type]*sc)*(1-p.tree)*fs;
-    const kwRaw=p.pvArea*skw; p.kw=Math.min(kwRaw,SP.capKw); p.capped=kwRaw>SP.capKw;
-    p.fBld=1-Math.min(SP.bldLossMax,bl*p.bh); p.yield=SP.baseYield*(p.ghi/SP.ghiRef)*p.fBld;
-    p.eYear=p.kw*p.yield; p.eDay=p.eYear/365*SP.worst;
+    p.fac=p.area*SP.facility[p.type];
+    p.lamps=Math.min(SP.lamp.max,Math.max(SP.lamp.min,Math.floor(p.fac/cov)));
+    p.essKwh=p.lamps*SP.lamp.battWh/1000; p.litM2=p.lamps*cov; p.litCap=p.litM2/SP.m2PerPerson;
+    p.hub=(hubOn&&SP.hub.types.includes(p.type))?1:0;
+    p.phonesLamp=p.lamps*SP.lamp.ports*ph; p.phonesHub=p.hub*SP.hub.essKwh*1000*SP.hub.usable/SP.hub.phoneWh; p.phones=p.phonesLamp+p.phonesHub;
     const nDem=p.pop2k*SP.evacRate, nCap=p.area/SP.m2PerPerson; p.nEvac=Math.min(nDem,nCap); p.evacLimit=nCap<nDem?"면적":"수요";
-    p.load=p.nEvac*state.sload; p.ess=p.load*state.sdays;
-    p.ss=p.load>0?p.eDay/p.load:0; p.nCov=Math.min(p.nEvac,p.eDay/state.sload);
+    p.covered=Math.min(p.nEvac,p.litCap); p.lightRatio=p.nEvac>0?Math.min(1,p.litCap/p.nEvac):1; p.chargeRatio=p.nEvac>0?Math.min(1,p.phones/p.nEvac):1;
+    p.shade=p.tree>.5;
   });
   const n=d.length; if(!n) return {d};
-  const ps=rankAvg(d.map(p=>Math.min(p.ss,SP.ssRankCap))),pc=rankAvg(d.map(p=>p.nCov));
-  d.forEach((p,i)=>{p.S=swc*pc[i]/n+(1-swc)*ps[i]/n;});
+  const pc=rankAvg(d.map(p=>p.covered)),pl=rankAvg(d.map(p=>p.lightRatio));
+  d.forEach((p,i)=>{p.S=swc*pc[i]/n+(1-swc)*pl[i]/n;});
   const sr=rankFirstDesc(d.map(p=>p.S)); d.forEach((p,i)=>p.Srank=sr[i]);
-  d.forEach(p=>{const pct=1-(p.Srank-1)/n; p.Sgrade=pct>=SP.cuts[1]?"상":(pct>=SP.cuts[0]?"중":"하");});   // need/s/s_engine.py와 같은 순위 백분위
-  if(!o.noStab){ // 안정성: 밀도 2 × 구조물 비율 2 × 음영 2 × 가중치 3 = 24 시나리오
+  d.forEach(p=>{const pct=1-(p.Srank-1)/n; p.Sgrade=pct>=SP.cuts[1]?"상":(pct>=SP.cuts[0]?"중":"하");});
+  if(!o.noStab){ // 안정성: 담당면적 2 × 충전 2 × 가중치 3 × 허브 2 = 24
     const gs={}; d.forEach(p=>gs[p.id]=[]);
-    for(const k of [.11,.18]) for(const c of [.6,1.4]) for(const b of [.005,.015]) for(const w of [.4,.6,.8])
-      computeS({skw:k,sc:c,bl:b,swc:w,noStab:true}).d.forEach(p=>gs[p.id].push(p.Sgrade));
+    for(const c of [120,200]) for(const q of [5,10]) for(const w of [.4,.6,.8]) for(const h of [true,false])
+      computeS({cov:c,phones:q,swc:w,hubOn:h,noStab:true}).d.forEach(p=>gs[p.id].push(p.Sgrade));
     d.forEach(p=>{p.nHigh=gs[p.id].filter(x=>x==="상").length;p.stab=new Set(gs[p.id]).size===1?"확정":"경계";});
   }
   return {d};
@@ -365,47 +365,44 @@ function renderH(){
 function renderS(){
   const {d}=computeS();
   if(state.spick==null||!d.some(p=>p.name===state.spick)){const t=d.slice().sort((a,b)=>a.Srank-b.Srank)[0];state.spick=t?t.name:null;}
-  $("#skwv").textContent=state.skw.toFixed(2);$("#sloadv").textContent=state.sload.toFixed(2);$("#sdaysv").textContent=state.sdays+"일";$("#swcv").textContent=state.swc.toFixed(2);
-  const top=d.slice().sort((a,b)=>b.nCov-a.nCov)[0];
-  kpis("#skpis",[["설치 가능 용량 합계",`${fi(d.reduce((s,p)=>s+p.kw,0))} kW`,`${d.filter(p=>p.capped).length}곳은 500 kW 상한`],
-    ["연 발전량 합계",`${fi(d.reduce((s,p)=>s+p.eYear,0)/1000)} MWh`,"1,300 kWh/kW × 일사·음영 보정"],
-    ["전력 보장 대피 인원 합계",`${fi(d.reduce((s,p)=>s+p.nCov,0))} 명`,`대피 인원 ${fi(d.reduce((s,p)=>s+p.nEvac,0))}명 중`],
-    ["보장 인원 1위",top?top.name:"–",top?`${fi(top.nCov)}명 · 자립률 ${pc(top.ss)}`:""]]);
-  drawMap("#smap",d,{size:p=>p.nCov,color:p=>sunColor(Math.min(1,p.ss)),pick:state.spick,onPick:n=>{state.spick=n;renderS();},
-    tip:p=>`${esc(p.name)} · ${esc(p.addr)}\n용량 ${f1(p.kw)} kW · ${f1(p.eYear/1000)} MWh/yr\n대피 ${fi(p.nEvac)}명 · 보장 ${fi(p.nCov)}명 · 자립률 ${pc(p.ss)}\n등급 ${p.Sgrade} · S ${p.Srank}위`});
-  $("#srows").innerHTML=d.slice().sort((a,b)=>a.Srank-b.Srank).map(p=>`<tr data-n="${esc(p.name)}" class="${p.name===state.spick?'sel':''}"><td class="num">${p.Srank}</td><td>${esc(p.name)}</td><td>${esc(p.type)}</td><td><span class="pill p-${p.Sgrade}">${p.Sgrade}</span></td><td>${p.stab} <span class="num">${p.nHigh}/24</span></td><td class="num">${f1(p.kw)}</td><td class="num">${f1(p.eYear/1000)}</td><td class="num">${fi(p.nEvac)}</td><td class="num">${fi(p.nCov)}</td><td class="num">${pc(p.ss)}</td></tr>`).join("")||`<tr><td colspan="10">선택된 유형이 없습니다</td></tr>`;
+  $("#covv").textContent=state.cov+" ㎡";$("#phv").textContent=state.phones+"대";$("#swcv").textContent=state.swc.toFixed(2);
+  const top=d.slice().sort((a,b)=>b.covered-a.covered)[0];
+  kpis("#skpis",[["태양광 공원등 합계",`${fi(d.reduce((s,p)=>s+p.lamps,0))} 기`,`분산 ESS ${f1(d.reduce((s,p)=>s+p.essKwh,0))} kWh (1기 160 Wh)`],
+    ["충전 허브",`${d.reduce((s,p)=>s+p.hub,0)} 기`,state.hubOn?"근린·역사·문화공원 각 5 kWh":"끔"],
+    ["밤 조명 아래 수용 인원 합계",`${fi(d.reduce((s,p)=>s+p.covered,0))} 명`,`대피 인원 ${fi(d.reduce((s,p)=>s+p.nEvac,0))}명 중`],
+    ["조명 보장 인원 1위",top?top.name:"–",top?`${fi(top.covered)}명 · ${top.lamps}기`:""]]);
+  drawMap("#smap",d,{size:p=>p.covered,color:p=>sunColor(p.lightRatio),pick:state.spick,onPick:n=>{state.spick=n;renderS();},
+    tip:p=>`${esc(p.name)} · ${esc(p.addr)}\n공원등 ${p.lamps}기 · ESS ${f1(p.essKwh)} kWh${p.hub?" · 허브 1":""}\n대피 ${fi(p.nEvac)}명 · 조명 수용 ${fi(p.litCap)}명 · 충전 ${fi(p.phones)}대/밤\n조명 자립률 ${pc(p.lightRatio)} · 등급 ${p.Sgrade} · S ${p.Srank}위`});
+  $("#srows").innerHTML=d.slice().sort((a,b)=>a.Srank-b.Srank).map(p=>`<tr data-n="${esc(p.name)}" class="${p.name===state.spick?'sel':''}"><td class="num">${p.Srank}</td><td>${esc(p.name)}</td><td>${esc(p.type)}</td><td><span class="pill p-${p.Sgrade}">${p.Sgrade}</span></td><td>${p.stab} <span class="num">${p.nHigh}/24</span></td><td class="num">${p.lamps}</td><td class="num">${f1(p.essKwh)}</td><td class="num">${p.hub}</td><td class="num">${fi(p.nEvac)}</td><td class="num">${fi(p.litCap)}</td><td class="num">${fi(p.phones)}</td><td class="num">${pc(p.lightRatio)}</td></tr>`).join("")||`<tr><td colspan="12">선택된 유형이 없습니다</td></tr>`;
   $("#srows").querySelectorAll("tr[data-n]").forEach(tr=>tr.addEventListener("click",()=>{state.spick=tr.dataset.n;renderS();}));
-  // 차트: 대피 인원 vs 보장 인원 (로그축)
   const t=d.slice().sort((a,b)=>b.nEvac-a.nEvac);
   if(t.length){const W=Math.max(900,t.length*26),H=360,L=52,R=12,T=28,B=78,iw=W-L-R,ih=H-T-B;
-    const lg=v=>Math.log10(Math.max(1,v)); const vmax=Math.ceil(lg(Math.max(...t.map(p=>p.nEvac))));
+    const lg=v=>Math.log10(Math.max(1,v)); const vmax=Math.ceil(lg(Math.max(...t.map(p=>Math.max(p.nEvac,p.litCap)))));
     const y=v=>T+(vmax-lg(v))/vmax*ih,bw=iw/t.length,bar=bw*.36;const ticks=[];
     for(let e=0;e<=vmax;e++)ticks.push(`<line x1="${L}" x2="${W-R}" y1="${y(10**e)}" y2="${y(10**e)}" stroke="var(--line)"/><text x="${L-6}" y="${y(10**e)+4}" text-anchor="end" font-size="10" fill="var(--muted)" font-family="var(--mono)">${(10**e).toLocaleString()}</text>`);
     const bars=t.map((p,i)=>{const x=L+i*bw+bw*.12;const r=(v,xx,c,lab)=>`<rect x="${xx.toFixed(1)}" y="${y(v).toFixed(1)}" width="${bar.toFixed(1)}" height="${(T+ih-y(v)).toFixed(1)}" fill="${c}"><title>${esc(p.name)} ${lab} ${fi(v)}명</title></rect>`;
-      return r(p.nEvac,x,"var(--muted)","대피")+r(p.nCov,x+bar+2,"var(--sun)","보장")+`<text transform="translate(${(L+i*bw+bw/2).toFixed(1)},${H-B+10}) rotate(-60)" text-anchor="end" font-size="9.5" fill="var(--muted)">${esc(p.name)}</text>`;}).join("");
-    $("#schart").innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="min-width:${W}px" role="img" aria-label="대피 인원과 보장 인원">${ticks.join("")}${bars}<g font-size="11" fill="var(--fg)"><rect x="${L}" y="6" width="10" height="10" fill="var(--muted)"/><text x="${L+14}" y="15">대피 인원</text><rect x="${L+84}" y="6" width="10" height="10" fill="var(--sun)"/><text x="${L+98}" y="15">전력 보장 인원</text></g><text x="${L}" y="${T-6}" font-size="10" fill="var(--muted)">명 (로그 눈금)</text></svg>`;}
+      return r(p.nEvac,x,"var(--muted)","대피 인원")+r(p.litCap,x+bar+2,"var(--sun)","조명 아래 수용")+`<text transform="translate(${(L+i*bw+bw/2).toFixed(1)},${H-B+10}) rotate(-60)" text-anchor="end" font-size="9.5" fill="var(--muted)">${esc(p.name)}</text>`;}).join("");
+    $("#schart").innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="min-width:${W}px" role="img" aria-label="대피 인원과 조명 수용 인원">${ticks.join("")}${bars}<g font-size="11" fill="var(--fg)"><rect x="${L}" y="6" width="10" height="10" fill="var(--muted)"/><text x="${L+14}" y="15">대피 인원</text><rect x="${L+84}" y="6" width="10" height="10" fill="var(--sun)"/><text x="${L+98}" y="15">밤 조명 아래 수용 가능 인원</text></g><text x="${L}" y="${T-6}" font-size="10" fill="var(--muted)">명 (로그 눈금)</text></svg>`;}
   else $("#schart").innerHTML="";
   const sel=$("#spick");sel.innerHTML=d.slice().sort((a,b)=>a.Srank-b.Srank).map(p=>`<option value="${esc(p.name)}" ${p.name===state.spick?"selected":""}>${p.Srank}. ${esc(p.name)}</option>`).join("");
   const p=d.find(q=>q.name===state.spick); if(!p){$("#sprose").innerHTML="<p>선택된 유형이 없습니다.</p>";return;}
-  const why=p.kw<1?"이미 숲이거나 너무 작아 PV를 얹을 구조물 자리가 없다":(p.fBld<.8?`주변 건물(평균 ${f1(p.bh)}m)에 둘러싸여 음영 손실 ${pc(1-p.fBld)}`:"");
-  const verdict=p.Sgrade==="상"?"대피 거점 PV 우선 검토":(p.Sgrade==="중"?"소규모 PV(파고라·가로등) 수준":"PV 효과 낮음 — 열·이용성 축으로 판단");
+  const verdict=p.Sgrade==="상"?"대피 거점 조명·충전 패키지 우선":(p.Sgrade==="중"?"공원등 기본 설치 (대피 거점으로는 보조)":"조명·충전 자립 낮음 — 열·이용성 축으로 판단");
   $("#sprose").innerHTML=`<p><b>${esc(p.name)}</b> (${esc(p.addr)}, ${fi(p.area)}㎡) — 회복력 <span class="pill p-${p.Sgrade}">${p.Sgrade}</span> · S 순위 <b>${p.Srank}위</b> / ${d.length}</p>
-  <p>시설부지 상한 ${pc(SP.facility[p.type])} 중 PV 구조물 ${pc(SP.pvshare[p.type])}, 수목 ${pc(p.tree)}${p.slope>SP.slopeLimit?`, 경사 ${f1(p.slope)}°(½)`:""}를 빼면 설치 면적 <b class="num">${fi(p.pvArea)}㎡</b> → 용량 <b class="num">${f1(p.kw)} kW</b>${p.capped?" (500 kW 상한)":""} [법 시행규칙 별표4 · WorldCover · 가정].</p>
-  <p>연 발전량 <b class="num">${f1(p.eYear/1000)} MWh</b> (1,300 kWh/kW × 일사 ${(p.ghi/SP.ghiRef).toFixed(2)} × 건물 음영 ${p.fBld.toFixed(2)}) [ERA5 2024 · GHSL 건물높이]. 재난 시 12월 수준으로 하루 <b class="num">${f1(p.eDay)} kWh</b>.${why?` ${why}.`:""}</p>
-  <p>2km 안 ${fi(p.pop2k)}명의 30%와 면적 ÷ 2㎡ 중 작은 쪽인 <b class="num">${fi(p.nEvac)}명</b>(${p.evacLimit} 제한)이 대피하면 필수 부하는 하루 <b class="num">${f1(p.load)} kWh</b>, ESS ${state.sdays}일분 <b class="num">${fi(p.ess)} kWh</b> [ERI 2020 · 일본 대피소 시산].</p>
-  <p>자립률 <b class="num">${pc(p.ss)}</b>, 전력 보장 가능 인원 <b class="num">${fi(p.nCov)}명</b>. 밀도·구조물 비율·음영·가중치를 바꾼 24개 시나리오 중 <b>${p.nHigh}개</b>에서 상 등급 → <b>${p.stab}</b>.</p>
+  <p>시설부지(상한 ${pc(SP.facility[p.type])}) <b class="num">${fi(p.fac)}㎡</b>에 1기당 ${state.cov}㎡ 기준으로 자립형 태양광 공원등 <b class="num">${p.lamps}기</b>${p.lamps>=SP.lamp.max?" (상한 200기)":""}를 세우면 분산 ESS <b class="num">${f1(p.essKwh)} kWh</b>(1기 PV 20 Wp·배터리 160 Wh·2,000 lm)가 생기고 흐린 날 ${SP.lamp.autonomy}일을 버틴다 [법 시행규칙 별표4 · 제품 사양].${p.shade?" 공원 안 수목이 "+pc(p.tree)+"라 산책로 위 음영을 피해 배치해야 한다.":""}</p>
+  <p>${p.hub?`근린공원급이라 충전 허브 1기(PV 600 W + ESS 5 kWh)를 더해 통신·방송 같은 공용 부하를 맡긴다. `:""}밤 조명 아래 <b class="num">${fi(p.litCap)}명</b>(2㎡/인)을 수용하고, 밤새 휴대폰 <b class="num">${fi(p.phones)}대</b>를 충전할 수 있다 (공원등 ${fi(p.phonesLamp)} + 허브 ${fi(p.phonesHub)}).</p>
+  <p>2km 안 ${fi(p.pop2k)}명의 30%와 면적 ÷ 2㎡ 중 작은 쪽인 <b class="num">${fi(p.nEvac)}명</b>(${p.evacLimit} 제한)이 대피하면 조명 자립률 <b class="num">${pc(p.lightRatio)}</b>, 충전 자립률 <b class="num">${pc(p.chargeRatio)}</b> [ERI 2020 · WorldPop 2020]. 담당면적·충전 대수·가중치·허브를 바꾼 24개 시나리오 중 <b>${p.nHigh}개</b>에서 상 등급 → <b>${p.stab}</b>.</p>
   <p class="verdict">판정: ${verdict}</p>`;
 }
 
 // ---- 종합 렌더 ----
 function renderBoth(){
   const H=computeH().ok, S=computeS().d;
-  const byId={}; H.forEach(p=>byId[p.id]={...p}); S.forEach(p=>{if(byId[p.id])Object.assign(byId[p.id],{S:p.S,Srank:p.Srank,Sgrade:p.Sgrade,kw:p.kw,nCov:p.nCov,sStab:p.stab});});
+  const byId={}; H.forEach(p=>byId[p.id]={...p}); S.forEach(p=>{if(byId[p.id])Object.assign(byId[p.id],{S:p.S,Srank:p.Srank,Sgrade:p.Sgrade,lamps:p.lamps,covered:p.covered,sStab:p.stab});});
   const rows=Object.values(byId).filter(p=>p.Sgrade);
   rows.forEach(p=>{p.combo=p.grade==="상"&&p.Sgrade==="상"?"열·전력 모두 상":(p.grade==="상"?"열만 상":(p.Sgrade==="상"?"전력만 상":"—"));});
   const both=rows.filter(p=>p.combo==="열·전력 모두 상");
   kpis("#bkpis",[["열·전력 모두 상",`${both.length}곳`,`그중 두 축 다 확정 ${both.filter(p=>p.stab==="확정"&&p.sStab==="확정").length}곳: `+both.filter(p=>p.stab==="확정"&&p.sStab==="확정").map(p=>p.name).join(", ")],
-    ["열만 상",`${rows.filter(p=>p.combo==="열만 상").length}곳`,"수목형 조성 우선"],["전력만 상",`${rows.filter(p=>p.combo==="전력만 상").length}곳`,"캐노피·시설형 PV"],
+    ["열만 상",`${rows.filter(p=>p.combo==="열만 상").length}곳`,"수목형 조성 우선"],["전력만 상",`${rows.filter(p=>p.combo==="전력만 상").length}곳`,"공원등·허브 패키지 우선"],
     ["시 1단계 2곳",["근린공원8","문화공원4"].map(n=>{const p=rows.find(q=>q.name===n);return p?`${n} H${p.grade}·S${p.Sgrade}`:n;}).join(" / "),"시 공고 대조"]]);
   // 산점도
   const W=560,Hh=520,L=50,R=20,T=24,B=50,iw=W-L-R,ih=Hh-T-B;
@@ -439,10 +436,11 @@ function chips(el,set,rerender){$(el).innerHTML=TYPES.map(t=>`<button type="butt
   $(el).addEventListener("click",e=>{const c=e.target.closest(".chip");if(!c)return;const t=c.dataset.t;if(set.has(t)){if(set.size>1)set.delete(t);}else set.add(t);c.setAttribute("aria-pressed",set.has(t));rerender();});}
 chips("#types",state.types,renderH); chips("#stypes",state.stypes,renderS);
 $("#scen").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.scen=b.dataset.v;$("#scen").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderH();});
-[["#b","b",renderH],["#wh","wh",renderH],["#wp","wp",renderH],["#skw","skw",renderS],["#sload","sload",renderS],["#sdays","sdays",renderS],["#swc","swc",renderS]]
+[["#b","b",renderH],["#wh","wh",renderH],["#wp","wp",renderH],["#cov","cov",renderS],["#phones","phones",renderS],["#swc","swc",renderS]]
   .forEach(([sel,key,fn])=>$(sel).addEventListener("input",e=>{state[key]=+e.target.value;fn();}));
 $("#pick").addEventListener("change",e=>{state.pick=e.target.value;renderH();});
 $("#usepop").addEventListener("change",e=>{state.usePop=e.target.checked;$("#wpl").textContent=state.usePop?"가중치: 냉각 편익 (냉각 × 인구)":"가중치: 냉각량 (℃)";$("#benh").textContent=state.usePop?"편익":"인구(참고)";renderH();});
 $("#spick").addEventListener("change",e=>{state.spick=e.target.value;renderS();});
+$("#hubon").addEventListener("change",e=>{state.hubOn=e.target.checked;renderS();});
 showView(location.hash.slice(1));
 </script>
