@@ -47,7 +47,7 @@ energy/          ← 에너지(열저감) 파트 (독립 참고)
   data/gee/       GEE 출력 원본 2개 · 특례사업지 전후 실측
   out/            계산 결과 (미업로드)
 total/           ← 통합 지도 (사업성 + 열저감, 읽기만)
-  통합_지도.html    최종본 (한 파일) — 주제 [사업성 | 열저감] 전환
+  청주_장기미집행_공원_40개소_조성_지도.html    최종본 (한 파일) — 주제 [사업성 | 열저감] 전환
   code/           통합 틀 만들기 · 합치기 스크립트
 claude-skills/   ← 문서·보고서 작성용 Claude 스킬 3종 (참고)
 ```
@@ -61,7 +61,7 @@ claude-skills/   ← 문서·보고서 작성용 Claude 스킬 3종 (참고)
 | 사업성 | `biz/사업성_지도.html` | 보고서·발표 | 땅 주인·공시지가·시 부담 지도 (위성사진·3D 지형) |
 | 사업성 → 에너지 | `biz/data/input/sites.csv`, `biz/data/vworld/{parks,gu,parcels,parcel_attr}.txt`, `land_own.csv` | `energy/` 가 읽기만 | 공원 목록·경계·필지 이용상황 |
 | 에너지 | `energy/에너지_지도.html`, `energy/out/master_energy.csv` | 보고서·발표 | 공원별 열저감 (참고) |
-| 사업성·에너지 → 통합 | `biz/out/mapdata.json`, `energy/out/mapdata.json`, `biz/data/map/` | `total/` 가 읽기만 | `python total/code/build_total.py` → `total/통합_지도.html` |
+| 사업성·에너지 → 통합 | `biz/out/mapdata.json`, `energy/out/mapdata.json`, `biz/data/map/` | `total/` 가 읽기만 | `python total/code/build_total.py` → `total/청주_장기미집행_공원_40개소_조성_지도.html` |
 
 - 모든 파일의 마스터 키는 `site_id` (1~40, `biz/data/input/sites.csv` 순서 = 공고 표 순서).
 - 같은 원자료를 두 파트에 중복으로 넣지 않는다 (공시지가 **변동률** → 필요성, 공시지가 **수준** → 사업성).

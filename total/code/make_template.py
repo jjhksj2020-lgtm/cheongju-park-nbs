@@ -8,8 +8,8 @@ def R(a, b, n=1):
     assert t.count(a) == n, (t.count(a), a[:80]); t = t.replace(a, b)
 
 # ---------- 제목·머리 ----------
-R('<title>청주 미집행공원 토지지도</title>', '<title>청주 미집행공원 통합지도</title>')
-R('<h1>청주 장기미집행 공원 40개소 · 땅 주인 지도</h1>', '<h1>청주 장기미집행 공원 40개소 · 사업성·열저감 통합 지도</h1>')
+R('<title>청주 미집행공원 토지지도</title>', '<title>청주 장기미집행 공원 40개소 조성 지도</title>')
+R('<h1>청주 장기미집행 공원 40개소 · 땅 주인 지도</h1>', '<h1>청주 장기미집행 공원 40개소 조성 지도</h1>')
 R('<div class="sub">공원 경계 안 필지를 국유·시유·사유로 나눠 본다 · V-World 조회 <span id="asof"></span></div>',
   '<div class="sub">같은 지도에서 주제를 바꿔 본다 — <b>사업성</b>: 시가 낼 돈·단계 · <b>열저감</b>: 조성하면 여름 지표온도가 얼마나 내려가나 · 기준일 <span id="asof"></span></div>')
 R('''    <div class="tabs" role="group" aria-label="보기">''', '''    <div class="tabs topic" role="group" aria-label="주제">

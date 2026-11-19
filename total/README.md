@@ -1,6 +1,6 @@
-# 통합 지도 — 사업성 + 열저감
+# 청주 장기미집행 공원 40개소 조성 지도 — 사업성 + 열저감 통합 지도
 
-**최종본: [`통합_지도.html`](통합_지도.html)** — 내려받아 더블클릭하면 열립니다(위성사진·지형 포함, 지도 엔진만 인터넷에서 불러옴).
+**최종본: [`청주_장기미집행_공원_40개소_조성_지도.html`](청주_장기미집행_공원_40개소_조성_지도.html)** — 내려받아 더블클릭하면 열립니다(위성사진·지형 포함, 지도 엔진만 인터넷에서 불러옴).
 GitHub 웹에서는 코드만 보이니 **Download raw file** 로 받아서 여세요.
 
 지도는 하나이고, 맨 위 **주제 [사업성 | 열저감]** 를 바꾸면 같은 지도 위의 색·기둥·목록·공원 카드·비교 막대가 그 주제로 바뀝니다.
@@ -26,7 +26,7 @@ GitHub 웹에서는 코드만 보이니 **Download raw file** 로 받아서 여�
 
 ```bash
 pip install pyyaml                       # 처음 한 번
-python total/code/build_total.py         # 두 파트 계산을 차례로 돌린 뒤 → total/통합_지도.html
+python total/code/build_total.py         # 두 파트 계산을 차례로 돌린 뒤 → total/청주_장기미집행_공원_40개소_조성_지도.html
 ```
 
 - 계산은 다시 하지 않고 지도만 다시 만들려면 `--no-run`.
@@ -34,10 +34,10 @@ python total/code/build_total.py         # 두 파트 계산을 차례로 돌린
 
 ```
 total/
-  통합_지도.html            최종본
+  청주_장기미집행_공원_40개소_조성_지도.html            최종본
   README.md
   code/
     make_template.py        사업성 지도 틀 + 열저감 화면 → total_template.html
     total_template.html     통합 지도 틀
-    build_total.py          두 파트 결과 합치기 → 통합_지도.html
+    build_total.py          두 파트 결과 합치기 → 청주_장기미집행_공원_40개소_조성_지도.html
 ```

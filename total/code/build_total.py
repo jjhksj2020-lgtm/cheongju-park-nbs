@@ -1,4 +1,4 @@
-"""사업성 + 열저감 통합 지도 → total/통합_지도.html (한 파일, 더블클릭으로 열림)
+"""사업성 + 열저감 통합 지도 → total/청주_장기미집행_공원_40개소_조성_지도.html (한 파일, 더블클릭으로 열림)
 
 각 파트의 계산을 먼저 돌리고(읽기만, 파트 폴더는 고치지 않음) 결과를 한 지도에 합친다.
   python total/code/build_total.py            # 두 파트 계산 → 지도 데이터 → 통합 지도
@@ -29,7 +29,7 @@ for sub in ('img', 'dem'):
         assets[f'{sub}/{fn}'] = f'data:{mime};base64,' + base64.b64encode(open(f'{d}/{fn}', 'rb').read()).decode()
 t = open(f'{C}/total_template.html', encoding='utf-8').read()
 page = t.replace('__DATA__', json.dumps(B, ensure_ascii=False, separators=(',', ':'))).replace('const D = ', 'const __ASSETS__ = ' + json.dumps(assets) + ';\nconst D = ', 1)
-out = f'{T}/통합_지도.html'
+out = f'{T}/청주_장기미집행_공원_40개소_조성_지도.html'
 open(out, 'w', encoding='utf-8').write('<!doctype html>\n<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n' + page + '\n</html>\n')
 n = sum(1 for p in B['parks'] if p['E'].get('status') == '산정')
-print(f'total/통합_지도.html {os.path.getsize(out)//1024} KB · 공원 40 (열저감 산정 {n}) · 사진·지형 {len(assets)}')
+print(f'total/청주_장기미집행_공원_40개소_조성_지도.html {os.path.getsize(out)//1024} KB · 공원 40 (열저감 산정 {n}) · 사진·지형 {len(assets)}')
