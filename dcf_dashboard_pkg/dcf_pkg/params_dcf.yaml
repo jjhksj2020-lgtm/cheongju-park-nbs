@@ -1,0 +1,46 @@
+# D 결핍 · C 연결 · F 실행 파라미터
+# - 기존 params.yaml에 이 파일의 세 블록(need_d, need_c, exec_f)을 그대로 붙여 넣거나,
+#   engine_dcf.load_params("params_dcf.yaml")로 따로 읽는다.
+# - 엔진 코드 안에는 숫자를 하드코딩하지 않는다(전략 문서 6절 검증 5). 모든 값은 여기서 온다.
+# - 값마다 status(확정/가정/미산정)와 src(출처키)를 둔다. 결과의 status는 가장 약한 입력을 따른다.
+
+need_d:
+  # 도시공원법 시행규칙 별표 3 유치거리. park_type 값은 master_d0.csv의 park_type과 같아야 한다.
+  service_distance_m:
+    어린이공원:  {value: 250,  status: 확정, src: L6}
+    근린공원:    {value: 500,  status: 가정, src: L6}   # 근린생활권 기준. 도보권이면 1000 → D4 고시문으로 세분 확인
+    소공원:      {value: 250,  status: 가정, src: P1}   # 법정 유치거리 없음. 청주 선행연구의 분석 범위
+  # 유형이 위 목록에 없으면(도시지역권·광역권 근린공원, 주제공원 등) D 지표를 '미산정'으로 둔다.
+  sensitivity_factors: [0.5, 1.0, 1.5]      # 유치거리 ±50% 민감도
+  per_capita_std_m2:
+    default: {value: 6, status: 확정, src: L6}  # 시행규칙 제4조
+    alt:     {value: 3, status: 확정, src: L6}  # 개발제한구역·녹지지역 제외 도시지역
+  per_capita_std_use: default
+  network_status: 확정                       # 국가교통DB 보행망이면 확정, OSM이면 가정으로 바꾼다
+
+need_c:
+  dispersal_m: [100, 300, 500, 700]         # 성남 2014 선례(100) ~ 문헌 범위(700). 하나로 고정하지 않는다
+  p_at_dispersal: 0.5                       # 이동거리에서 연결 확률 0.5(Conefor 관례)
+  prob_floor: 0.0001                        # 이보다 작은 연결 확률의 간선은 계산에서 뺀다
+  min_patch_m2: 300                         # 성남 2014 선례
+  rank_spread_flag: 10                      # 거리별 순위 폭이 이 값 이상이면 '가정 의존' 표시
+  status: 가정                              # 이동거리 가정에 의존하므로 dPC는 항상 '가정'
+  src: [D9, P2]
+
+exec_f:
+  public_owner_classes: [국유, 공유]
+  high_value_jimok: [대, 잡]                # 대지·잡종지
+  owner_missing_tolerance: 0.0              # 소유 구분이 빈 필지 면적 비율이 이보다 크면 '미산정'
+  review_thresholds_won:
+    central:     {value: 10000000000, status: 가정, src: L8}  # 중앙 투자심사 기준. 지방재정투자사업 심사규칙의 시·군 기준으로 확인 필요
+    feasibility: {value: 50000000000, status: 확정, src: L8}  # 지방재정법 제37조의2: 총사업비 500억 이상 신규사업 타당성조사
+  review_extra_months:                      # 심사 등급별로 일정에 더하는 기간
+    자체:       {value: 0,  status: 가정, src: L8}
+    중앙:       {value: 6,  status: 가정, src: L8}
+    타당성조사: {value: 12, status: 가정, src: L8}
+  lead_time_months:                         # 수단별 리드타임(착수 여유 F5)
+    조성계획:   {value: 12, status: 가정, src: L3, col: plan}
+    직접조성:   {value: 30, status: 가정, src: L2, col: direct}   # 2~3년의 중간값
+    국비:       {value: 36, status: 가정, src: G1, col: grant}
+    민간특례:   {value: 48, status: 가정, src: L4, col: special}
+  lapse_date_rule: year_start               # 실효일이 연도만 있으면 그해 1월 1일로 둔다(보수적, status=가정)
