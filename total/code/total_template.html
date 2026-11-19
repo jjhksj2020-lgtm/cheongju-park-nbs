@@ -25,6 +25,7 @@
   --own-nat:#5aa6dc; --own-loc:#6cc38a; --own-ind:#f0ae45; --own-org:#e37f69; --own-unk:#6b7570;
   --seq0:#3a2f17; --seq1:#8a6420; --seq2:#d39a3a; --seq3:#ffe2a6;
   --accent:#5aa6dc; --stage1:#e37f69; --stage2:#9aa8a1; color-scheme:dark}
+[hidden]{display:none!important}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5;
@@ -340,7 +341,7 @@ function legend(){
     else if(S.colorCity==='cool') h=`<div class="t">냉각량 (기준 시나리오, 제곱근 눈금)</div><div class="ramp" style="background:linear-gradient(90deg,var(--seq0),var(--seq1),var(--seq2),var(--seq3))"></div><div class="ramp-l"><span>0</span><span>${f2(maxCool,1)} °C·ha</span></div>`;
     else if(S.colorCity==='dcell') h=`<div class="t">공원 일대 지표온도 저감 (기준)</div><div class="ramp" style="background:linear-gradient(90deg,var(--seq0),var(--seq1),var(--seq2),var(--seq3))"></div><div class="ramp-l"><span>0</span><span>−${f2(maxDcell)}°C</span></div>`;
     else if(S.colorCity==='ndvi') h=`<div class="t">지금 녹지 (Sentinel-2 여름 NDVI)</div><div class="ramp" style="background:linear-gradient(90deg,var(--own-ind),var(--own-loc))"></div><div class="ramp-l"><span>0.1 적음</span><span>0.9 많음</span></div>`;
-    else h=`<div class="t">열저감 등급 (냉각량 순위)</div><div class="row">${Object.entries(GCOL).map(([k,v])=>`<span class="k">${sw(v)}${k}</span>`).join('')}<span class="k">${sw('--own-unk')}미산정</span></div>`;
+    else h=`<div class="t">열저감 등급 (냉각량 순위)</div><div class="row">${Object.entries(GCOL).map(([k,v])=>`<span class="k">${sw(v)}${k}</span>`).join('')}</div>`;
     h+=`<div class="meta" style="margin-top:4px">${sw('--own-unk')} 미산정: 어린이공원152(경계 없음)·생태공원3(하천 위주)</div>`;
     h+= S.d3&&S.heightCity!=='none' ? `<div class="meta" style="margin-top:5px">기둥 높이 = ${S.heightCity==='cool'?`냉각량 (제곱근, 최고 ${f2(maxCool,1)} °C·ha)`:`공원 일대 저감 (최고 −${f2(maxDcell)}°C)`}</div>` : `<div class="meta" style="margin-top:5px">원 크기 = 공원 면적</div>`;
   } else if(S.view==='city'){
