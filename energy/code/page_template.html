@@ -156,6 +156,7 @@ details.flowbox>summary{cursor:pointer;font-size:12.5px;font-weight:600;color:va
 
 <script src="https://unpkg.com/deck.gl@8.9.36/dist.min.js"></script>
 <script src="https://unpkg.com/@loaders.gl/terrain@3.4.15/dist/dist.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 <script>
 const D = __DATA__;
 const ASSETS = (typeof __ASSETS__!=='undefined')?__ASSETS__:{}; const asset = p => ASSETS[p]||p;
@@ -278,11 +279,24 @@ function cityLayers(){
   return L;
 }
 function parcelColor(q){ return S.colorPark==='jimok'?(C[JCOL[q.jc]]||C['--muted']):C[LUC[q.lc]]; }
+// 필지를 공원 경계 안쪽만 남기도록 자른다 (사업성 지도와 같은 방식). turf가 없으면 자르지 않고 그린다.
+const CLIP = {};
+function clippedParcels(p, qs){
+  if(CLIP[p.id]) return CLIP[p.id];
+  if(typeof turf==='undefined') return qs.flatMap(q=>q.poly.map(poly=>Object.assign(Object.create(q),{poly})));
+  const park = turf.multiPolygon(p.poly); const out=[];
+  for(const q of qs) for(const poly of q.poly){
+    let g=null; try{ g=turf.intersect(turf.polygon(poly), park); }catch(e){ g=null; }
+    if(!g) continue;
+    (g.geometry.type==='Polygon'?[g.geometry.coordinates]:g.geometry.coordinates).forEach(pp=>out.push(Object.assign(Object.create(q),{poly:pp})));
+  }
+  return CLIP[p.id]=out;
+}
 function parkLayers(){
   const p = byId[S.sel]; if(!p||!p.poly) return [guLayer()];
   const qs = D.parcels.filter(q=>q.s===p.id);
   return [bgLayer(), guLayer(), ringLayer(p.id),
-    new deck.PolygonLayer({id:'parcels', data:qs.flatMap(q=>q.poly.map(poly=>Object.assign(Object.create(q),{poly}))), getPolygon:d=>d.poly,
+    new deck.PolygonLayer({id:'parcels', data:clippedParcels(p, qs), getPolygon:d=>d.poly,
       getFillColor:d=>[...parcelColor(d), S.d3?235:(S.bg==='none'?200:150)], getLineColor:[...C['--panel'],255], lineWidthMinPixels:1, pickable:true,
       updateTriggers:{getFillColor:[S.colorPark,C['--own-nat'],S.bg,S.d3]}}),
     new deck.PolygonLayer({id:'park-outline', data:p.poly, getPolygon:d=>d, filled:false, stroked:true, getLineColor:[...C['--ink'],255], lineWidthMinPixels:2.2, pickable:false, updateTriggers:{getLineColor:C['--ink']}})];
@@ -322,7 +336,7 @@ function legend(){
     if(S.colorPark==='use') h=`<div class="t">지금 땅 상태 (토지특성 이용상황 2026)</div><div class="row">${Object.entries(LUC).map(([k,v])=>`<span class="k">${sw(v)}${k}</span>`).join('')}</div>`;
     else h=`<div class="t">지목</div><div class="row">${['임야','전','답','대','도로','하천','기타'].map(k=>`<span class="k">${sw(JCOL[k])}${k}</span>`).join('')}</div>`;
     if(terrainOn()){ const m=demFor(); h+=`<div class="meta" style="margin-top:4px">지형: 해발 ${m.min}~${m.max}m · 높이 ×${terK()}</div>`; }
-    h+=`<div class="meta" style="margin-top:5px">굵은 선 = 공원 경계${byId[S.sel]&&byId[S.sel].ring_applied==='적용'&&S.ring?' · 파란 원 = 주변 300m(대략)':''}</div>`;
+    h+=`<div class="meta" style="margin-top:5px">굵은 선 = 공원 부지 경계 · 필지는 선 안쪽만 표시${typeof turf==='undefined'?' (오프라인이라 자르지 못함)':''}${byId[S.sel]&&byId[S.sel].ring_applied==='적용'&&S.ring?' · 파란 원 = 주변 300m(대략)':''}</div>`;
   }
   $('legend').innerHTML=h;
 }

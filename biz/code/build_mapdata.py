@@ -33,7 +33,7 @@ for sid, m in mb.items():
         'area': f(m['area_m2']), 'notice': m['notice_stage'], 'stage': m['stage_base'], 'reasons': m['stage_reasons'],
         'pub': f(o.get('public_share')), 'tag': m['private_share_tag'], 'boundary': o.get('boundary') or '미확인', 'ratio': f(o.get('boundary_ratio')),
         'maxH': f(m['city_max_high_krw']), 'maxL': f(m['city_max_low_krw']), 'minH': f(m['city_min_high_krw']), 'minL': f(m['city_min_low_krw']),
-        'comp': f(m['comp_high_krw']), 'cons': f(m['cons_high_krw']), 'special': m['special_ok'] == '1',
+        'comp': f(m['comp_high_krw']), 'cons': f(m['cons_high_krw']), 'compL': f(m['comp_low_krw']), 'consL': f(m['cons_low_krw']), 'routes': m['subsidy_routes'], 'subsidy': m['subsidy_status'], 'special': m['special_ok'] == '1',
         'price': f(p.get('land_price_krw_m2')), 'dae': f(p.get('jimok_dae_m2')), 'urban': f(p.get('urban_private_m2')), 'gb': f(p.get('greenbelt_m2')),
         'poly': poly, 'c': cen(poly) if poly else None})
 parcels = []
