@@ -27,3 +27,26 @@ area_type:
   industrial_share: 0.10    # 산업: OSM 산업용지 비율 ≥ 10% (밀집·주거와 겹치면 함께 표기)
   # 어느 것에도 해당하지 않으면 기타(농촌·산림). OSM 주거용지는 도심에서 누락이 많아 밀도를 우선한다
 
+# 인구 격자 — E1·E2·D1·지역 유형이 함께 쓴다. sgis(2024 등록센서스 100m, 실자료) | worldpop(2020, 대체자료·비교용)
+pop_source: sgis
+sgis_grid:
+  file: sgis/sgis_grid_pop_2024_100m.zip   # SGIS 자료제공 신청(2026-11-18), 격자통계(인구) 2024 100M, 격자 다바·라바
+  item_total: to_in_001                    # 총인구 (to_in_007·008은 성별)
+  crs: "EPSG:5179"                          # 격자 경계 shp의 prj (Korea 2000 UTM-K)
+  cell_m: 100
+  # 격자 코드 = 100km 칸 글자 2자 + x 3자리 + y 3자리(100m 단위). 칸 왼쪽 아래 좌표 (shp 경계와 대조해 확인)
+  x0: {다: 900000, 라: 1000000}
+  y0: {바: 1800000}
+# 토지피복지도 — 환경부 환경공간정보서비스(EGIS) 중분류 2025(항공사진 2024-12-31), 1:25,000 도엽 14장(청주 100% 포함)
+# source: egis면 C1 녹지축 산림·지역 유형을 이 자료로, osm이면 예전 OSM으로 계산한다. 수변축 하천 이름·하천 인접은 계속 OSM.
+landcover:
+  source: egis
+  dir: egis
+  forest: [310, 320, 330]      # 활엽수림·침엽수림·혼효림
+  residential: [110]           # 주거지역
+  industrial: [120]            # 공업지역
+  commercial: [130]            # 상업지역
+# D1 기존 공원 — city: 청주시 도시공원정보(2025-11-20) − 미조성공원 현황(2026-09-29, '미조성'만 제외, 부분조성은 기존으로 봄)
+#   좌표가 주소의 구 밖이면 V-World 주소 검색 좌표(geocoded_vworld.csv), 그래도 없으면 OSM 같은 이름. 점 위치라 면적이 같은 원으로 본다(가정)
+#   유치거리는 공원구분으로 service_radius_m 을 고른다(수변·역사·체육·문화·묘지·기타는 default). osm: 예전 OSM 공원·놀이터
+existing_parks_source: city

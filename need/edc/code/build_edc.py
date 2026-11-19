@@ -2,13 +2,11 @@
 
 실행: need/edc/code 에서  python build_edc.py
 입력(읽기 전용): biz/data/input/sites.csv, biz/data/vworld/parks.txt, biz/data/vworld/gu.txt, need/presets.yaml
-원자료: data/raw/worldpop/*.tif (WorldPop 2020 100m constrained), data/raw/osm/*.json (Overpass)
+원자료: data/raw/sgis/*.zip (SGIS 2024 100m 격자 인구; params pop_source), data/raw/worldpop/*.tif (비교용), data/raw/osm/*.json (Overpass)
 """
 import csv, json, os, sys, warnings
 import numpy as np
 warnings.filterwarnings('ignore', category=DeprecationWarning)
-import rasterio
-from rasterio.windows import from_bounds
 from shapely.geometry import box
 from shapely.ops import transform, unary_union
 from shapely.strtree import STRtree
@@ -18,25 +16,14 @@ from common import EDC_P, OUT, RAW, ROOT, _dec, buffers, sites, to4326, to5186, 
 import osm
 
 BBOX = None  # 청주시 경계(구 4개)의 범위로 채운다
+LC = None    # 토지피복지도 분류별 도형 (params landcover.source = egis일 때)
 
 
 # ---------- 인구 ----------
 class Pop:
-    """100m 격자 하나. 도형 안 인구 = Σ 값 × (격자∩도형 면적 / 격자 면적)."""
-    def __init__(self, path):
-        with rasterio.open(path) as r:
-            w = from_bounds(*BBOX, r.transform)
-            a = r.read(1, window=w, boundless=True, fill_value=0).astype('float64')
-            t = r.window_transform(w); nd = r.nodata
-        if nd is not None:
-            a[a == nd] = 0
-        a[~np.isfinite(a)] = 0; a[a < 0] = 0
-        rows, cols = np.nonzero(a)
-        self.cells, self.vals, self.wt = [], [], None
-        for i, j in zip(rows, cols):
-            x0, y0 = t * (j, i); x1, y1 = t * (j + 1, i + 1)
-            self.cells.append(transform(to5186, box(min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1))))
-            self.vals.append(a[i, j])
+    """100m 격자 하나. 도형 안 인구 = Σ 값 × (격자∩도형 면적 / 격자 면적). cells는 5186 도형."""
+    def __init__(self, cells, vals, name):
+        self.cells, self.vals, self.wt, self.name = cells, vals, None, name
         self.tree = STRtree(self.cells)
 
     def sum(self, g):
@@ -66,7 +53,44 @@ class Pop:
 
 
 def worldpop():
-    return Pop(f'{RAW}/worldpop/kor_ppp_2020_UNadj_constrained.tif')
+    """WorldPop 2020 100m (대체자료, 비교용)."""
+    import rasterio
+    from rasterio.windows import from_bounds
+    with rasterio.open(f'{RAW}/worldpop/kor_ppp_2020_UNadj_constrained.tif') as r:
+        w = from_bounds(*BBOX, r.transform)
+        a = r.read(1, window=w, boundless=True, fill_value=0).astype('float64')
+        t = r.window_transform(w); nd = r.nodata
+    if nd is not None:
+        a[a == nd] = 0
+    a[~np.isfinite(a)] = 0; a[a < 0] = 0
+    cells, vals = [], []
+    for i, j in zip(*np.nonzero(a)):
+        x0, y0 = t * (j, i); x1, y1 = t * (j + 1, i + 1)
+        cells.append(transform(to5186, box(min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1))))
+        vals.append(a[i, j])
+    return Pop(cells, vals, 'WorldPop 2020')
+
+
+def sgis():
+    """SGIS 2024 등록센서스 100m 격자 총인구 (실자료). 격자 코드에서 칸 좌표를 바로 계산한다."""
+    import zipfile
+    from pyproj import Transformer
+    G = EDC_P['sgis_grid']; m = G['cell_m']
+    t5179 = Transformer.from_crs('EPSG:4326', G['crs'], always_xy=True).transform
+    to5186_ = Transformer.from_crs(G['crs'], 'EPSG:5186', always_xy=True).transform
+    bx0, by0, bx1, by1 = transform(t5179, box(*BBOX)).bounds
+    cells, vals = [], []
+    with zipfile.ZipFile(f"{RAW}/{G['file']}") as z:
+        for info in z.infolist():
+            for line in z.read(info).decode('cp949').splitlines():
+                _, code, item, v = line.split(',')
+                if item != G['item_total'] or int(v) <= 0:
+                    continue
+                x = G['x0'][code[0]] + int(code[2:5]) * m; y = G['y0'][code[1]] + int(code[5:8]) * m
+                if x + m < bx0 or x > bx1 or y + m < by0 or y > by1:
+                    continue
+                cells.append(transform(to5186_, box(x, y, x + m, y + m))); vals.append(float(v))
+    return Pop(cells, vals, 'SGIS 2024')
 
 
 def dongs():
@@ -85,6 +109,15 @@ def dongs():
 def existing_service(targets):
     R = EDC_P['service_radius_m']; small = EDC_P['small_park_m2']; tgt = unary_union(list(targets))
     parks, zones = [], []
+    if EDC_P['existing_parks_source'] == 'city':          # 청주시 공식 공원 목록(미조성 제외), 공원구분별 유치거리
+        import parks_city
+        lst, n = parks_city.existing()
+        print('기존 공원(청주시 목록)', {k: v for k, v in n.items() if k != '못 찾은 공원'}, '못 찾음:', n['못 찾은 공원'])
+        for name, kind, a, g, how in lst:
+            if tgt.contains(g.centroid):                  # 평가 대상 40개소 자신은 뺀다
+                continue
+            parks.append(g); zones.append(g.buffer(R.get(kind, R['default'])))
+        return unary_union(parks), unary_union(zones), len(parks)
     for tags, g in osm.areas('parks'):
         if g.intersection(tgt).area > 0:          # 평가 대상 40개소 자신은 '기존 공원'에서 뺀다
             continue
@@ -106,12 +139,14 @@ def axes():
     names = set(EDC_P['axis_rivers']); ww = osm.waterways()
     water = unary_union([g for t, g in ww if t.get('name') in names])
     anyriver = unary_union([g for t, g in ww if t.get('waterway') in ('river', 'stream')])
-    forest = unary_union([g for t, g in osm.areas('forests')])
+    forest = LC['forest'] if LC else unary_union([g for t, g in osm.areas('forests')])
     big = [p for p in getattr(forest, 'geoms', [forest]) if p.area >= EDC_P['axis_forest_min_ha'] * 1e4]
     return water, unary_union(big), anyriver
 
 
 def landuse():
+    if LC:
+        return {'res': LC['residential'], 'ind': LC['industrial'], 'com': LC['commercial']}
     L = osm.areas('landuse')
     return {k: unary_union([g for t, g in L if t.get('landuse') in v])
             for k, v in {'res': ['residential'], 'ind': ['industrial'], 'com': ['commercial', 'retail']}.items()}
@@ -147,7 +182,7 @@ def _geo(g, tol=8):
 
 
 def main():
-    global BBOX
+    global BBOX, LC
     gu_lines = [l for l in open(f'{ROOT}/biz/data/vworld/gu.txt', encoding='utf-8').read().split('\n') if l]
     gu4326 = {l.split('~')[0]: _dec(l.split('~')[1]) for l in gu_lines}
     BBOX = unary_union(list(gu4326.values())).bounds
@@ -155,16 +190,25 @@ def main():
 
     B = buffers()
     print('공원 경계', len(B), '/ 40')
-    total = worldpop(); print('WorldPop 격자', len(total.cells), '칸')
+    total = sgis() if EDC_P['pop_source'] == 'sgis' else worldpop()
+    print(total.name, '격자', len(total.cells), '칸, 합계', round(sum(total.vals)))
     dgeo, dratio, dgu = dongs(); total.set_ratio(dgeo, dratio)
-    ex_parks, served, n_ex = existing_service(g for g, _, _ in B.values()); print('기존 공원(OSM)', n_ex)
+    ex_parks, served, n_ex = existing_service(g for g, _, _ in B.values()); print('기존 공원 사용', n_ex)
+    LCP = EDC_P['landcover']
+    if LCP['source'] == 'egis':
+        import landcover
+        LC = landcover.classes({k: LCP[k] for k in ('forest', 'residential', 'industrial', 'commercial')})
+        print('토지피복지도', {k: round(v.area / 1e6, 1) for k, v in LC.items()}, '㎢')
     water, green, anyriver = axes()
     LU = landuse()
     LZ = EDC_P['living_zone_park']; DT = set(EDC_P['downtown_dongs'])
     zone_of = lambda dong: '도심생활권' if dong in DT else f"{dgu[dong][:2]}생활권"
 
     rows, wide, geo_out = [], [], {}
-    WP, OS, MO, LZK = 'WP-2020', 'OSM-2026-11', 'MOIS-2026-10', 'PARK2030-T11-2'
+    OS, MO, LZK = 'OSM-2026-11', 'MOIS-2026-10', 'PARK2030-T11-2'
+    LCK = 'EGIS-LC-2025' if LC else OS
+    PK, PKT = ('CJ-PARK-2025', '실자료') if EDC_P['existing_parks_source'] == 'city' else (OS, '대체자료')
+    WP, WPT = ('SGIS-2024', '실자료') if EDC_P['pop_source'] == 'sgis' else ('WP-2020', '대체자료')
     def add(sid, ind, val, unit, src, tag):
         rows.append({'site_id': sid, 'indicator': ind, 'value': '' if val is None else val, 'unit': unit, 'source_key': src, 'tag': tag})
 
@@ -192,22 +236,22 @@ def main():
         dens = e1 / (buf.area / 1e6)
         sh = {k: buf.intersection(v).area / buf.area for k, v in LU.items()}
         atype = area_type(dens, sh['res'], sh['ind'])
-        add(sid, 'E1', round(e1), '명', WP, '대체자료')
+        add(sid, 'E1', round(e1), '명', WP, WPT)
         add(sid, 'E2', round(e2, 4), '비율(0~1)', f'{MO};{WP}', '실자료')
-        add(sid, 'D1', None if d1 is None else round(d1, 4), '비율(0~1)', f'{WP};{OS}', '대체자료')
+        add(sid, 'D1', None if d1 is None else round(d1, 4), '비율(0~1)', f'{WP};{PK}', PKT)
         add(sid, 'D2', d2, '㎡/인', LZK, '실자료' if zone != '도심생활권' else '가정')
-        add(sid, 'C1', round(c1), 'm', OS, '대체자료')
-        add(sid, 'C1_near', int(c1 <= EDC_P['c1_near_m']), '1/0', OS, '가정')
+        add(sid, 'C1', round(c1), 'm', f'{OS};{LCK}' if LC else OS, '대체자료')
+        add(sid, 'C1_near', int(c1 <= EDC_P['c1_near_m']), '1/0', f'{OS};{LCK}' if LC else OS, '가정')
         add(sid, 'river_adjacent', radj, '1/0', OS, '가정')
-        add(sid, 'new_served_pop', round(new), '명', f'{WP};{OS}', '대체자료')
+        add(sid, 'new_served_pop', round(new), '명', f'{WP};{PK}', PKT)
         wide.append({'site_id': sid, 'name': s['name'], 'type': s['type'], 'dong': dong, 'living_zone': zone, 'buffer_m': rad,
                      'E1_pop': round(e1), 'E2_vulnerable': round(e2, 3), 'E2_basis': e2_src,
                      'D1_unserved': None if d1 is None else round(d1, 3), 'new_served_pop': round(new),
                      'D2_built_m2_per_cap': d2, 'D2_decided_m2_per_cap': LZ['per_cap_decided'][zone],
                      'C1_m': round(c1), 'C1_water_m': round(cw), 'C1_green_m': round(cg),
                      'C1_near': int(c1 <= EDC_P['c1_near_m']), 'river_adjacent': radj,
-                     'area_type': atype, 'pop_density_km2': round(dens), 'osm_res_share': round(sh['res'], 3),
-                     'osm_ind_share': round(sh['ind'], 3), 'osm_com_share': round(sh['com'], 3), 'note': ''})
+                     'area_type': atype, 'pop_density_km2': round(dens), 'res_share': round(sh['res'], 3),
+                     'ind_share': round(sh['ind'], 3), 'com_share': round(sh['com'], 3), 'note': ''})
         geo_out[sid] = {'park': _geo(park, 2), 'buffer': _geo(buf, 8)}
 
     write_rows(f'{OUT}/indicators_edc.csv', rows)
@@ -225,9 +269,9 @@ def main():
             x, y = transform(to4326, c.centroid).coords[0]
             cells.append([round(x, 5), round(y, 5), round(float(v), 1), None if w is None else round(w, 3)])
     big_parks = unary_union([p for p in getattr(ex_parks, 'geoms', [ex_parks]) if p.intersects(near)])
-    mapd = {'asof': '2026-11-15', 'sites': wide, 'geo': geo_out,
+    mapd = {'asof': '2026-11-18', 'pop_source': total.name, 'landcover': LCK, 'existing_parks': PK, 'sites': wide, 'geo': geo_out,
             'served': _geo(served.intersection(near), 10), 'existing': _geo(big_parks, 4),
-            'water': _geo(water.intersection(view), 15), 'forest': _geo(green.intersection(view), 25),
+            'water': _geo(water.intersection(view), 15), 'forest': _geo(green.intersection(view), 60),
             'gu': {k: _geo(g, 30) for k, g in gu.items()}, 'cells': cells,
             'zones': EDC_P['living_zone_park'], 'params': {k: EDC_P[k] for k in ('area_type', 'c1_near_m', 'river_adjacent_m', 'axis_forest_min_ha', 'axis_rivers')},
             'buffer_m': {k: v for k, v in __import__('common').PRESETS['buffer_m'].items()}}

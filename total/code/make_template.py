@@ -1,4 +1,4 @@
-"""biz/code/map_template.html(사업성 지도 틀)을 바탕으로 통합 지도 틀 total/code/total_template.html 을 만든다.
+"""biz/code/map_template.html(사업성 지도 틀)에 열저감·이용성 화면을 더해 통합 지도 틀 total/code/total_template.html 을 만든다.
 사업성 지도 틀이 바뀌면 다시 실행: python total/code/make_template.py"""
 import os
 C = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(os.path.dirname(C))
@@ -166,6 +166,134 @@ function setView(v){""")
 
 # ---------- 출처 ----------
 R("생태공원3 필지는 사유·대형 필지만 표시.</footer>", "생태공원3 필지는 사유·대형 필지만 표시. 열저감: Landsat 8·9 C2 L2(USGS)·Sentinel-2 L2A(ESA)·ESA WorldCover v200·GHSL 2020(인구 참고), Google Earth Engine 처리, energy_engine.py 산출 — 계수는 모두 청주 위성 실측, 지표온도(기온 아님).</footer>")
+
+# ================= 이용성 (③ 인구·토지·생활권 E·D·C, need/edc) =================
+R('· <b>열저감</b>: 조성하면 여름 지표온도가 얼마나 내려가나 · 기준일',
+  '· <b>열저감</b>: 조성하면 여름 지표온도가 얼마나 내려가나 · <b>이용성</b>: 주변에 누가 살고 지금 공원이 얼마나 모자라나 · 기준일')
+R('      <button id="tp-heat" aria-pressed="false">열저감</button>', '      <button id="tp-heat" aria-pressed="false">열저감</button>\n      <button id="tp-use" aria-pressed="false">이용성</button>')
+R("  park:{color:[", """  cityUse:{color:[['d1','D1 서비스권 밖 비율'],['e1','E1 버퍼 인구'],['e2','E2 아동·고령 비율'],['d2','D2 생활권 1인당 공원면적'],['c1','C1 녹지·수변축 거리'],['atype','지역 유형 (표시용)']], height:[['new','신규 수혜 인구 (제곱근 눈금)'],['e1','E1 버퍼 인구 (제곱근 눈금)'],['none','없음']]},
+  park:{color:[""")
+R("(S.topic==='heat'?OPTS.cityHeat:OPTS.city)", "(S.topic==='heat'?OPTS.cityHeat:S.topic==='use'?OPTS.cityUse:OPTS.city)")
+R("function cityColor(p){\n", """const U = p => p.U||{};
+const useOK = p => U(p).status==='산정';
+const UOK = D.parks.filter(useOK);
+const umax = k => Math.max(...UOK.map(p=>U(p)[k]||0)), umin = k => Math.min(...UOK.map(p=>U(p)[k]||0));
+const maxE1=umax('E1_pop'), maxNew=umax('new_served_pop'), maxC1=umax('C1_m'), minE2=umin('E2_vulnerable'), maxE2=umax('E2_vulnerable'), minD2=umin('D2_built_m2_per_cap'), maxD2=umax('D2_built_m2_per_cap');
+const ATCOL = {'밀집':'--own-org','주거':'--own-ind','주거+산업':'--seq2','산업':'--own-nat','기타':'--own-loc'};
+const UTCOL = {'실자료':'--own-loc','대체자료':'--own-ind','가정':'--muted','미산정':'--own-unk'};
+const nf = v => v==null?'—':Math.round(v).toLocaleString('ko-KR');
+const pct1 = v => v==null?'—':(v*100).toFixed(1)+'%';
+function utag(p,k){ const t=(U(p).tag||{})[k]; return t?` <span class="pill" style="color:var(${UTCOL[t[0]]||'--muted'})" title="자료: ${t[1]}">${t[0]}</span>`:''; }
+function useColor(p){
+  const u=U(p); if(!useOK(p)) return C['--own-unk'];
+  if(S.colorCity==='d1') return seq(u.D1_unserved||0);
+  if(S.colorCity==='e1') return seq(Math.sqrt((u.E1_pop||0)/maxE1));
+  if(S.colorCity==='e2') return seq((u.E2_vulnerable-minE2)/((maxE2-minE2)||1));
+  if(S.colorCity==='d2') return seq((maxD2-u.D2_built_m2_per_cap)/((maxD2-minD2)||1));
+  if(S.colorCity==='c1') return seq(Math.min(1,(u.C1_m||0)/maxC1));
+  return C[ATCOL[u.area_type]||'--own-unk'];
+}
+function useTip(p){ const u=U(p); return useOK(p)?`버퍼 ${u.buffer_m}m 인구 ${nf(u.E1_pop)}명 · 서비스권 밖 ${pct(u.D1_unserved)} · 신규 수혜 ${nf(u.new_served_pop)}명 · ${u.area_type}`:'이용성 미산정'; }
+function useLegend(){
+  const ramp=(t,a,b)=>`<div class="t">${t}</div><div class="ramp" style="background:linear-gradient(90deg,var(--seq0),var(--seq1),var(--seq2),var(--seq3))"></div><div class="ramp-l"><span>${a}</span><span>${b}</span></div>`;
+  let h;
+  if(S.colorCity==='d1') h=ramp('D1 서비스권 밖 비율 (버퍼 인구 중 기존 공원 유치권 밖)','0%','100%');
+  else if(S.colorCity==='e1') h=ramp('E1 버퍼 인구 (제곱근 눈금)','0',nf(maxE1)+'명');
+  else if(S.colorCity==='e2') h=ramp('E2 아동(9세 이하)·고령(65세 이상) 비율',pct1(minE2),pct1(maxE2));
+  else if(S.colorCity==='d2') h=ramp('D2 생활권 1인당 조성 공원면적 (진할수록 적음)',maxD2+'㎡',minD2+'㎡');
+  else if(S.colorCity==='c1') h=ramp('C1 녹지·수변축까지 거리 (진할수록 멂)','0m',nf(maxC1)+'m')+`<div class="meta">녹지축 = 토지피복지도 산림 ${D.U.params.axis_forest_min_ha}ha 이상, 수변축 = OSM 주요 하천. 녹지축 도면이 없어 대체자료</div>`;
+  else h=`<div class="t">지역 유형 (표시용, 점수에는 넣지 않음)</div><div class="row">${Object.entries(ATCOL).map(([k,v])=>`<span class="k">${sw(v)}${k}</span>`).join('')}</div>`;
+  h+=`<div class="meta" style="margin-top:4px">${sw('--own-unk')} 미산정: ${D.parks.filter(p=>!useOK(p)).map(p=>p.name).join('·')}(경계 없음)</div>`;
+  h+= S.d3&&S.heightCity!=='none' ? `<div class="meta" style="margin-top:5px">기둥 높이 = ${S.heightCity==='new'?`신규 수혜 인구 (제곱근, 최고 ${nf(maxNew)}명)`:`버퍼 인구 (제곱근, 최고 ${nf(maxE1)}명)`}</div>` : `<div class="meta" style="margin-top:5px">원 크기 = 공원 면적</div>`;
+  return h;
+}
+function useSummary(){
+  const ok=UOK; const s=k=>ok.reduce((a,p)=>a+(U(p)[k]||0),0); const cnt=k=>ok.filter(p=>U(p).area_type===k).length;
+  const top=[...ok].sort((a,b)=>U(b).new_served_pop-U(a).new_served_pop).slice(0,3).map(p=>`${p.name}(${nf(U(p).new_served_pop)}명)`).join(', ');
+  return `<h2>40개소 요약 · 이용성</h2><div class="meta">질문: 공원 주변에 누가 살고, 지금 공원 혜택을 못 받는 사람이 얼마나 되나</div>
+    <dl class="kv"><dt>산정</dt><dd>${ok.length}개소 / 40</dd>
+    <dt>버퍼 인구 합계</dt><dd>${nf(s('E1_pop'))}명</dd><dt>신규 수혜 인구 합계</dt><dd>${nf(s('new_served_pop'))}명</dd>
+    <dt>녹지·수변축 ${D.U.params.c1_near_m}m 이내</dt><dd>${ok.filter(p=>U(p).C1_near).length}곳</dd>
+    <dt>지역 유형</dt><dd>${Object.keys(ATCOL).filter(cnt).map(k=>`${k} ${cnt(k)}`).join(' · ')}</dd></dl>
+    <div class="note">신규 수혜 상위: ${top}. 버퍼가 겹치는 공원이 있어 합계에는 같은 사람이 두 번 들어갈 수 있다. 인구는 SGIS 2024 100m 격자, 기존 공원은 청주시 공원 목록(미조성 제외).</div>`;
+}
+function useCard(p){
+  const u=U(p);
+  const head=`<h2>${p.name} ${useOK(p)?`<span class="pill s2">${u.area_type}</span>`:'<span class="pill warn">미산정</span>'}</h2><div class="meta">${p.loc} · ${p.type} · ${m2(p.area)}${useOK(p)?` · ${u.dong} · ${u.living_zone}`:''}</div>`;
+  if(!useOK(p)) return head+`<div class="note">${u.note||'공원 경계가 없어 산정하지 못함.'}</div>`;
+  const row=(k,label,val)=>`<dt>${label}${utag(p,k)}</dt><dd>${val}</dd>`;
+  const sh=[['주거',u.res_share,'--own-ind'],['공업',u.ind_share,'--own-nat'],['상업',u.com_share,'--own-org']];
+  const rest=Math.max(0,1-sh.reduce((a,x)=>a+x[1],0));
+  const bar=`<div class="bar">${sh.filter(x=>x[1]).map(([k,v,c])=>`<span title="${k} ${(v*100).toFixed(0)}%" style="width:${v*100}%;background:var(${c})"></span>`).join('')}<span title="그 밖 ${(rest*100).toFixed(0)}%" style="width:${rest*100}%;background:var(--soft)"></span></div>
+    <div class="legend" style="position:static;border:0;padding:4px 0 0"><div class="row">${sh.map(([k,v,c])=>`<span class="k">${sw(c)}${k} ${(v*100).toFixed(0)}%</span>`).join('')}<span class="k">${sw('--soft')}그 밖(도로·녹지·농지 등) ${(rest*100).toFixed(0)}%</span></div></div>`;
+  const A=D.U.params.area_type;
+  return head+`<dl class="kv">
+    ${row('E1',`E1 버퍼 ${u.buffer_m}m 인구`,nf(u.E1_pop)+'명')}
+    ${row('E2','E2 아동·고령 비율',pct1(u.E2_vulnerable))}
+    ${row('D1','D1 서비스권 밖 비율',pct1(u.D1_unserved))}
+    ${row('new_served_pop','신규 수혜 인구',nf(u.new_served_pop)+'명')}
+    ${row('D2',`D2 ${u.living_zone} 1인당`,`조성 ${u.D2_built_m2_per_cap}㎡ (결정 ${u.D2_decided_m2_per_cap}㎡)`)}
+    ${row('C1','C1 녹지·수변축 거리',nf(u.C1_m)+'m')}
+    <dt>수변축 / 녹지축</dt><dd>${nf(u.C1_water_m)}m / ${nf(u.C1_green_m)}m</dd>
+    ${row('river_adjacent',`하천 ${D.U.params.river_adjacent_m}m 이내`,u.river_adjacent?'예':'아니오')}
+    <dt>버퍼 인구밀도</dt><dd>${nf(u.pop_density_km2)}명/㎢</dd></dl>
+    <div class="t" style="font-weight:600;font-size:12px;margin-top:10px">버퍼 안 토지이용 (토지피복지도 2025)</div>${bar}
+    <details class="ev"><summary>숫자의 근거</summary><table>
+    <tr><th>버퍼</th><td>공원 경계 + 유치거리 ${u.buffer_m}m (소공원·어린이공원 ${D.U.buffer_m['소공원']}m, 그 밖 ${D.U.buffer_m['근린공원']}m)</td></tr>
+    <tr><th>E1 인구</th><td>SGIS 2024 100m 격자 총인구(국가데이터처 자료제공). 행정동 주민등록과 r 0.99</td></tr>
+    <tr><th>E2</th><td>행안부 행정동 연령별 주민등록(2026-10) 9세 이하+65세 이상 비율을 격자 인구로 가중 (${u.E2_basis})</td></tr>
+    <tr><th>D1·신규 수혜</th><td>청주시 도시공원정보(2025-11) − 미조성공원 현황(2026-09) = 기존 공원, 공원구분별 유치거리 원. 버퍼 인구 중 그 밖에 사는 사람</td></tr>
+    <tr><th>D2</th><td>${D.U.zones.source}${u.living_zone==='도심생활권'?' · 도심생활권 배정은 가정':''}</td></tr>
+    <tr><th>C1</th><td>토지피복지도 2025 산림 ${D.U.params.axis_forest_min_ha}ha 이상 + OSM 주요 하천(${D.U.params.axis_rivers.slice(0,4).join('·')} 등). 녹지축 도면 대체</td></tr>
+    <tr><th>지역 유형</th><td>인구밀도 ${A.dense_per_km2.toLocaleString('ko-KR')}명/㎢ 이상 밀집, ${A.residential_per_km2.toLocaleString('ko-KR')}명/㎢ 또는 주거 ${A.residential_share*100}% 이상 주거, 공업 ${A.industrial_share*100}% 이상 산업 (가정)</td></tr>
+    </table></details>`;
+}
+function useList(){
+  const ps=[...D.parks].sort((a,b)=>(U(b).new_served_pop??-1)-(U(a).new_served_pop??-1));
+  $('list').innerHTML=ps.map(p=>`<button role="listitem" data-id="${p.id}" aria-current="${S.sel===p.id}"><span class="n">${p.id}</span>
+    <span style="min-width:0"><span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name} <span class="meta">${p.loc.split(' ').slice(-1)[0]}</span></span>
+    <span class="mini" title="서비스권 밖 ${pct(U(p).D1_unserved)}"><i style="width:${(U(p).D1_unserved||0)*100}%;background:var(--seq2)"></i></span></span>
+    <span class="v">${useOK(p)?nf(U(p).new_served_pop)+'명':'미산정'}</span></button>`).join('');
+  $('list').querySelectorAll('button').forEach(b=>b.onclick=()=>select(+b.dataset.id, S.view==='park'));
+}
+function useChart(){
+  const ps=[...D.parks].sort((a,b)=>(U(b).new_served_pop??-1)-(U(a).new_served_pop??-1));
+  $('userows').innerHTML=ps.map(p=>{const u=U(p); return `<div class="crow"><span class="nm" title="${p.name}">${p.name}</span>
+    ${useOK(p)?`<span class="cbar" style="position:relative;background:var(--soft)" title="버퍼 인구 ${nf(u.E1_pop)}명 · 신규 수혜 ${nf(u.new_served_pop)}명"><span style="position:absolute;left:0;width:${u.E1_pop/maxE1*100}%;height:100%;background:var(--seq1);opacity:.45"></span><span style="position:absolute;left:0;width:${u.new_served_pop/maxE1*100}%;height:100%;background:var(--seq2)"></span></span>`:'<span class="meta">미산정</span>'}
+    <span class="num">${useOK(p)?nf(u.new_served_pop):'—'}</span><span class="num pc">${useOK(p)?pct(u.D1_unserved):''}</span></div>`;}).join('');
+}
+function cityColor(p){
+""")
+R("  if(S.topic==='heat') return heatColor(p);", "  if(S.topic==='heat') return heatColor(p);\n  if(S.topic==='use') return useColor(p);")
+R("function cityHeight(p){\n", """function cityHeight(p){
+  if(S.topic==='use'){ const u=U(p); if(!useOK(p)) return 0;
+    if(S.heightCity==='new') return Math.sqrt((u.new_served_pop||0)/maxNew)*6000;
+    if(S.heightCity==='e1') return Math.sqrt((u.E1_pop||0)/maxE1)*6000; return 0; }
+""")
+R("<br>${S.topic==='heat'?(heatOK(p)?", "<br>${S.topic==='use'?useTip(p):S.topic==='heat'?(heatOK(p)?")
+R("  if(S.view==='city' && S.topic==='heat'){\n", "  if(S.view==='city' && S.topic==='use'){ h=useLegend(); }\n  else if(S.view==='city' && S.topic==='heat'){\n")
+R("""<button data-tp="heat" aria-pressed="${S.topic==='heat'}">열저감 (지표온도)</button>""",
+  """<button data-tp="heat" aria-pressed="${S.topic==='heat'}">열저감 (지표온도)</button><button data-tp="use" aria-pressed="${S.topic==='use'}">이용성 (주민·생활권)</button>""")
+R("  if(S.topic==='heat'){ $('card').innerHTML=topicTabs()+(p?heatCard(p):heatSummary()); bindTabs(); return; }",
+  "  if(S.topic==='use'){ $('card').innerHTML=topicTabs()+(p?useCard(p):useSummary()); bindTabs(); return; }\n  if(S.topic==='heat'){ $('card').innerHTML=topicTabs()+(p?heatCard(p):heatSummary()); bindTabs(); return; }")
+R("function list(){\n", "function list(){\n  if(S.topic==='use') return useList();\n")
+R("""    <div id="heatrows"></div>
+    </div>
+""", """    <div id="heatrows"></div>
+    </div>
+    <div id="usechart" hidden>
+    <h2>공원별 신규 수혜 인구 — 버퍼 인구 중 지금 공원 유치권 밖에 사는 사람</h2>
+    <div class="meta" style="margin-bottom:10px">옅은 막대 = 버퍼 인구(E1), 진한 막대 = 그중 기존 공원 유치권 밖(신규 수혜 인구). 오른쪽은 D1 서비스권 밖 비율.</div>
+    <div class="chead"><span>공원</span><span>인구 (명)</span><span style="text-align:right">신규 수혜</span><span class="pc" style="text-align:right">D1</span></div>
+    <div id="userows"></div>
+    </div>
+""")
+R("  $('bizchart').hidden=S.topic==='heat'; $('heatchart').hidden=S.topic!=='heat';",
+  "  $('bizchart').hidden=S.topic!=='biz'; $('heatchart').hidden=S.topic!=='heat'; $('usechart').hidden=S.topic!=='use';\n  if(S.topic==='use'){ useChart(); return; }")
+R("  ['biz','heat'].forEach(k=>$('tp-'+k).setAttribute('aria-pressed',k===tp));\n  S.colorCity = tp==='heat'?'kind':'pub'; S.heightCity = tp==='heat'?'cool':'cost';\n  S.colorPark = tp==='heat'?'use':'cost';",
+  "  ['biz','heat','use'].forEach(k=>$('tp-'+k).setAttribute('aria-pressed',k===tp));\n  S.colorCity = {biz:'pub',heat:'kind',use:'d1'}[tp]; S.heightCity = {biz:'cost',heat:'cool',use:'new'}[tp];\n  S.colorPark = tp==='biz'?'cost':'use';")
+R("$('tp-biz').onclick=()=>setTopic('biz'); $('tp-heat').onclick=()=>setTopic('heat');", "$('tp-biz').onclick=()=>setTopic('biz'); $('tp-heat').onclick=()=>setTopic('heat'); $('tp-use').onclick=()=>setTopic('use');")
+R("지표온도(기온 아님).</footer>", "지표온도(기온 아님). 이용성: SGIS 2024 100m 격자 인구(국가데이터처)·행안부 연령별 주민등록(2026-10)·청주시 도시공원정보(2025-11)·미조성공원 현황(2026-09)·V-World 주소 검색·환경부 토지피복지도 2025·OSM 하천·2030 청주시 공원녹지기본계획, build_edc.py 산출.</footer>")
 
 open(f'{C}/total_template.html', 'w', encoding='utf-8').write(t)
 print('total/code/total_template.html', len(t))
