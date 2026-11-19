@@ -360,7 +360,7 @@ function legend(){
       h=`<div class="t">개별공시지가 2026 (원/㎡)</div><div class="ramp" style="background:linear-gradient(90deg,var(--seq0),var(--seq1),var(--seq2),var(--seq3))"></div><div class="ramp-l"><span>0</span><span>${jm.toLocaleString('ko-KR')}</span></div>`; }
     if(D.bld&&D.bld[S.sel]) h+=`<div class="row" style="margin-top:4px"><span class="k">${sw('--own-org')}공원 안 건물</span><span class="k">${sw('--muted')}주변 건물${S.d3?' (높이 = 실제 m)':''}</span></div>`;
     if(terrainOn()){ const m=demFor(); h+=`<div class="meta" style="margin-top:4px">지형: 해발 ${m.min}~${m.max}m · 높이 ×${terK()}</div>`; }
-    h+=`<div class="meta" style="margin-top:5px">점선 = 공원 경계${S.d3&&S.heightPark!=='none'?' · 높이 = 공시지가(이 공원 최고값 기준)':''}</div>`;
+    h+=`<div class="meta" style="margin-top:5px">검은 선 = 공원 부지 경계(도시계획시설 결정). 선 밖으로 나온 색은 경계에 걸친 필지의 바깥 부분 — 계산은 선 안 면적만${S.d3&&S.heightPark!=='none'?' · 높이 = 공시지가(이 공원 최고값 기준)':''}</div>`;
   }
   $('legend').innerHTML=h;
 }
