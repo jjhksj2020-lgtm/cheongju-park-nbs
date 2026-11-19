@@ -67,6 +67,14 @@ aside{background:var(--panel);border:1px solid var(--line);border-radius:12px;di
 .bar{display:flex;height:10px;border-radius:3px;overflow:hidden;background:var(--soft);margin-top:8px}
 .bar span{display:block;height:100%}
 .note{font-size:11.5px;color:var(--muted);margin-top:8px}
+.costs{display:grid;gap:6px;margin-top:10px}
+.cost{border:1px solid var(--line);border-radius:8px;padding:7px 9px;border-left-width:4px}
+.cost.comp{border-left-color:var(--own-ind)} .cost.cons{border-left-color:var(--accent)} .cost.tot{border-left-color:var(--ink);background:var(--soft)}
+.cost .ch{font-size:12px} .cost .ch span{color:var(--muted);font-size:11px;margin-left:4px}
+.cost .cf{font-size:11.5px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums} .cost .op{color:var(--ink);font-weight:600;margin:0 2px}
+.cost .src{display:inline-block;font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:2px}
+.cost .cv{font-family:var(--f-mono);font-size:13px;font-weight:600;text-align:right;margin-top:2px}
+.cost .cn{font-size:10.5px;color:var(--muted);margin-top:2px}
 .ctabs{display:flex;gap:2px;background:var(--soft);padding:3px;border-radius:8px;margin:0 0 10px}
 .ctabs button{flex:1;border:0;background:transparent;color:var(--muted);font:inherit;font-size:12px;font-weight:600;padding:5px 8px;border-radius:6px;cursor:pointer}
 .ctabs button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
@@ -140,8 +148,8 @@ footer{font-size:11.5px;color:var(--muted)}
     <h2>공원별 시 부담 최대(상한 단가) — 보상비와 조성비</h2>
     <div class="meta" style="margin-bottom:10px">막대 길이는 같은 축(억 원). 오른쪽 숫자는 국공유지 비율. 국공유 100%인 공원은 보상비가 0이라 조성비만 남는다.</div>
     <div class="legend" style="position:static;display:inline-block;margin-bottom:10px"><div class="row">
-      <span class="k"><i class="sw" style="background:var(--own-ind)"></i>보상비(사유지 × 23~34만원/㎡ 상한)</span>
-      <span class="k"><i class="sw" style="background:var(--accent)"></i>조성비(면적 × 13.9만원/㎡ 상한)</span></div></div>
+      <span class="k"><i class="sw" style="background:var(--own-ind)"></i>① 보상비 = 사유지 면적 × 보상 단가(실적 23~34만 또는 공시지가 기준, 상한)</span>
+      <span class="k"><i class="sw" style="background:var(--accent)"></i>② 조성비 = 공원 전체 면적 × 조성 단가(13.9만원/㎡ 상한)</span></div></div>
     <div class="chead"><span>공원</span><span>시 부담 최대</span><span style="text-align:right">억 원</span><span class="pc" style="text-align:right">국공유</span></div>
     <div id="chartrows"></div>
     </div>
@@ -194,11 +202,11 @@ function seq(t){ t=Math.max(0,Math.min(1,t)); const s=[C['--seq0'],C['--seq1'],C
 function pubColor(p){ if(p==null) return C['--own-unk']; return lerp(C['--own-ind'], C['--own-nat'], p); }
 
 // --- 상태 ---
-const S = {topic:'biz', ter:3, showBld:true, bg:'none', view:'city', d3:false, sel:null, colorCity:'pub', heightCity:'cost', colorPark:'own', heightPark:'none'};
+const S = {topic:'biz', ter:3, showBld:true, bg:'none', view:'city', d3:false, sel:null, colorCity:'pub', heightCity:'cost', colorPark:'cost', heightPark:'none'};
 const OPTS = {
-  city:{color:[['pub','국공유지 비율'],['stage','집행 단계(기준 시나리오)'],['boundary','경계 일치도'],['urban','건물·시가지 사유지']], height:[['cost','시 부담 최대(억)'],['priv','사유지 면적'],['none','없음']]},
+  city:{color:[['pub','국공유지 비율'],['stage','집행 단계(기준 시나리오)'],['boundary','경계 일치도'],['urban','건물·시가지 사유지']], height:[['cost','시 부담 최대 = 보상+조성'],['comp','① 보상비만'],['cons','② 조성비만'],['priv','사유지 면적'],['none','없음']]},
   cityHeat:{color:[['kind','성격 (조성형·보전형)'],['cool','냉각량 °C·ha'],['dcell','공원 일대 저감 °C'],['ndvi','지금 녹지(NDVI)'],['grade','열저감 등급']], height:[['cool','냉각량 (제곱근 눈금)'],['dcell','공원 일대 저감 °C'],['none','없음']]},
-  park:{color:[['own','소유 구분'],['use','이용상황(건물 여부)'],['zone','용도지역'],['jimok','지목'],['jiga','개별공시지가 2026']], height:[['none','없음 (실제 건물만 세움)'],['jiga','개별공시지가']]}
+  park:{color:[['cost','보상 대상 여부 (보상+조성 / 조성만)'],['own','소유 구분'],['use','이용상황(건물 여부)'],['zone','용도지역'],['jimok','지목'],['jiga','개별공시지가 2026']], height:[['none','없음 (실제 건물만 세움)'],['jiga','개별공시지가']]}
 };
 
 // --- deck ---
@@ -210,8 +218,8 @@ const deckgl = new deck.DeckGL({
 const ttStyle = () => ({backgroundColor:`rgb(${C['--panel']})`, color:`rgb(${C['--ink']})`, border:`1px solid rgb(${C['--line']})`, borderRadius:'8px', padding:'7px 9px', boxShadow:'0 4px 14px rgba(0,0,0,.18)', maxWidth:'260px'});
 function tip({object, layer}){
   if(!object || !layer) return null;
-  if(layer.id.startsWith('park-')){ const p=object.p||object; const e=E(p); return {html:`<div class="tt"><b>${p.name}</b> · ${p.loc}<br>면적 ${m2(p.area)} · 국공유 ${pct(p.pub)}<br>${S.topic==='heat'?(heatOK(p)?`${e.kind} · 냉각량 ${f2(e.cool_base)} °C·ha · 공원 일대 −${f2(e.dlst_cell_base)}°C · 등급 ${e.grade_range}`:'열저감 미산정'):`시 부담 최대 ${eok(p.maxH)}억 · ${p.stage}`}</div>`, style:ttStyle()}; }
-  if(layer.id==='parcels'){ const q=object; return {html:`<div class="tt"><b>${q.jb}</b> · ${q.own}<br>지목 ${q.jm} · 공원 안 ${m2(q.in)}<br>이용상황 ${q.use} · ${q.zone}${q.gb?' · 개발제한구역':''}<br>2026 공시지가 ${q.jiga?q.jiga.toLocaleString('ko-KR')+'원/㎡':'—'}</div>`, style:ttStyle()}; }
+  if(layer.id.startsWith('park-')){ const p=object.p||object; const e=E(p); return {html:`<div class="tt"><b>${p.name}</b> · ${p.loc}<br>면적 ${m2(p.area)} · 국공유 ${pct(p.pub)}<br>${S.topic==='heat'?(heatOK(p)?`${e.kind} · 냉각량 ${f2(e.cool_base)} °C·ha · 공원 일대 −${f2(e.dlst_cell_base)}°C · 등급 ${e.grade_range}`:'열저감 미산정'):`보상 ${eok(p.comp)}억 + 조성 ${eok(p.cons)}억 = 시 부담 최대 ${eok(p.maxH)}억 · ${p.stage}`}</div>`, style:ttStyle()}; }
+  if(layer.id==='parcels'){ const q=object; return {html:`<div class="tt"><b>${q.jb}</b> · ${q.own} · ${(q.cat==='국유'||q.cat==='시·도유')?'조성비만':'보상비 + 조성비'}<br>지목 ${q.jm} · 공원 안 ${m2(q.in)}<br>이용상황 ${q.use} · ${q.zone}${q.gb?' · 개발제한구역':''}<br>2026 공시지가 ${q.jiga?q.jiga.toLocaleString('ko-KR')+'원/㎡':'—'}</div>`, style:ttStyle()}; }
   if(layer.id==='bld') return {html:`<div class="tt"><b>건물</b> · 높이 ${object.h}m${object.in?' · 공원 경계 안':''}<br>V-World 건물통합정보</div>`, style:ttStyle()};
   if(layer.id==='gu') return {html:`<div class="tt">${object.name}</div>`, style:ttStyle()};
   return null;
@@ -269,6 +277,8 @@ function cityHeight(p){
     if(S.heightCity==='cool') return Math.sqrt((e.cool_base||0)/maxCool)*6000;
     if(S.heightCity==='dcell') return (e.dlst_cell_base||0)/maxDcell*6000; return 0; }
   if(S.heightCity==='cost') return (p.maxH||0)/maxCost*6000;
+  if(S.heightCity==='comp') return (p.comp||0)/maxCost*6000;
+  if(S.heightCity==='cons') return (p.cons||0)/maxCost*6000;
   if(S.heightCity==='priv') return (p.pub==null?p.area:p.area*(1-p.pub))/maxPriv*6000;
   return 0;
 }
@@ -289,6 +299,7 @@ function cityLayers(){
   return L;
 }
 function parcelColor(q, jmax){
+  if(S.colorPark==='cost') return (q.cat==='국유'||q.cat==='시·도유')?C['--accent']:C['--own-ind'];
   if(S.colorPark==='own') return C[OWN[q.cat]];
   if(S.colorPark==='jimok') return C[JCOL[q.jc]]||C['--muted'];
   if(S.colorPark==='use') return C[UCOL[q.uc]];
@@ -364,10 +375,11 @@ function legend(){
     else if(S.colorCity==='stage') h=`<div class="t">집행 단계</div><div class="row"><span class="k">${sw('--stage1')}1단계</span><span class="k">${sw('--stage2')}2단계</span></div>`;
     else if(S.colorCity==='urban') h=`<div class="t">경계 안 사유지의 이용상황</div><div class="row"><span class="k">${sw('--own-org')}주택·상가 등 건물 있음</span><span class="k">${sw('--own-loc')}없음</span></div>`;
     else h=`<div class="t">공고 면적 대비 V-World 경계</div><div class="row"><span class="k">${sw('--own-loc')}일치 ±2%</span><span class="k">${sw('--own-ind')}근사 ±15%</span><span class="k">${sw('--own-org')}불일치</span></div>`;
-    if(S.d3&&S.heightCity!=='none') h+=`<div class="meta" style="margin-top:5px">기둥 높이 = ${S.heightCity==='cost'?`시 부담 최대 (최고 ${eok(maxCost)}억)`:`사유지 면적 (최고 ${m2(maxPriv)})`}</div>`;
+    if(S.d3&&S.heightCity!=='none') h+=`<div class="meta" style="margin-top:5px">기둥 높이 = ${S.heightCity==='cost'?`시 부담 최대 = 보상+조성 (최고 ${eok(maxCost)}억)`:S.heightCity==='comp'?`① 보상비 (사유지만, 같은 축 최고 ${eok(maxCost)}억)`:S.heightCity==='cons'?`② 조성비 (공원 전체, 같은 축 최고 ${eok(maxCost)}억)`:`사유지 면적 (최고 ${m2(maxPriv)})`}</div>`;
     else h+=`<div class="meta" style="margin-top:5px">원 크기 = 공원 면적</div>`;
   } else {
-    if(S.colorPark==='own') h=`<div class="t">소유 구분</div><div class="row">${Object.entries(OWN).map(([k,v])=>`<span class="k">${sw(v)}${k}</span>`).join('')}</div>`;
+    if(S.colorPark==='cost') h=`<div class="t">이 땅에 드는 돈</div><div class="row"><span class="k">${sw('--own-ind')}사유지 = ① 보상비 + ② 조성비</span><span class="k">${sw('--accent')}국공유지 = ② 조성비만</span></div>`;
+    else if(S.colorPark==='own') h=`<div class="t">소유 구분</div><div class="row">${Object.entries(OWN).map(([k,v])=>`<span class="k">${sw(v)}${k}</span>`).join('')}</div>`;
     else if(S.colorPark==='use') h=`<div class="t">이용상황 (토지특성 2026)</div><div class="row">${Object.entries(UCOL).map(([k,v])=>`<span class="k">${sw(v)}${k}</span>`).join('')}</div>`;
     else if(S.colorPark==='zone') h=`<div class="t">용도지역</div><div class="row">${Object.entries(ZCOL).map(([k,v])=>`<span class="k">${sw(v)}${k}</span>`).join('')}</div>`;
     else if(S.colorPark==='jimok') h=`<div class="t">지목</div><div class="row">${['임야','전','답','대','도로','하천','기타'].map(k=>`<span class="k">${sw(JCOL[k])}${k}</span>`).join('')}</div>`;
@@ -384,6 +396,28 @@ function legend(){
 function ownBreak(id){
   const qs=D.parcels.filter(q=>q.s===id); const t={}; qs.forEach(q=>t[q.cat]=(t[q.cat]||0)+q.in);
   const tot=Object.values(t).reduce((a,b)=>a+b,0); return {t,tot,n:qs.length};
+}
+// 보상비(땅을 사는 돈)와 조성비(공원을 만드는 돈)를 나눠 보여 준다
+function costBlocks(p, lo, hi, unitTxt){
+  const priv = p.pub==null?p.area:p.area*(1-p.pub);
+  const none = priv<1;
+  const comp = `<div class="cost comp"><div class="ch"><b>① 보상비</b> <span>사유지를 사들이는 돈</span></div>
+    ${none?`<div class="cf">보상 대상 없음 — 국공유지 ${pct(p.pub)} (국유·시유지는 사들이지 않고 사용허가로 쓴다)</div><div class="cv">0원</div>`
+    :`<div class="cf">사유지 ${m2(priv)} <span class="op">×</span> 보상 단가 ${(lo/1e4).toFixed(1)}~${(hi/1e4).toFixed(1)}만원/㎡ <span class="src">${unitTxt.split(' · ')[1]}</span></div>
+      <div class="cv">${eok(p.compL)} ~ ${eok(p.comp)}억</div>`}
+    <div class="cn">국공유지 ${m2(p.pub==null?0:p.area*p.pub)}는 넣지 않음${p.pub==null?' (경계 없음 → 전부 사유지 가정)':''}</div></div>`;
+  const cons = `<div class="cost cons"><div class="ch"><b>② 조성비</b> <span>공원을 만드는 돈</span></div>
+    ${p.cons==null?`<div class="cf">미산정 — ${p.type}은 비교할 조성 실적이 없음</div><div class="cv">—</div>`
+    :`<div class="cf">공원 전체 ${m2(p.area)} <span class="op">×</span> 조성 단가 ${(D.rule.klow/1e4).toFixed(1)}~${(D.rule.khigh/1e4).toFixed(1)}만원/㎡ <span class="src">청주 실적</span></div>
+      <div class="cv">${eok(p.consL)} ~ ${eok(p.cons)}억</div>`}
+    <div class="cn">땅 주인과 관계없이 공원 전체 면적에 든다</div></div>`;
+  const tot = `<div class="cost tot"><div class="ch"><b>시 부담 = ① + ②</b></div>
+    <div class="cv">최대 ${eok(p.maxL)} ~ ${eok(p.maxH)}억</div>
+    <div class="cn">최소 ${eok(p.minL)} ~ ${eok(p.minH)}억 — ${p.special?'민간공원 특례(5만㎡ 이상) 가능 → 민간이 부담하면 0':(p.routes?'국비 경로('+p.routes+')로 조성비 일부 지원':'외부 재원 없음 → 최대와 같음')}</div></div>`;
+  const tw=(p.comp||0)+(p.cons||0);
+  const bar = tw? `<div class="bar" style="height:8px;margin-top:6px" title="상한 기준 보상 ${eok(p.comp)}억 · 조성 ${eok(p.cons)}억"><span style="width:${(p.comp||0)/tw*100}%;background:var(--own-ind)"></span><span style="width:${(p.cons||0)/tw*100}%;background:var(--accent)"></span></div>
+    <div class="legend" style="position:static;border:0;padding:4px 0 0"><div class="row"><span class="k">${sw('--own-ind')}보상 ${((p.comp||0)/tw*100).toFixed(0)}%</span><span class="k">${sw('--accent')}조성 ${((p.cons||0)/tw*100).toFixed(0)}%</span><span class="k">(상한 기준)</span></div></div>`:'';
+  return `<div class="costs">${comp}${cons}${tot}${bar}</div>`;
 }
 function topicTabs(){ return `<div class="ctabs" role="group" aria-label="카드 주제"><button data-tp="biz" aria-pressed="${S.topic==='biz'}">사업성 (시가 낼 돈)</button><button data-tp="heat" aria-pressed="${S.topic==='heat'}">열저감 (지표온도)</button></div>`; }
 function bindTabs(){ $('card').querySelectorAll('.ctabs button').forEach(b=>b.onclick=()=>setTopic(b.dataset.tp)); }
@@ -464,10 +498,8 @@ function card(){
     <dl class="kv"><dt>공고 면적</dt><dd>${m2(p.area)}</dd><dt>국공유지 비율</dt><dd>${pct(p.pub)}</dd>
     <dt>사유지 면적</dt><dd>${m2(p.pub==null?p.area:p.area*(1-p.pub))}</dd>
     <dt>건물·시가지 사유지</dt><dd>${m2(p.urban)}</dd><dt>개발제한구역 면적</dt><dd>${m2(p.gb)}</dd>
-    <dt>사유지 공시지가 2026(가중)</dt><dd>${p.price?p.price.toLocaleString('ko-KR')+'원/㎡':'—'}</dd>
-    <dt>시 부담 최대</dt><dd>${eok(p.maxL)}~${eok(p.maxH)}억</dd><dt>시 부담 최소</dt><dd>${eok(p.minL)}~${eok(p.minH)}억</dd>
-    <dt>보상 단가</dt><dd>${unitTxt.split(' · ')[0]}</dd>
-    <dt>보상 / 조성 (상한)</dt><dd>${eok(p.comp)} / ${eok(p.cons)}억</dd></dl>
+    <dt>사유지 공시지가 2026(가중)</dt><dd>${p.price?p.price.toLocaleString('ko-KR')+'원/㎡':'—'}</dd></dl>
+    ${costBlocks(p, lo, hi, unitTxt)}
     ${bar}
     ${under}
     ${ev}
@@ -530,7 +562,7 @@ function setTopic(tp){
   if(S.topic===tp) return; S.topic=tp;
   ['biz','heat'].forEach(k=>$('tp-'+k).setAttribute('aria-pressed',k===tp));
   S.colorCity = tp==='heat'?'kind':'pub'; S.heightCity = tp==='heat'?'cool':'cost';
-  S.colorPark = tp==='heat'?'use':'own';
+  S.colorPark = tp==='heat'?'use':'cost';
   if(S.view==='chart'){ chart(); return; }
   fillSelects(); list(); render();
 }

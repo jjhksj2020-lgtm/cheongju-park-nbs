@@ -56,8 +56,8 @@ t = t.replace("updateTriggers:{getElevation:S.heightCity,getFillColor:[S.colorCi
 t = t.replace("updateTriggers:{getFillColor:[S.colorCity,S.sel,C['--own-nat']]", "updateTriggers:{getFillColor:[S.topic,S.colorCity,S.sel,C['--own-nat']]")
 
 # ---------- 툴팁 ----------
-R("  if(layer.id.startsWith('park-')){ const p=object.p||object; return {html:`<div class=\"tt\"><b>${p.name}</b> · ${p.loc}<br>면적 ${m2(p.area)} · 국공유 ${pct(p.pub)}<br>시 부담 최대 ${eok(p.maxH)}억 · ${p.stage}</div>`, style:ttStyle()}; }",
-  "  if(layer.id.startsWith('park-')){ const p=object.p||object; const e=E(p); return {html:`<div class=\"tt\"><b>${p.name}</b> · ${p.loc}<br>면적 ${m2(p.area)} · 국공유 ${pct(p.pub)}<br>${S.topic==='heat'?(heatOK(p)?`${e.kind} · 냉각량 ${f2(e.cool_base)} °C·ha · 공원 일대 −${f2(e.dlst_cell_base)}°C · 등급 ${e.grade_range}`:'열저감 미산정'):`시 부담 최대 ${eok(p.maxH)}억 · ${p.stage}`}</div>`, style:ttStyle()}; }")
+R("  if(layer.id.startsWith('park-')){ const p=object.p||object; return {html:`<div class=\"tt\"><b>${p.name}</b> · ${p.loc}<br>면적 ${m2(p.area)} · 국공유 ${pct(p.pub)}<br>보상 ${eok(p.comp)}억 + 조성 ${eok(p.cons)}억 = 시 부담 최대 ${eok(p.maxH)}억 · ${p.stage}</div>`, style:ttStyle()}; }",
+  "  if(layer.id.startsWith('park-')){ const p=object.p||object; const e=E(p); return {html:`<div class=\"tt\"><b>${p.name}</b> · ${p.loc}<br>면적 ${m2(p.area)} · 국공유 ${pct(p.pub)}<br>${S.topic==='heat'?(heatOK(p)?`${e.kind} · 냉각량 ${f2(e.cool_base)} °C·ha · 공원 일대 −${f2(e.dlst_cell_base)}°C · 등급 ${e.grade_range}`:'열저감 미산정'):`보상 ${eok(p.comp)}억 + 조성 ${eok(p.cons)}억 = 시 부담 최대 ${eok(p.maxH)}억 · ${p.stage}`}</div>`, style:ttStyle()}; }")
 
 # ---------- 범례 ----------
 R("  if(S.view==='city'){\n    if(S.colorCity==='pub')", """  if(S.view==='city' && S.topic==='heat'){
@@ -157,7 +157,7 @@ R("function setView(v){", """function setTopic(tp){
   if(S.topic===tp) return; S.topic=tp;
   ['biz','heat'].forEach(k=>$('tp-'+k).setAttribute('aria-pressed',k===tp));
   S.colorCity = tp==='heat'?'kind':'pub'; S.heightCity = tp==='heat'?'cool':'cost';
-  S.colorPark = tp==='heat'?'use':'own';
+  S.colorPark = tp==='heat'?'use':'cost';
   if(S.view==='chart'){ chart(); return; }
   fillSelects(); list(); render();
 }
