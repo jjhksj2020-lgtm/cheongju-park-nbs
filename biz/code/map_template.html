@@ -142,6 +142,7 @@ footer{font-size:11.5px;color:var(--muted)}
 
 <script src="https://unpkg.com/deck.gl@8.9.36/dist.min.js"></script>
 <script src="https://unpkg.com/@loaders.gl/terrain@3.4.15/dist/dist.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 <script>
 const D = __DATA__;
 // 한 파일판(park-land-map_standalone.html)에서는 사진·지형이 data URI로 들어 있다
@@ -258,13 +259,27 @@ function parcelColor(q, jmax){
   if(S.colorPark==='zone') return C[ZCOL[q.zc]];
   return q.jiga?seq(q.jiga/jmax):C['--own-unk'];
 }
+// 필지를 공원 경계(검은 선) 안쪽만 남기도록 자른다 = 계산에 들어간 부분만 보인다. turf가 없으면(오프라인) 자르지 않고 그린다.
+const CLIP = {};
+function clippedParcels(p, qs){
+  if(CLIP[p.id]) return CLIP[p.id];
+  if(typeof turf==='undefined') return qs.flatMap(q=>q.poly.map(poly=>Object.assign(Object.create(q),{poly})));
+  const park = turf.multiPolygon(p.poly); const out=[];
+  for(const q of qs) for(const poly of q.poly){
+    let g=null; try{ g=turf.intersect(turf.polygon(poly), park); }catch(e){ g=null; }
+    if(!g) continue;
+    const polys = g.geometry.type==='Polygon'?[g.geometry.coordinates]:g.geometry.coordinates;
+    polys.forEach(pp=>out.push(Object.assign(Object.create(q),{poly:pp})));
+  }
+  return CLIP[p.id]=out;
+}
 function parkLayers(){
   const p = byId[S.sel]; if(!p||!p.poly) return [guLayer()];
   const qs = D.parcels.filter(q=>q.s===p.id);
   const jmax = Math.max(1,...qs.map(q=>q.jiga||0));
   const ext = extentM(p.poly);
   const L=[bgLayer(), guLayer(),
-    new deck.PolygonLayer({id:'parcels', data:qs.flatMap(q=>q.poly.map(poly=>Object.assign(Object.create(q),{poly}))), getPolygon:d=>d.poly,
+    new deck.PolygonLayer({id:'parcels', data:clippedParcels(p, qs), getPolygon:d=>d.poly,
       extruded:S.d3 && S.heightPark!=='none', getElevation:d=>d.jiga?d.jiga/jmax*ext*0.3:0, wireframe:true,
       getFillColor:d=>[...parcelColor(d,jmax), S.d3?235:(S.bg==='none'?200:150)], getLineColor:[...C['--panel'],255], lineWidthMinPixels:1, pickable:true,
       material:{ambient:.6,diffuse:.55}, updateTriggers:{getFillColor:[S.colorPark,C['--own-nat']], getElevation:[S.heightPark]}, transitions:{getElevation:450}}),
@@ -316,7 +331,7 @@ function legend(){
       h=`<div class="t">개별공시지가 2026 (원/㎡)</div><div class="ramp" style="background:linear-gradient(90deg,var(--seq0),var(--seq1),var(--seq2),var(--seq3))"></div><div class="ramp-l"><span>0</span><span>${jm.toLocaleString('ko-KR')}</span></div>`; }
     if(D.bld&&D.bld[S.sel]) h+=`<div class="row" style="margin-top:4px"><span class="k">${sw('--own-org')}공원 안 건물</span><span class="k">${sw('--muted')}주변 건물${S.d3?' (높이 = 실제 m)':''}</span></div>`;
     if(terrainOn()){ const m=demFor(); h+=`<div class="meta" style="margin-top:4px">지형: 해발 ${m.min}~${m.max}m · 높이 ×${terK()}</div>`; }
-    h+=`<div class="meta" style="margin-top:5px">검은 선 = 공원 부지 경계(도시계획시설 결정). 선 밖으로 나온 색은 경계에 걸친 필지의 바깥 부분 — 계산은 선 안 면적만${S.d3&&S.heightPark!=='none'?' · 높이 = 공시지가(이 공원 최고값 기준)':''}</div>`;
+    h+=`<div class="meta" style="margin-top:5px">검은 선 = 공원 부지 경계(도시계획시설 결정). 필지는 선 안쪽만 표시 = 계산에 들어간 부분${typeof turf==='undefined'?' (오프라인이라 자르지 못함)':''}${S.d3&&S.heightPark!=='none'?' · 높이 = 공시지가(이 공원 최고값 기준)':''}</div>`;
   }
   $('legend').innerHTML=h;
 }
