@@ -413,7 +413,7 @@ function costBlocks(p, lo, hi, unitTxt){
     <div class="cn">땅 주인과 관계없이 공원 전체 면적에 든다</div></div>`;
   const tot = `<div class="cost tot"><div class="ch"><b>시 부담 = ① + ②</b></div>
     <div class="cv">최대 ${eok(p.maxL)} ~ ${eok(p.maxH)}억</div>
-    <div class="cn">최소 ${eok(p.minL)} ~ ${eok(p.minH)}억 — ${p.special?'민간공원 특례(5만㎡ 이상) 가능 → 민간이 부담하면 0':(p.routes?'국비 경로('+p.routes+')로 조성비 일부 지원':'외부 재원 없음 → 최대와 같음')}</div></div>`;
+    <div class="cn">최소 ${eok(p.minL)} ~ ${eok(p.minH)}억 — ${p.special?'민간공원 특례(5만㎡ 이상) 가능 → 민간이 부담하면 0':((p.routes&&p.routes!=='없음')?'국비 경로('+p.routes+')로 조성비 일부 지원':'외부 재원 없음 → 최대와 같음'+(/검토/.test(p.subsidy||'')?' (국비 요건은 필요성 결과를 받은 뒤 판정)':''))}</div></div>`;
   const tw=(p.comp||0)+(p.cons||0);
   const bar = tw? `<div class="bar" style="height:8px;margin-top:6px" title="상한 기준 보상 ${eok(p.comp)}억 · 조성 ${eok(p.cons)}억"><span style="width:${(p.comp||0)/tw*100}%;background:var(--own-ind)"></span><span style="width:${(p.cons||0)/tw*100}%;background:var(--accent)"></span></div>
     <div class="legend" style="position:static;border:0;padding:4px 0 0"><div class="row"><span class="k">${sw('--own-ind')}보상 ${((p.comp||0)/tw*100).toFixed(0)}%</span><span class="k">${sw('--accent')}조성 ${((p.cons||0)/tw*100).toFixed(0)}%</span><span class="k">(상한 기준)</span></div></div>`:'';
