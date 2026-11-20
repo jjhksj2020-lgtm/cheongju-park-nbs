@@ -1094,6 +1094,15 @@ parkLayers = function(){
 const wide = () => S.view==='park' && (S.topic==='use'||S.topic==='heat');
 const _demFor = demFor;
 demFor = function(){ return wide() ? (D.dem||{}).city : _demFor(); };
+// 지형 배율: 원래 공원 화면처럼 '높이차 × 배율 ≤ 화면 폭의 1/4' (높이차는 그 공원 둘레 지형 자료로)
+const _terK = terK;
+terK = function(){
+  if(!wide()) return _terK();
+  const p = byId[S.sel], loc = (D.dem||{})['s'+S.sel];
+  const poly = S.topic==='use' && PZU && PZU.buffer[String(S.sel)] ? PZU.buffer[String(S.sel)] : p.poly, b = bb(poly);
+  const ext = Math.max((b[2]-b[0])*89000,(b[3]-b[1])*111320), rel = loc ? Math.max(20, loc.max-loc.min) : 60;
+  return Math.round(Math.min(S.ter, 0.25*ext/rel)*10)/10;
+};
 const _viewPark = viewPark;
 viewPark = function(){
   const p = byId[S.sel]; if(!p||!p.poly) return;
