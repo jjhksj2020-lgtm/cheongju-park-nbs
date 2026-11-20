@@ -20,6 +20,19 @@ def pz():
             'wolmyeong': B['validation']['wolmyeong']}
 
 
+def edc_geo():
+    """이용성 공원 화면용: need/edc/EDC_지도.html(이용성 파트 결과물) 안의 100m 인구 격자·기존 공원·이용 거리(버퍼)를 꺼낸다.
+    cells = [경도, 위도, 인구, 아동·고령 비율], served = 기존 공원 이용권(합쳐진 면), existing = 기존 공원 경계, buffer = 대상 공원 이용 거리."""
+    f = f'{ROOT}/need/edc/EDC_지도.html'
+    if not os.path.exists(f):
+        return None
+    s = open(f, encoding='utf-8').read()
+    a = s.index('=', s.index('const D')) + 1
+    E, _ = json.JSONDecoder().raw_decode(s[a:].lstrip())
+    return {'asof': E.get('asof'), 'pop_source': E.get('pop_source'), 'cells': E['cells'], 'served': E['served'],
+            'existing': E['existing'], 'buffer': {k: v['buffer'] for k, v in E['geo'].items()}}
+
+
 def wrap(page):
     """page = 데이터가 들어간 지도 앱 본문(total_template.html 치환 결과). 발표판 전체 HTML을 돌려준다."""
     shell = open(f'{C}/present_shell.html', encoding='utf-8').read()
@@ -27,7 +40,7 @@ def wrap(page):
     mapjs = open(f'{C}/present_map.js', encoding='utf-8').read()   # 청주시 모양 배경 · 3D 공원 블록 · 처음 화면 맞춤
     page = page.replace('<div class="wrap">', '<div class="wrap" id="app">', 1)
     page = page.replace('<title>청주 장기미집행 공원 40개소 조성 지도</title>', f'<title>{TITLE}</title>', 1)
-    body = shell + page + '\n<script>\n' + mapjs + '</script>\n<script>\nconst PZ = ' + json.dumps(pz(), ensure_ascii=False) + ';\n' + js + '</script>\n'
+    body = shell + page + '\n<script>\nconst PZU = ' + json.dumps(edc_geo(), ensure_ascii=False, separators=(',', ':')) + ';\n' + mapjs + '</script>\n<script>\nconst PZ = ' + json.dumps(pz(), ensure_ascii=False) + ';\n' + js + '</script>\n'
     return ('<!doctype html>\n<html lang="ko" data-theme="light"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">\n' + body + '\n</html>\n')
 
