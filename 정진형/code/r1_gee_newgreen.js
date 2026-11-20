@@ -26,12 +26,8 @@ var vec = cand.reduceToVectors({
 vec = vec.filter(ee.Filter.gte('count', MIN_PIX));
 var out = vec.map(function (f) {
   var c = f.geometry().centroid(10).coordinates();
-  return ee.Feature(null, {lon: c.get(0), lat: c.get(1), px: f.get('count')});
+  return ee.Feature(f.geometry(), {lon: c.get(0), lat: c.get(1), px: f.get('count')});
 });
-out.size().evaluate(function (n, e) { print('N|' + n + '|' + (e || '')); });
-out.sort('px', false).limit(800).evaluate(function (fc, e) {
-  if (e) { print('ERR|' + e); return; }
-  var s = fc.features.map(function (f) { var p = f.properties; return p.lat.toFixed(4) + ',' + p.lon.toFixed(4) + ',' + p.px; }).join(';');
-  print('C|' + s);
-  print('DONE|');
-});
+// 대화형 실행은 5분 제한이라 배치 작업으로 자산에 저장한다. 읽기는 r1_gee_read.js
+Export.table.toAsset({collection: out, description: 'r1_newgreen', assetId: 'projects/cheongju-grpi/assets/r1_newgreen'});
+print('EXPORT|queued');
