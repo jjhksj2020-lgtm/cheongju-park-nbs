@@ -64,7 +64,7 @@ terrainLayer = function(){
   if(wide()){
     const m = demFor(), k = terK(), tex = CUT ? CUT[S.bg==='base'?'base':S.bg==='sat'?'sat':'none'] : (S.bg==='none'?null:asset('img/'+((S.bg==='base'?BM.cityBase:BM.citySat)||{}).file));
     return new deck.TerrainLayer({id:'terrain-wide-'+k+'-'+S.bg, elevationData:asset('dem/'+m.file), texture:tex, bounds:m.bounds,
-      elevationDecoder:{rScaler:256*k,gScaler:k,bScaler:k/256,offset:(-32768-m.min)*k}, meshMaxError:1, skirtHeight:0,
+      elevationDecoder:{rScaler:256*k,gScaler:k,bScaler:k/256,offset:(-32768-m.min)*k}, meshMaxError:2, skirtHeight:0,
       color:C['--gu'], loaders:[loaders.TerrainLoader], loadOptions:{worker:false}, operation:'terrain+draw'});
   }
   if(S.view!=='city' || !CUT) return _terrainLayer();
