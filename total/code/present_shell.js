@@ -29,18 +29,35 @@ const dash = (tp,tip) => `<section class="pz-block pz-dash"><div class="pz-dash-
 const n = P.length, early = P.filter(p=>p.expiry<=PZ.stage1_expiry_max).length;
 const small = P.filter(p=>/소공원|어린이공원/.test(p.type)).length;
 const yrs = P.map(p=>p.expiry), y0=Math.min(...yrs), y1=Math.max(...yrs);
-const pIntro = `<div class="pz-cover">
-  <div class="pz-eyebrow" style="--tc:var(--pz-ink)">청주시 공고 제2026-2004호 · 장기미집행 도시공원 ${n}개소</div>
-  <h1 class="pz-h1">어떤 공원부터 먼저 만들어야 하는가</h1>
-  <p class="pz-lead">청주시에는 공원으로 지정만 되고 아직 만들지 못한 땅이 <b>${n}곳</b> 있습니다. 이 땅들은 ${y0}년부터 ${y1}년 사이에 차례로 <b>공원 지정이 풀립니다(실효)</b>. 시의 재원으로 한꺼번에 조성하기는 어렵기 때문에, <b>무엇을 기준으로 순서를 정할지</b>를 데이터로 제시하는 것이 이 작업의 목적입니다.</p>
-</div>
+// 표지 지도: 청주시 4개 구 경계 + 공원 40곳 위치 (SVG, 지도 엔진 없이)
+function cityMap(){
+  const rings = D.gu.flatMap(g=>g.poly.map(pg=>({name:g.name, r:pg[0]})));
+  const xs = rings.flatMap(o=>o.r.map(c=>c[0])), ys = rings.flatMap(o=>o.r.map(c=>c[1]));
+  const x0=Math.min(...xs), x1=Math.max(...xs), y0g=Math.min(...ys), y1g=Math.max(...ys), k=Math.cos((y0g+y1g)/2*Math.PI/180);
+  const W=420, sc=W/((x1-x0)*k), H=Math.round((y1g-y0g)*sc), pad=10;
+  const X=lon=>pad+(lon-x0)*k*sc, Y=lat=>pad+(y1g-lat)*sc;
+  const path = r => 'M'+r.map(c=>X(c[0]).toFixed(1)+','+Y(c[1]).toFixed(1)).join('L')+'Z';
+  const cen = r => [r.reduce((a,c)=>a+c[0],0)/r.length, r.reduce((a,c)=>a+c[1],0)/r.length];
+  const dots = [...P].filter(p=>p.c).sort((a,b)=>b.expiry-a.expiry).map(p=>`<circle cx="${X(p.c[0]).toFixed(1)}" cy="${Y(p.c[1]).toFixed(1)}" r="4.2" fill="${p.expiry<=PZ.stage1_expiry_max?'#1a2230':'#b0aca2'}" stroke="#fff" stroke-width="1.4"><title>${p.name} · ${p.loc} · 실효 ${p.expiry}</title></circle>`).join('');
+  return `<svg viewBox="0 0 ${W+pad*2} ${H+pad*2}" role="img" aria-label="청주시 구 경계와 장기미집행 공원 ${n}곳 위치">
+    ${rings.map((o,i)=>`<path d="${path(o.r)}" fill="${['#eef1ec','#e8ece6','#f1f2ee','#e9ede8'][i%4]}" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>`).join('')}
+    ${rings.map(o=>`<path d="${path(o.r)}" fill="none" stroke="#9aa39b" stroke-width=".8" stroke-linejoin="round"/>`).join('')}
+    ${rings.map(o=>{const c=cen(o.r);return `<text x="${X(c[0]).toFixed(0)}" y="${Y(c[1]).toFixed(0)}" text-anchor="middle" font-size="13" font-weight="700" fill="#9aa39b" style="letter-spacing:.1em">${o.name}</text>`}).join('')}
+    ${dots}</svg>
+    <div class="lg"><span><i style="background:#1a2230"></i>${PZ.stage1_expiry_max}년까지 실효</span><span><i style="background:#b0aca2"></i>그 이후 실효</span></div>`;
+}
+const pIntro = `<div class="pz-hero"><div>
+  <div class="pz-eyebrow" style="--tc:var(--pz-ink2)">청주시 공고 제2026-2004호 · 장기미집행 도시공원 ${n}개소</div>
+  <h1 class="pz-h1">어떤 공원부터<br>먼저 만들어야 하는가</h1>
+  <p class="pz-lead">청주시에는 공원으로 지정만 되고 아직 만들지 못한 땅이 <b>${n}곳</b> 있습니다. 이 땅들은 ${y0}년부터 ${y1}년 사이에 차례로 <b>공원 지정이 풀립니다(실효)</b>. 한꺼번에 조성하기는 어렵기 때문에, <b>무엇을 기준으로 순서를 정할지</b>를 데이터로 제시합니다.</p>
+</div><div class="pz-cmap">${cityMap()}</div></div>
 <div class="pz-kpis" style="--cols:4;margin-top:26px">
   ${kpi('대상 공원',n,'곳',`소공원·어린이공원 ${small}곳, 근린·주제공원 ${n-small}곳`)}
   ${kpi('실효 시점',`${y0}–${y1}`,'',`${PZ.stage1_expiry_max}년까지 ${early}곳이 먼저 풀림`)}
   ${kpi('평가 기준','3','가지','이용성 · 에너지저감 · 사업성')}
-  ${kpi('분석한 필지',nf(D.parcels.length),'필지','공원 경계 안 땅을 한 필지씩 소유·땅값 확인')}
+  ${kpi('시 부담 추정',`${eok(sum(P,p=>p.minL))}–${eok(sum(P,p=>p.maxH))}`,'억 원','40곳 전체, 땅 보상 + 공원 조성')}
 </div>
-<h3 class="pz-h3" style="margin-top:40px">세 가지 눈으로 봅니다</h3>
+<h3 class="pz-h3" style="margin-top:44px">세 가지 눈으로 봅니다</h3>
 <div class="pz-lenses">
   <button class="pz-lens" style="--tc:var(--pz-use)" data-go="use"><span class="k">기준 1</span><span class="t">이용성</span><span class="q">누가 이 공원을 쓰게 되나?</span><span class="d">주변에 사는 사람 중 지금 가까운 공원이 없는 사람이 얼마나 되는지 봅니다.</span><span class="go">자세히 →</span></button>
   <button class="pz-lens" style="--tc:var(--pz-heat)" data-go="heat"><span class="k">기준 2</span><span class="t">에너지저감</span><span class="q">만들면 여름이 얼마나 시원해지나?</span><span class="d">녹지가 늘어 여름철 땅 온도가 얼마나 내려가는지 위성 실측으로 봅니다.</span><span class="go">자세히 →</span></button>
@@ -118,7 +135,7 @@ ${sec(4,'결과',`<div class="pz-kpis" style="--cols:4">
   ${kpi('상위 5곳 비중',pc(u5s/uNew),'','신규 수혜 인구 중')}
 </div>
 <div class="pz-res"><div><p class="pz-sub">신규 수혜 인구 상위 5곳</p><div class="pz-legend" style="margin-top:2px"><span><i style="background:var(--pz-use)"></i>신규 수혜 인구</span><span><i style="background:#cfe3d8"></i>주변 인구 중 이미 공원이 있는 사람</span></div>
-  ${rank(u5.map(p=>({p,v:U(p).new_served_pop,segs:[[U(p).new_served_pop,'var(--pz-use)'],[U(p).E1_pop-U(p).new_served_pop,'#cfe3d8']]})), Math.max(...u5.map(p=>U(p).E1_pop)), r=>`${nf(r.v)}명<small>공백 ${pc(U(r.p).D1_unserved)}</small>`)}</div>
+  ${rank(u5.map(p=>({p,v:U(p).new_served_pop,segs:[[U(p).new_served_pop,'var(--pz-use)'],[U(p).E1_pop-U(p).new_served_pop,'#cfe2d7']]})), Math.max(...u5.map(p=>U(p).E1_pop)), r=>`${nf(r.v)}명<small>공백 ${pc(U(r.p).D1_unserved)}</small>`)}</div>
   <div class="pz-take" style="--tc:var(--pz-use)"><div class="h">해석</div>
   <p><b>${u5[0].name}</b>은 주변 ${nf(U(u5[0]).E1_pop)}명 중 ${nf(U(u5[0]).new_served_pop)}명이 지금 걸어서 갈 공원이 없어, 조성 시 혜택을 받는 사람이 가장 많습니다.</p>
   <ul><li>상위 5곳이 전체 신규 수혜 인구의 ${pc(u5s/uNew)}를 차지합니다.</li><li>주변에 공원이 이미 있으면 인구가 많아도 순위가 낮습니다.</li></ul></div></div>
@@ -210,7 +227,7 @@ const TC = {use:'var(--pz-use)',heat:'var(--pz-heat)',biz:'var(--pz-biz)'};
 $('pzMain').innerHTML = PAGES.map(([id,,h])=>`<div class="pz-page" id="pg-${id}" style="--tc:${TC[id]||'var(--pz-ink)'}">${h}</div>`).join('');
 $('pzSteps').innerHTML = PAGES.map(([id,l],i)=>`<button data-go="${id}"><i>${i+1}</i>${l}</button>`).join('');
 const app = document.getElementById('app'); $('pzHome').appendChild(app);
-const HAS_DECK = typeof window.deck==='object' && window.deck && typeof window.deck.DeckGL==='function' && typeof deckgl!=='undefined';
+let HAS_DECK = false; try{ HAS_DECK = typeof window.deck==='object' && !!window.deck && typeof window.deck.DeckGL==='function' && !!deckgl; }catch(e){}
 let cur = 0;
 function go(i, push=true){
   i = Math.max(0, Math.min(PAGES.length-1, i)); cur = i; const id = PAGES[i][0];

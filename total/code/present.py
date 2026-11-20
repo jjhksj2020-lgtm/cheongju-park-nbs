@@ -1,5 +1,6 @@
 """발표용 껍데기를 통합 지도에 씌운다 — 주제·목적 → 공원이란 → 이용성 → 에너지저감 → 사업성.
-지도 앱(total_template.html)은 그대로 두고, 앞에 설명 페이지(present_shell.html)와 페이지 넘기기(present_shell.js)를 붙인다.
+지도 앱(total_template.html)은 그대로 두고, 앞에 설명 페이지(present_shell.html)와 페이지 넘기기(present_shell.js)를 붙이고,
+지도 보정(present_map.js: 청주시 경계 모양 배경, 3D에서 공원 모양이 솟는 블록, 시 경계에 맞춘 첫 화면)을 덧붙인다.
 
   build_total.py 가 마지막에 wrap() 을 부른다 (보통은 이것만 쓰면 됨).
   python total/code/present.py   # 계산 없이: 이미 만든 total/*.html 안의 데이터를 꺼내 발표판만 다시 만든다
@@ -23,9 +24,10 @@ def wrap(page):
     """page = 데이터가 들어간 지도 앱 본문(total_template.html 치환 결과). 발표판 전체 HTML을 돌려준다."""
     shell = open(f'{C}/present_shell.html', encoding='utf-8').read()
     js = open(f'{C}/present_shell.js', encoding='utf-8').read()
+    mapjs = open(f'{C}/present_map.js', encoding='utf-8').read()   # 청주시 모양 배경 · 3D 공원 블록 · 처음 화면 맞춤
     page = page.replace('<div class="wrap">', '<div class="wrap" id="app">', 1)
     page = page.replace('<title>청주 장기미집행 공원 40개소 조성 지도</title>', f'<title>{TITLE}</title>', 1)
-    body = shell + page + '\n<script>\nconst PZ = ' + json.dumps(pz(), ensure_ascii=False) + ';\n' + js + '</script>\n'
+    body = shell + page + '\n<script>\n' + mapjs + '</script>\n<script>\nconst PZ = ' + json.dumps(pz(), ensure_ascii=False) + ';\n' + js + '</script>\n'
     return ('<!doctype html>\n<html lang="ko" data-theme="light"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">\n' + body + '\n</html>\n')
 

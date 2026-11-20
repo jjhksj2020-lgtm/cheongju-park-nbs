@@ -1,152 +1,178 @@
 <!doctype html>
 <html lang="ko" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
-/* 발표용 껍데기 — 지도 앱(#app)은 그대로 두고, 앞뒤로 설명 페이지를 붙인다. 클래스는 모두 pz- 로 시작(지도 앱 CSS와 겹치지 않게). */
-:root{--pz-use:#2f7d5a; --pz-heat:#c2562a; --pz-biz:#2b6cb0; --pz-comp:#c27a12; --pz-cons:#2b6cb0;
-  --pz-ink:#16201b; --pz-muted:#56625c; --pz-line:#d9dfdb; --pz-soft:#f1f4f2; --pz-paper:#ffffff; --pz-bg:#f6f7f6}
-body{background:var(--pz-bg);padding:0!important;margin:0}
-.pz-top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--pz-line)}
-.pz-top-in{max-width:1240px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
-.pz-brand{font-weight:700;font-size:14px;letter-spacing:-.01em;color:var(--pz-ink);margin-right:auto}
-.pz-brand small{display:block;font-weight:500;font-size:11.5px;color:var(--pz-muted)}
-.pz-steps{display:flex;gap:4px;flex-wrap:wrap}
-.pz-steps button{display:flex;align-items:center;gap:7px;border:1px solid transparent;background:transparent;color:var(--pz-muted);font:inherit;font-size:13px;font-weight:600;padding:6px 11px;border-radius:999px;cursor:pointer}
-.pz-steps button i{font-style:normal;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--pz-soft);font-size:11px;color:var(--pz-muted)}
-.pz-steps button[aria-current="step"]{color:var(--pz-ink);border-color:var(--pz-line);background:var(--pz-paper)}
-.pz-steps button[aria-current="step"] i{background:var(--pz-ink);color:#fff}
-.pz-steps button:hover{color:var(--pz-ink)}
-.pz-main{max-width:1240px;margin:0 auto;padding:36px 24px 120px}
-.pz-page{display:none}.pz-page.on{display:block;animation:pzin .35s ease}
-@keyframes pzin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.pz-eyebrow{font-size:12.5px;font-weight:700;letter-spacing:.06em;color:var(--tc,var(--pz-muted));text-transform:uppercase}
-h1.pz-h1{font-size:40px;line-height:1.2;font-weight:700;letter-spacing:-.025em;margin:10px 0 14px;color:var(--pz-ink);text-wrap:balance}
-h2.pz-h2{font-size:30px;line-height:1.25;font-weight:700;letter-spacing:-.02em;margin:8px 0 12px;color:var(--pz-ink);text-wrap:balance}
-h3.pz-h3{font-size:18px;font-weight:700;margin:0 0 14px;color:var(--pz-ink);display:flex;align-items:center;gap:10px}
-h3.pz-h3 .n{font-size:12px;font-weight:700;color:#fff;background:var(--tc,var(--pz-ink));border-radius:6px;padding:2px 7px}
-.pz-lead{font-size:17px;line-height:1.7;color:var(--pz-muted);max-width:820px;margin:0}
-.pz-lead b{color:var(--pz-ink);font-weight:600}
-.pz-block{background:var(--pz-paper);border:1px solid var(--pz-line);border-radius:16px;padding:26px 28px;margin-top:22px}
-.pz-why{border-left:5px solid var(--tc);}
+/* 발표용 껍데기 — 지도 앱(#app)은 그대로 두고 앞뒤로 설명 페이지를 붙인다. 클래스는 모두 pz- (지도 앱 CSS와 겹치지 않게). */
+:root{--pz-use:#3a7d5c; --pz-heat:#c4623a; --pz-biz:#2b6cb0; --pz-comp:#c27a12; --pz-cons:#2b6cb0;
+  --pz-ink:#1a2230; --pz-ink2:#3b4556; --pz-muted:#6b7380; --pz-line:#e7e5df; --pz-soft:#f4f3ef; --pz-paper:#ffffff; --pz-bg:#f8f7f4;
+  --pz-shadow:0 1px 2px rgba(26,34,48,.04),0 2px 8px rgba(26,34,48,.04);
+  --f-body:"Pretendard Variable",Pretendard,"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}
+/* 지도 앱 색도 같은 톤으로 (밝은 화면 고정) */
+:root[data-theme="light"]{--bg:#f8f7f4;--panel:#ffffff;--ink:#1a2230;--muted:#6b7380;--line:#e7e5df;--soft:#f4f3ef;--map:#eef0ec;--gu:#e6e9e3;--gu-line:#b7beb5;--accent:#2b6cb0}
+body{background:var(--pz-bg);padding:0!important;margin:0;color:var(--pz-ink);font-family:var(--f-body);-webkit-font-smoothing:antialiased;letter-spacing:-.005em}
+.pz-top{position:sticky;top:0;z-index:20;background:rgba(248,247,244,.88);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--pz-line)}
+.pz-top-in{max-width:1280px;margin:0 auto;padding:12px 32px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.pz-brand{font-weight:700;font-size:14px;color:var(--pz-ink);margin-right:auto;display:flex;align-items:center;gap:10px}
+.pz-brand::before{content:"";width:9px;height:9px;border-radius:2px;background:linear-gradient(135deg,var(--pz-use),var(--pz-biz));transform:rotate(45deg)}
+.pz-brand small{font-weight:500;font-size:12px;color:var(--pz-muted);margin-left:2px}
+.pz-steps{display:flex;gap:2px;background:var(--pz-paper);border:1px solid var(--pz-line);border-radius:999px;padding:3px}
+.pz-steps button{display:flex;align-items:center;gap:7px;border:0;background:transparent;color:var(--pz-muted);font:inherit;font-size:13px;font-weight:600;padding:6px 13px 6px 8px;border-radius:999px;cursor:pointer;transition:background .2s,color .2s}
+.pz-steps button i{font-style:normal;display:inline-grid;place-items:center;width:19px;height:19px;border-radius:50%;background:var(--pz-soft);font-size:10.5px;font-weight:700;color:var(--pz-muted)}
+.pz-steps button[aria-current="step"]{color:#fff;background:var(--pz-ink)}
+.pz-steps button[aria-current="step"] i{background:rgba(255,255,255,.18);color:#fff}
+.pz-steps button:hover:not([aria-current]){color:var(--pz-ink);background:var(--pz-soft)}
+.pz-main{max-width:1280px;margin:0 auto;padding:44px 32px 130px}
+.pz-page{display:none}.pz-page.on{display:block;animation:pzin .45s cubic-bezier(.2,.7,.2,1)}
+@keyframes pzin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.pz-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;letter-spacing:.04em;color:var(--tc,var(--pz-muted))}
+.pz-eyebrow::before{content:"";width:18px;height:2px;border-radius:2px;background:currentColor}
+h1.pz-h1{font-size:46px;line-height:1.18;font-weight:800;letter-spacing:-.035em;margin:14px 0 18px;color:var(--pz-ink);text-wrap:balance}
+h2.pz-h2{font-size:34px;line-height:1.25;font-weight:800;letter-spacing:-.03em;margin:12px 0 4px;color:var(--pz-ink);text-wrap:balance}
+h3.pz-h3{font-size:17px;font-weight:700;margin:0 0 16px;color:var(--pz-ink);display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
+h3.pz-h3 .n{display:inline-grid;place-items:center;width:24px;height:24px;font-size:12px;font-weight:700;color:var(--tc,var(--pz-ink));background:color-mix(in srgb,var(--tc,var(--pz-ink)) 12%,white);border-radius:7px}
+.pz-lead{font-size:17.5px;line-height:1.75;color:var(--pz-ink2);max-width:780px;margin:0}
+.pz-lead b{color:var(--pz-ink);font-weight:700}
+.pz-block{background:var(--pz-paper);border:1px solid var(--pz-line);border-radius:18px;padding:28px 30px;margin-top:20px;box-shadow:var(--pz-shadow)}
+.pz-why{position:relative;overflow:hidden;background:linear-gradient(120deg,color-mix(in srgb,var(--tc) 7%,white),#fff 60%)}
+.pz-why::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--tc)}
 .pz-why h3.pz-h3{margin-bottom:10px}
-.pz-why p{font-size:16px;line-height:1.75;margin:0;color:var(--pz-ink);max-width:900px}
-.pz-why ul{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:8px}
-.pz-why li{font-size:13px;background:var(--pz-soft);border-radius:999px;padding:5px 12px;color:var(--pz-muted)}
-.pz-flow{display:grid;grid-template-columns:repeat(var(--cols,4),minmax(0,1fr));gap:14px;position:relative}
-.pz-stepc{position:relative;background:var(--pz-soft);border-radius:12px;padding:16px 16px 14px;display:flex;flex-direction:column;gap:6px}
-.pz-stepc:not(:last-child)::after{content:"";position:absolute;right:-12px;top:50%;width:10px;height:10px;border-top:2px solid var(--pz-line);border-right:2px solid var(--pz-line);transform:translateY(-50%) rotate(45deg);z-index:1}
+.pz-why p{font-size:16.5px;line-height:1.8;margin:0;color:var(--pz-ink);max-width:920px}
+.pz-why ul{margin:16px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:8px}
+.pz-why li{font-size:12.5px;font-weight:500;background:#fff;border:1px solid color-mix(in srgb,var(--tc) 22%,white);color:color-mix(in srgb,var(--tc) 75%,black);border-radius:999px;padding:4px 12px}
+.pz-flow{display:grid;grid-template-columns:repeat(var(--cols,4),minmax(0,1fr));gap:16px;position:relative}
+.pz-stepc{position:relative;background:var(--pz-paper);border:1px solid var(--pz-line);border-radius:14px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:7px}
+.pz-stepc:not(:last-child)::after{content:"";position:absolute;right:-12px;top:50%;width:8px;height:8px;border-top:1.5px solid #b9b6ad;border-right:1.5px solid #b9b6ad;transform:translateY(-50%) rotate(45deg);z-index:1}
 .pz-stepc .k{font-size:12px;font-weight:700;color:var(--tc)}
-.pz-stepc .t{font-size:16px;font-weight:700;color:var(--pz-ink)}
-.pz-stepc .d{font-size:13px;line-height:1.6;color:var(--pz-muted)}
-.pz-stepc .f{font-family:var(--f-mono);font-size:12px;background:var(--pz-paper);border:1px solid var(--pz-line);border-radius:6px;padding:5px 8px;color:var(--pz-ink);margin-top:auto}
+.pz-stepc .t{font-size:16.5px;font-weight:700;color:var(--pz-ink);letter-spacing:-.01em}
+.pz-stepc .d{font-size:13.5px;line-height:1.65;color:var(--pz-muted)}
+.pz-stepc .f{font-family:var(--f-body);font-size:12.5px;font-weight:600;background:var(--pz-soft);border-radius:8px;padding:7px 10px;color:var(--pz-ink2);margin-top:auto}
 .pz-stepc .s{font-size:11.5px;color:var(--pz-muted)}
-.pz-stepc.key{background:var(--pz-paper);box-shadow:inset 0 0 0 2px var(--tc)}
-.pz-note{margin-top:14px;font-size:13.5px;line-height:1.65;color:var(--pz-ink);background:var(--pz-soft);border-radius:10px;padding:12px 14px}
-.pz-note b{font-weight:700}
-details.pz-more{margin-top:16px;border-top:1px solid var(--pz-line);padding-top:12px}
-details.pz-more summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--pz-muted);list-style:none;display:inline-flex;align-items:center;gap:6px}
+.pz-stepc.key{border-color:var(--tc);box-shadow:0 0 0 3px color-mix(in srgb,var(--tc) 12%,transparent)}
+.pz-stepc.key .f{background:color-mix(in srgb,var(--tc) 10%,white);color:color-mix(in srgb,var(--tc) 80%,black)}
+.pz-note{margin-top:16px;font-size:13.5px;line-height:1.7;color:var(--pz-ink2);background:var(--pz-soft);border-radius:12px;padding:13px 16px}
+.pz-note b{font-weight:700;color:var(--pz-ink)}
+details.pz-more{margin-top:18px;border-top:1px dashed var(--pz-line);padding-top:14px}
+details.pz-more summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--pz-muted);list-style:none;display:inline-flex;align-items:center;gap:7px;user-select:none}
 details.pz-more summary::-webkit-details-marker{display:none}
-details.pz-more summary::before{content:"+";display:inline-grid;place-items:center;width:18px;height:18px;border:1px solid var(--pz-line);border-radius:5px;font-size:12px}
-details.pz-more[open] summary::before{content:"−"}
+details.pz-more summary::before{content:"";width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);transition:transform .2s;margin-right:2px}
+details.pz-more[open] summary::before{transform:rotate(45deg)}
 details.pz-more summary:hover{color:var(--pz-ink)}
-.pz-dl{display:grid;grid-template-columns:200px 1fr;gap:8px 18px;margin-top:12px;font-size:13px;line-height:1.6}
-.pz-dl dt{color:var(--pz-muted);font-weight:600}.pz-dl dd{margin:0;color:var(--pz-ink)}
+.pz-dl{display:grid;grid-template-columns:200px 1fr;gap:10px 20px;margin-top:14px;font-size:13px;line-height:1.65}
+.pz-dl dt{color:var(--pz-muted);font-weight:600}.pz-dl dd{margin:0;color:var(--pz-ink2)}
 .pz-kpis{display:grid;grid-template-columns:repeat(var(--cols,4),minmax(0,1fr));gap:14px}
-.pz-kpi{background:var(--pz-soft);border-radius:12px;padding:16px 18px}
+.pz-kpi{background:var(--pz-paper);border:1px solid var(--pz-line);border-radius:14px;padding:18px 20px}
 .pz-kpi .l{font-size:12.5px;color:var(--pz-muted);font-weight:600}
-.pz-kpi .v{font-size:30px;font-weight:700;letter-spacing:-.02em;color:var(--pz-ink);margin-top:4px;font-variant-numeric:tabular-nums;line-height:1.15}
-.pz-kpi .v small{font-size:15px;font-weight:600;color:var(--pz-muted);margin-left:3px}
-.pz-kpi .c{font-size:12px;color:var(--pz-muted);margin-top:4px;line-height:1.5}
-.pz-kpi.hl{background:var(--pz-paper);box-shadow:inset 0 0 0 2px var(--tc)}
-.pz-res{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px;margin-top:22px}
-.pz-sub{font-size:14px;font-weight:700;color:var(--pz-ink);margin:0 0 4px}
-.pz-cap{font-size:12.5px;color:var(--pz-muted);margin:0 0 12px}
-.pz-rank{display:flex;flex-direction:column;gap:9px}
-.pz-r{display:grid;grid-template-columns:22px 118px minmax(0,1fr) 116px;align-items:center;gap:10px;font-size:13.5px}
-.pz-r .no{font-weight:700;color:var(--pz-muted);font-variant-numeric:tabular-nums}
+.pz-kpi .v{font-size:32px;font-weight:800;letter-spacing:-.03em;color:var(--pz-ink);margin-top:6px;font-variant-numeric:tabular-nums;line-height:1.1}
+.pz-kpi .v small{font-size:15px;font-weight:600;color:var(--pz-muted);margin-left:3px;letter-spacing:0}
+.pz-kpi .c{font-size:12px;color:var(--pz-muted);margin-top:6px;line-height:1.5}
+.pz-kpi.hl{background:color-mix(in srgb,var(--tc) 7%,white);border-color:color-mix(in srgb,var(--tc) 30%,white)}
+.pz-kpi.hl .v{color:color-mix(in srgb,var(--tc) 85%,black)}
+.pz-res{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;margin-top:26px;align-items:start}
+.pz-sub{font-size:14.5px;font-weight:700;color:var(--pz-ink);margin:0 0 4px}
+.pz-cap{font-size:12.5px;color:var(--pz-muted);margin:0 0 14px;line-height:1.6}
+.pz-rank{display:flex;flex-direction:column;gap:12px}
+.pz-r{display:grid;grid-template-columns:20px 120px minmax(0,1fr) 118px;align-items:center;gap:12px;font-size:13.5px}
+.pz-r .no{font-weight:700;color:#a6a39a;font-variant-numeric:tabular-nums}
 .pz-r .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pz-r .nm small{display:block;font-weight:400;font-size:11px;color:var(--pz-muted)}
-.pz-r .tr{height:14px;background:var(--pz-soft);border-radius:0 4px 4px 0;display:flex;gap:2px}
+.pz-r .nm small{display:block;font-weight:400;font-size:11.5px;color:var(--pz-muted)}
+.pz-r .tr{height:10px;background:var(--pz-soft);border-radius:0 5px 5px 0;display:flex;gap:2px}
 .pz-r .tr span{display:block;height:100%}
-.pz-r .tr span:last-child{border-radius:0 4px 4px 0}
-.pz-r .val{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.pz-r .tr span:last-child{border-radius:0 5px 5px 0}
+.pz-r .val{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
 .pz-r .val small{display:block;font-size:11px;font-weight:400;color:var(--pz-muted)}
-.pz-legend{display:flex;gap:14px;font-size:12px;color:var(--pz-muted);margin:-4px 0 12px}
-.pz-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
-.pz-take{align-self:start;background:var(--pz-ink);color:#fff;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:10px}
-.pz-take .h{font-size:12px;font-weight:700;letter-spacing:.06em;opacity:.7}
-.pz-take p{margin:0;font-size:16.5px;line-height:1.7}
-.pz-take p b{color:#fff;font-weight:700;border-bottom:2px solid var(--tc)}
-.pz-take ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.7;opacity:.88}
-.pz-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.pz-chips span{font-size:12px;border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:2px 9px}
-table.pz-t{width:100%;border-collapse:collapse;margin-top:12px;font-size:12.5px}
-table.pz-t th{text-align:left;color:var(--pz-muted);font-weight:600;border-bottom:1px solid var(--pz-ink);padding:6px 8px;white-space:nowrap}
-table.pz-t td{border-bottom:1px solid var(--pz-line);padding:6px 8px;font-variant-numeric:tabular-nums}
+.pz-legend{display:flex;gap:16px;font-size:12px;color:var(--pz-muted);margin:-2px 0 14px}
+.pz-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.pz-take{align-self:start;background:color-mix(in srgb,var(--tc) 6%,white);border:1px solid color-mix(in srgb,var(--tc) 22%,white);border-radius:16px;padding:22px 24px;display:flex;flex-direction:column;gap:12px}
+.pz-take .h{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--tc)}
+.pz-take p{margin:0;font-size:16.5px;line-height:1.75;color:var(--pz-ink)}
+.pz-take p b{font-weight:800;color:color-mix(in srgb,var(--tc) 85%,black)}
+.pz-take ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.75;color:var(--pz-ink2)}
+.pz-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.pz-chips span{font-size:12px;background:#fff;border:1px solid color-mix(in srgb,var(--tc) 22%,white);border-radius:999px;padding:2px 10px;color:var(--pz-ink2)}
+table.pz-t{width:100%;border-collapse:collapse;margin-top:14px;font-size:12.5px}
+table.pz-t th{text-align:left;color:var(--pz-muted);font-weight:600;border-bottom:1px solid var(--pz-ink);padding:7px 8px;white-space:nowrap}
+table.pz-t td{border-bottom:1px solid var(--pz-line);padding:7px 8px;font-variant-numeric:tabular-nums}
 table.pz-t td.r,table.pz-t th.r{text-align:right}
 table.pz-t tr:hover td{background:var(--pz-soft)}
-.pz-dash{margin-top:22px}
-.pz-dash-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.pz-dash-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .pz-dash-head .tip{font-size:12.5px;color:var(--pz-muted)}
 .pz-slot{min-height:200px}
-.pz-slot #app{height:auto;max-width:none;padding:0}
+/* 지도: 가로형(16:10), 오른쪽 패널은 지도 높이에 맞추고 안에서 스크롤 */
+.pz-slot #app{height:auto;max-width:none;padding:0;gap:10px}
 .pz-slot #app header{justify-content:flex-end}
 .pz-slot #app header > div:first-child,.pz-slot #app .tabs.topic,.pz-slot #app footer,#app .ctabs{display:none!important}
-.pz-slot #app .main{height:640px;min-height:0}
+.pz-slot #app .main{height:auto;min-height:0;grid-template-columns:minmax(0,1fr) 330px;align-items:stretch}
+.pz-slot #app .mapbox{aspect-ratio:16/10;min-height:0;border-radius:14px;border-color:var(--pz-line)}
+.pz-slot #app aside{height:0;min-height:100%;border-radius:14px;border-color:var(--pz-line)}
+.pz-slot #app .chartview{max-height:720px;border-radius:14px}
+.pz-slot #app .tabs{background:var(--pz-soft)}
+.pz-slot #app .ctrl label,.pz-slot #app .seg,.pz-slot #app .legend,.pz-slot #app .hint{border-color:var(--pz-line);box-shadow:var(--pz-shadow);backdrop-filter:blur(6px)}
+.pz-slot #app .legend{background:rgba(255,255,255,.94)}
 .pz-offline{padding:40px;text-align:center;color:var(--pz-muted);font-size:14px;background:var(--pz-soft);border-radius:12px}
 /* 표지 */
-.pz-cover{padding:40px 0 10px}
-.pz-cover h1.pz-h1{font-size:48px;max-width:900px}
-.pz-lenses{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:22px}
-.pz-lens{all:unset;cursor:pointer;background:var(--pz-paper);border:1px solid var(--pz-line);border-top:5px solid var(--tc);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:8px;transition:transform .15s,box-shadow .15s}
-.pz-lens:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.07)}
+.pz-hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:40px;align-items:center;padding:12px 0 6px}
+.pz-hero h1.pz-h1{font-size:52px}
+.pz-cmap{background:var(--pz-paper);border:1px solid var(--pz-line);border-radius:22px;padding:18px;box-shadow:var(--pz-shadow)}
+.pz-cmap svg{display:block;width:100%;height:auto}
+.pz-cmap .lg{display:flex;gap:14px;justify-content:center;font-size:12px;color:var(--pz-muted);margin-top:6px}
+.pz-cmap .lg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.pz-lenses{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
+.pz-lens{all:unset;cursor:pointer;background:var(--pz-paper);border:1px solid var(--pz-line);border-radius:18px;padding:24px;display:flex;flex-direction:column;gap:8px;transition:transform .2s,box-shadow .2s,border-color .2s;box-shadow:var(--pz-shadow);position:relative;overflow:hidden}
+.pz-lens::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--tc)}
+.pz-lens:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(26,34,48,.08);border-color:color-mix(in srgb,var(--tc) 35%,white)}
 .pz-lens:focus-visible{outline:2px solid var(--tc);outline-offset:3px}
 .pz-lens .k{font-size:12px;font-weight:700;color:var(--tc)}
-.pz-lens .t{font-size:22px;font-weight:700;color:var(--pz-ink)}
-.pz-lens .q{font-size:15px;color:var(--pz-ink);line-height:1.5}
-.pz-lens .d{font-size:13px;color:var(--pz-muted);line-height:1.6}
-.pz-lens .go{margin-top:auto;font-size:13px;font-weight:600;color:var(--tc)}
+.pz-lens .t{font-size:24px;font-weight:800;color:var(--pz-ink);letter-spacing:-.02em}
+.pz-lens .q{font-size:15px;font-weight:600;color:var(--pz-ink2);line-height:1.5}
+.pz-lens .d{font-size:13.5px;color:var(--pz-muted);line-height:1.65}
+.pz-lens .go{margin-top:auto;padding-top:6px;font-size:13px;font-weight:700;color:var(--tc)}
 /* 공원이란 */
-.pz-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px}
-.pz-types{display:flex;flex-direction:column;gap:10px}
+.pz-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+.pz-two > .pz-block{margin-top:20px}
+.pz-types{display:flex;flex-direction:column;gap:12px}
 .pz-type{display:grid;grid-template-columns:110px minmax(0,1fr) 46px;gap:12px;align-items:center;font-size:13.5px}
 .pz-type .nm{font-weight:700}.pz-type .nm small{display:block;font-weight:400;font-size:11.5px;color:var(--pz-muted)}
-.pz-type .tr{height:14px;background:var(--pz-soft);border-radius:0 4px 4px 0}
-.pz-type .tr span{display:block;height:100%;background:var(--pz-ink);border-radius:0 4px 4px 0}
+.pz-type .tr{height:10px;background:var(--pz-soft);border-radius:0 5px 5px 0}
+.pz-type .tr span{display:block;height:100%;background:var(--pz-ink2);border-radius:0 5px 5px 0}
 .pz-type .c{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
-.pz-years{display:flex;align-items:flex-end;gap:6px;height:170px;margin-top:8px;padding-bottom:22px;position:relative}
+.pz-years{display:flex;align-items:flex-end;gap:6px;height:170px;margin-top:8px;padding-bottom:22px;position:relative;border-bottom:1px solid var(--pz-line)}
 .pz-y{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative}
-.pz-y b{font-size:11.5px;font-variant-numeric:tabular-nums;margin-bottom:3px}
-.pz-y span{width:100%;max-width:34px;border-radius:4px 4px 0 0;background:var(--pz-line)}
-.pz-y.urg span{background:var(--pz-ink)}
-.pz-y em{position:absolute;bottom:-20px;font-style:normal;font-size:11px;color:var(--pz-muted)}
-.pz-y.empty span{height:2px!important;background:var(--pz-line)}
+.pz-y b{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;margin-bottom:4px;color:var(--pz-ink2)}
+.pz-y span{width:100%;max-width:30px;border-radius:5px 5px 0 0;background:#d9d6ce}
+.pz-y.urg span{background:var(--pz-ink2)}
+.pz-y em{position:absolute;bottom:-21px;font-style:normal;font-size:11px;color:var(--pz-muted)}
+.pz-y.empty span{height:0!important}
 .pz-steps3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-.pz-steps3 > div{background:var(--pz-soft);border-radius:12px;padding:16px}
-.pz-steps3 .t{font-weight:700;font-size:15px;margin-bottom:4px}
-.pz-steps3 .d{font-size:13px;line-height:1.65;color:var(--pz-muted)}
+.pz-steps3 > div{background:var(--pz-soft);border-radius:14px;padding:18px}
+.pz-steps3 .t{font-weight:700;font-size:15px;margin-bottom:6px;color:var(--pz-ink)}
+.pz-steps3 .d{font-size:13.5px;line-height:1.7;color:var(--pz-muted)}
 /* 아래 이동 */
-.pz-nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.96);border-top:1px solid var(--pz-line);backdrop-filter:blur(6px)}
-.pz-nav-in{max-width:1240px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.pz-nav button{font:inherit;font-size:14px;font-weight:600;border-radius:10px;padding:9px 18px;cursor:pointer;border:1px solid var(--pz-line);background:var(--pz-paper);color:var(--pz-ink)}
+.pz-nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(248,247,244,.9);border-top:1px solid var(--pz-line);backdrop-filter:saturate(1.4) blur(10px)}
+.pz-nav-in{max-width:1280px;margin:0 auto;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.pz-nav button{font:inherit;font-size:14px;font-weight:600;border-radius:999px;padding:9px 20px;cursor:pointer;border:1px solid var(--pz-line);background:var(--pz-paper);color:var(--pz-ink);transition:background .2s}
+.pz-nav button:hover:not(:disabled){background:var(--pz-soft)}
 .pz-nav button.next{background:var(--pz-ink);border-color:var(--pz-ink);color:#fff}
+.pz-nav button.next:hover:not(:disabled){background:#2c3748}
 .pz-nav button:disabled{opacity:.35;cursor:default}
-.pz-nav .pos{font-size:12.5px;color:var(--pz-muted)}
-.pz-src{font-size:12px;line-height:1.7;color:var(--pz-muted)}
+.pz-nav .pos{font-size:12.5px;color:var(--pz-muted);font-variant-numeric:tabular-nums}
+.pz-src{font-size:12px;line-height:1.75;color:var(--pz-muted)}
 @media (max-width:960px){
   .pz-flow,.pz-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .pz-stepc:not(:last-child)::after{display:none}
-  .pz-res,.pz-two,.pz-lenses,.pz-steps3{grid-template-columns:1fr}
-  h1.pz-h1,.pz-cover h1.pz-h1{font-size:32px} h2.pz-h2{font-size:24px}
+  .pz-res,.pz-two,.pz-lenses,.pz-steps3,.pz-hero{grid-template-columns:1fr}
+  h1.pz-h1,.pz-hero h1.pz-h1{font-size:34px} h2.pz-h2{font-size:26px}
   .pz-dl{grid-template-columns:1fr}
-  .pz-r{grid-template-columns:20px 96px minmax(0,1fr) 78px}
-  .pz-slot #app .main{height:auto}
-  .pz-brand{display:none}
+  .pz-r{grid-template-columns:18px 96px minmax(0,1fr) 92px}
+  .pz-slot #app .main{grid-template-columns:1fr}
+  .pz-slot #app .mapbox{aspect-ratio:4/3}
+  .pz-slot #app aside{height:auto;min-height:0;max-height:420px}
+  .pz-brand{display:none} .pz-main,.pz-top-in,.pz-nav-in{padding-left:16px;padding-right:16px}
 }
 @media print{.pz-top,.pz-nav{display:none}.pz-page{display:block!important;break-after:page}}
 </style>
 
 <div class="pz-top"><div class="pz-top-in">
-  <div class="pz-brand">청주시 장기미집행 공원 조성 우선순위<small>2040 청주시 공원녹지기본계획</small></div>
+  <div class="pz-brand">청주시 장기미집행 공원 조성 우선순위<small>2040 공원녹지기본계획</small></div>
   <nav class="pz-steps" id="pzSteps" aria-label="발표 순서"></nav>
 </div></div>
 <main class="pz-main" id="pzMain"></main>
@@ -846,6 +872,82 @@ readTokens(); fillSelects(); list(); render();
 </script>
 
 <script>
+// 발표판 지도 보정 — 지도 앱(total_template.html)은 고치지 않고, 같은 이름의 함수만 바꿔 끼운다.
+//  1) 배경(항공사진·일반지도)을 사각형이 아니라 청주시 경계 모양으로: 시 경계 밖을 바탕색으로 덮고 시 경계선을 그린다.
+//  2) 도시 화면 3D: 원기둥 대신 공원 경계(검은 테두리) 모양 그대로 살짝 솟아오르고, 카메라가 기울며 확대된다.
+//  3) 처음 화면은 청주시 경계에 꼭 맞게.
+(function(){
+try{ if(typeof deck!=='object' || !deck || typeof deck.DeckGL!=='function' || !deckgl) return; }catch(e){ return; }   // 지도 엔진을 못 불러왔으면 손대지 않음
+const ELEV = 0.22;   // 기둥 높이(최대 6,000) → 공원 블록 높이 최대 약 1.3km. "살짝" 솟게
+const EASE = t => 1-Math.pow(1-t,3);
+
+// --- 청주시 경계 (4개 구 합집합) ---
+let CITY = null;
+function city(){
+  if(CITY) return CITY;
+  const polys = D.gu.flatMap(g=>g.poly);              // [폴리곤(링 배열)]
+  let geom = null;
+  if(typeof turf!=='undefined'){
+    try{ let u = turf.polygon(polys[0]); for(let i=1;i<polys.length;i++) u = turf.union(u, turf.polygon(polys[i])) || u; geom = u.geometry; }catch(e){ geom = null; }
+  }
+  const outer = geom ? (geom.type==='Polygon'?[geom.coordinates]:geom.coordinates) : polys;   // 합치기 실패 시 구 경계 그대로
+  const xs=[], ys=[]; outer.forEach(pg=>pg[0].forEach(([x,y])=>{xs.push(x);ys.push(y)}));
+  CITY = {polys: outer, bb:[Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)]};
+  return CITY;
+}
+// 시 경계 밖을 덮는 마스크: 큰 사각형에 시 경계(바깥 링)를 구멍으로
+function maskLayer(){
+  if(S.bg==='none' || S.view!=='city') return null;
+  const c = city(), b = c.bb, m = 0.6;
+  const box = [[b[0]-m,b[1]-m],[b[2]+m,b[1]-m],[b[2]+m,b[3]+m],[b[0]-m,b[3]+m],[b[0]-m,b[1]-m]];
+  return new deck.PolygonLayer({id:'city-mask', data:[[box, ...c.polys.map(pg=>pg[0])]], getPolygon:d=>d, filled:true, stroked:false,
+    getFillColor:[...C['--map'],255], pickable:false, updateTriggers:{getFillColor:C['--map']}});
+}
+function cityLine(){
+  return new deck.PathLayer({id:'city-line', data:city().polys.map(pg=>pg[0]), getPath:d=>d, getColor:[...C['--ink'],170], getWidth:1.6, widthUnits:'pixels', pickable:false, updateTriggers:{getColor:C['--ink']}});
+}
+
+// --- 도시 화면 레이어 ---
+cityLayers = function(){
+  const ps = D.parks.filter(p=>p.c);
+  const up = S.d3 && S.heightCity!=='none';
+  const h = p => up ? cityHeight(p)*ELEV : 0;
+  const L = [bgLayer(), maskLayer(), guLayer(), cityLine(), guLabels()];
+  // 공원 경계 모양 그대로: 2D는 납작한 면 + 검은 테두리, 3D는 같은 모양이 값만큼 솟음
+  L.push(new deck.PolygonLayer({id:'park-poly', data:ps.filter(p=>p.poly).flatMap(p=>p.poly.map(poly=>({p,poly}))), getPolygon:d=>d.poly,
+    extruded:true, wireframe:true, getElevation:d=>h(d.p), getFillColor:d=>[...cityColor(d.p), up?245:225], getLineColor:[...C['--ink'],235],
+    material: up?{ambient:.55,diffuse:.55,shininess:28,specularColor:[255,255,255]}:false, pickable:true, autoHighlight:true, highlightColor:[255,255,255,70],
+    onClick:i=>select(i.object.p.id,false),
+    updateTriggers:{getElevation:[S.d3,S.topic,S.heightCity], getFillColor:[S.topic,S.colorCity,S.d3,C['--own-nat']], getLineColor:C['--ink']},
+    transitions:{getElevation:{duration:1100, easing:EASE}}}));
+  // 작은 공원(수백 ㎡)은 시 전체 화면에서 면이 안 보이므로 위치 점을 같이 — 3D에서는 블록 꼭대기에 얹힌다
+  L.push(new deck.ScatterplotLayer({id:'park-dot', data:ps, getPosition:p=>[p.c[0],p.c[1],h(p)+2], radiusUnits:'pixels', getRadius:p=>S.sel===p.id?7:4.5,
+    getFillColor:p=>[...cityColor(p),255], stroked:true, getLineColor:p=>S.sel===p.id?[...C['--ink'],255]:[255,255,255,235], getLineWidth:p=>S.sel===p.id?2.5:1.3, lineWidthUnits:'pixels',
+    pickable:true, onClick:i=>select(i.object.id,false),
+    updateTriggers:{getPosition:[S.d3,S.topic,S.heightCity], getFillColor:[S.topic,S.colorCity,C['--own-nat']], getRadius:S.sel, getLineColor:[S.sel,C['--ink']], getLineWidth:S.sel},
+    transitions:{getPosition:{duration:1100, easing:EASE}}}));
+  return L;
+};
+
+// --- 처음 화면: 청주시 경계에 맞춤. 3D는 기울이며 살짝 확대 ---
+viewCity = function(){
+  const b = city().bb, el = document.getElementById('deck');
+  const w = el.clientWidth||900, hh = el.clientHeight||560;
+  const vp = new deck.WebMercatorViewport({width:w, height:hh});
+  const f = vp.fitBounds([[b[0],b[1]],[b[2],b[3]]], {padding:Math.round(Math.min(w,hh)*0.05)});
+  fly({longitude:f.longitude, latitude:f.latitude-(S.d3?0.035:0), zoom:f.zoom+(S.d3?0.45:0), pitch:S.d3?52:0, bearing:S.d3?-14:0});
+};
+
+// 범례 아래 줄: '원 크기 = 공원 면적' 대신
+const _legend = legend;
+legend = function(){
+  _legend();
+  const el = document.getElementById('legend');
+  el.innerHTML = el.innerHTML.replace(/원 크기 = 공원 면적/g, '공원 모양 = 도시계획시설 경계 · 점 = 위치(작은 공원)').replace(/기둥 높이 = /g, '공원 높이 = ');
+};
+})();
+</script>
+<script>
 const PZ = {"stage1_expiry_max": 2030, "special_min_m2": 50000, "wolmyeong": {"area_m2": 102487, "compensation_krw": 35100000000, "construction_krw": 6300000000, "tolerance": 0.01}};
 // 발표용 페이지 — 지도 앱의 데이터 D(세 파트 결과)만 읽어 숫자를 만든다. 지도 앱 함수에는 기대지 않는다(지도 엔진을 못 불러와도 설명 페이지는 뜨게).
 (function(){
@@ -878,18 +980,35 @@ const dash = (tp,tip) => `<section class="pz-block pz-dash"><div class="pz-dash-
 const n = P.length, early = P.filter(p=>p.expiry<=PZ.stage1_expiry_max).length;
 const small = P.filter(p=>/소공원|어린이공원/.test(p.type)).length;
 const yrs = P.map(p=>p.expiry), y0=Math.min(...yrs), y1=Math.max(...yrs);
-const pIntro = `<div class="pz-cover">
-  <div class="pz-eyebrow" style="--tc:var(--pz-ink)">청주시 공고 제2026-2004호 · 장기미집행 도시공원 ${n}개소</div>
-  <h1 class="pz-h1">어떤 공원부터 먼저 만들어야 하는가</h1>
-  <p class="pz-lead">청주시에는 공원으로 지정만 되고 아직 만들지 못한 땅이 <b>${n}곳</b> 있습니다. 이 땅들은 ${y0}년부터 ${y1}년 사이에 차례로 <b>공원 지정이 풀립니다(실효)</b>. 시의 재원으로 한꺼번에 조성하기는 어렵기 때문에, <b>무엇을 기준으로 순서를 정할지</b>를 데이터로 제시하는 것이 이 작업의 목적입니다.</p>
-</div>
+// 표지 지도: 청주시 4개 구 경계 + 공원 40곳 위치 (SVG, 지도 엔진 없이)
+function cityMap(){
+  const rings = D.gu.flatMap(g=>g.poly.map(pg=>({name:g.name, r:pg[0]})));
+  const xs = rings.flatMap(o=>o.r.map(c=>c[0])), ys = rings.flatMap(o=>o.r.map(c=>c[1]));
+  const x0=Math.min(...xs), x1=Math.max(...xs), y0g=Math.min(...ys), y1g=Math.max(...ys), k=Math.cos((y0g+y1g)/2*Math.PI/180);
+  const W=420, sc=W/((x1-x0)*k), H=Math.round((y1g-y0g)*sc), pad=10;
+  const X=lon=>pad+(lon-x0)*k*sc, Y=lat=>pad+(y1g-lat)*sc;
+  const path = r => 'M'+r.map(c=>X(c[0]).toFixed(1)+','+Y(c[1]).toFixed(1)).join('L')+'Z';
+  const cen = r => [r.reduce((a,c)=>a+c[0],0)/r.length, r.reduce((a,c)=>a+c[1],0)/r.length];
+  const dots = [...P].filter(p=>p.c).sort((a,b)=>b.expiry-a.expiry).map(p=>`<circle cx="${X(p.c[0]).toFixed(1)}" cy="${Y(p.c[1]).toFixed(1)}" r="4.2" fill="${p.expiry<=PZ.stage1_expiry_max?'#1a2230':'#b0aca2'}" stroke="#fff" stroke-width="1.4"><title>${p.name} · ${p.loc} · 실효 ${p.expiry}</title></circle>`).join('');
+  return `<svg viewBox="0 0 ${W+pad*2} ${H+pad*2}" role="img" aria-label="청주시 구 경계와 장기미집행 공원 ${n}곳 위치">
+    ${rings.map((o,i)=>`<path d="${path(o.r)}" fill="${['#eef1ec','#e8ece6','#f1f2ee','#e9ede8'][i%4]}" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>`).join('')}
+    ${rings.map(o=>`<path d="${path(o.r)}" fill="none" stroke="#9aa39b" stroke-width=".8" stroke-linejoin="round"/>`).join('')}
+    ${rings.map(o=>{const c=cen(o.r);return `<text x="${X(c[0]).toFixed(0)}" y="${Y(c[1]).toFixed(0)}" text-anchor="middle" font-size="13" font-weight="700" fill="#9aa39b" style="letter-spacing:.1em">${o.name}</text>`}).join('')}
+    ${dots}</svg>
+    <div class="lg"><span><i style="background:#1a2230"></i>${PZ.stage1_expiry_max}년까지 실효</span><span><i style="background:#b0aca2"></i>그 이후 실효</span></div>`;
+}
+const pIntro = `<div class="pz-hero"><div>
+  <div class="pz-eyebrow" style="--tc:var(--pz-ink2)">청주시 공고 제2026-2004호 · 장기미집행 도시공원 ${n}개소</div>
+  <h1 class="pz-h1">어떤 공원부터<br>먼저 만들어야 하는가</h1>
+  <p class="pz-lead">청주시에는 공원으로 지정만 되고 아직 만들지 못한 땅이 <b>${n}곳</b> 있습니다. 이 땅들은 ${y0}년부터 ${y1}년 사이에 차례로 <b>공원 지정이 풀립니다(실효)</b>. 한꺼번에 조성하기는 어렵기 때문에, <b>무엇을 기준으로 순서를 정할지</b>를 데이터로 제시합니다.</p>
+</div><div class="pz-cmap">${cityMap()}</div></div>
 <div class="pz-kpis" style="--cols:4;margin-top:26px">
   ${kpi('대상 공원',n,'곳',`소공원·어린이공원 ${small}곳, 근린·주제공원 ${n-small}곳`)}
   ${kpi('실효 시점',`${y0}–${y1}`,'',`${PZ.stage1_expiry_max}년까지 ${early}곳이 먼저 풀림`)}
   ${kpi('평가 기준','3','가지','이용성 · 에너지저감 · 사업성')}
-  ${kpi('분석한 필지',nf(D.parcels.length),'필지','공원 경계 안 땅을 한 필지씩 소유·땅값 확인')}
+  ${kpi('시 부담 추정',`${eok(sum(P,p=>p.minL))}–${eok(sum(P,p=>p.maxH))}`,'억 원','40곳 전체, 땅 보상 + 공원 조성')}
 </div>
-<h3 class="pz-h3" style="margin-top:40px">세 가지 눈으로 봅니다</h3>
+<h3 class="pz-h3" style="margin-top:44px">세 가지 눈으로 봅니다</h3>
 <div class="pz-lenses">
   <button class="pz-lens" style="--tc:var(--pz-use)" data-go="use"><span class="k">기준 1</span><span class="t">이용성</span><span class="q">누가 이 공원을 쓰게 되나?</span><span class="d">주변에 사는 사람 중 지금 가까운 공원이 없는 사람이 얼마나 되는지 봅니다.</span><span class="go">자세히 →</span></button>
   <button class="pz-lens" style="--tc:var(--pz-heat)" data-go="heat"><span class="k">기준 2</span><span class="t">에너지저감</span><span class="q">만들면 여름이 얼마나 시원해지나?</span><span class="d">녹지가 늘어 여름철 땅 온도가 얼마나 내려가는지 위성 실측으로 봅니다.</span><span class="go">자세히 →</span></button>
@@ -967,7 +1086,7 @@ ${sec(4,'결과',`<div class="pz-kpis" style="--cols:4">
   ${kpi('상위 5곳 비중',pc(u5s/uNew),'','신규 수혜 인구 중')}
 </div>
 <div class="pz-res"><div><p class="pz-sub">신규 수혜 인구 상위 5곳</p><div class="pz-legend" style="margin-top:2px"><span><i style="background:var(--pz-use)"></i>신규 수혜 인구</span><span><i style="background:#cfe3d8"></i>주변 인구 중 이미 공원이 있는 사람</span></div>
-  ${rank(u5.map(p=>({p,v:U(p).new_served_pop,segs:[[U(p).new_served_pop,'var(--pz-use)'],[U(p).E1_pop-U(p).new_served_pop,'#cfe3d8']]})), Math.max(...u5.map(p=>U(p).E1_pop)), r=>`${nf(r.v)}명<small>공백 ${pc(U(r.p).D1_unserved)}</small>`)}</div>
+  ${rank(u5.map(p=>({p,v:U(p).new_served_pop,segs:[[U(p).new_served_pop,'var(--pz-use)'],[U(p).E1_pop-U(p).new_served_pop,'#cfe2d7']]})), Math.max(...u5.map(p=>U(p).E1_pop)), r=>`${nf(r.v)}명<small>공백 ${pc(U(r.p).D1_unserved)}</small>`)}</div>
   <div class="pz-take" style="--tc:var(--pz-use)"><div class="h">해석</div>
   <p><b>${u5[0].name}</b>은 주변 ${nf(U(u5[0]).E1_pop)}명 중 ${nf(U(u5[0]).new_served_pop)}명이 지금 걸어서 갈 공원이 없어, 조성 시 혜택을 받는 사람이 가장 많습니다.</p>
   <ul><li>상위 5곳이 전체 신규 수혜 인구의 ${pc(u5s/uNew)}를 차지합니다.</li><li>주변에 공원이 이미 있으면 인구가 많아도 순위가 낮습니다.</li></ul></div></div>
@@ -1059,7 +1178,7 @@ const TC = {use:'var(--pz-use)',heat:'var(--pz-heat)',biz:'var(--pz-biz)'};
 $('pzMain').innerHTML = PAGES.map(([id,,h])=>`<div class="pz-page" id="pg-${id}" style="--tc:${TC[id]||'var(--pz-ink)'}">${h}</div>`).join('');
 $('pzSteps').innerHTML = PAGES.map(([id,l],i)=>`<button data-go="${id}"><i>${i+1}</i>${l}</button>`).join('');
 const app = document.getElementById('app'); $('pzHome').appendChild(app);
-const HAS_DECK = typeof window.deck==='object' && window.deck && typeof window.deck.DeckGL==='function' && typeof deckgl!=='undefined';
+let HAS_DECK = false; try{ HAS_DECK = typeof window.deck==='object' && !!window.deck && typeof window.deck.DeckGL==='function' && !!deckgl; }catch(e){}
 let cur = 0;
 function go(i, push=true){
   i = Math.max(0, Math.min(PAGES.length-1, i)); cur = i; const id = PAGES[i][0];
