@@ -984,11 +984,10 @@ cityLayers = function(){
     updateTriggers:{getElevation:[S.d3,S.topic,S.heightCity], getFillColor:[S.topic,S.colorCity,S.d3,C['--own-nat']], getLineColor:C['--ink']},
     transitions:{getElevation:{duration:1100, easing:EASE}}}));
   // 작은 공원(수백 ㎡)은 시 전체 화면에서 면이 안 보이므로 위치 점을 같이 — 3D에서는 블록 꼭대기에 얹힌다
-  L.push(new deck.ScatterplotLayer({id:'park-dot', data:ps, getPosition:p=>[p.c[0],p.c[1],h(p)+2], radiusUnits:'pixels', getRadius:p=>(S.sel===p.id?7:4.5)+(S.d3?3:0),
-    terrainDrawMode:'offset', parameters:{depthTest:!S.d3},   // 3D: 지형·블록에 가려지지 않게 항상 위에
-    getFillColor:p=>[...cityColor(p),255], stroked:true, getLineColor:p=>S.sel===p.id?[...C['--ink'],255]:[255,255,255,235], getLineWidth:p=>S.sel===p.id?2.5:(S.d3?2.5:1.3), lineWidthUnits:'pixels',
+  L.push(new deck.ScatterplotLayer({id:'park-dot', data:ps, getPosition:p=>[p.c[0],p.c[1],h(p)+2], radiusUnits:'pixels', getRadius:p=>S.sel===p.id?7:4.5,
+    getFillColor:p=>[...cityColor(p),255], stroked:true, getLineColor:p=>S.sel===p.id?[...C['--ink'],255]:[255,255,255,235], getLineWidth:p=>S.sel===p.id?2.5:1.3, lineWidthUnits:'pixels',
     pickable:true, onClick:i=>select(i.object.id,false),
-    updateTriggers:{getPosition:[S.d3,S.topic,S.heightCity], getFillColor:[S.topic,S.colorCity,C['--own-nat']], getRadius:[S.sel,S.d3], getLineColor:[S.sel,C['--ink']], getLineWidth:[S.sel,S.d3]},
+    updateTriggers:{getPosition:[S.d3,S.topic,S.heightCity], getFillColor:[S.topic,S.colorCity,C['--own-nat']], getRadius:S.sel, getLineColor:[S.sel,C['--ink']], getLineWidth:S.sel},
     transitions:{getPosition:{duration:1100, easing:EASE}}}));
   return L;
 };
@@ -1152,9 +1151,9 @@ legend = function(){
   } else if(S.topic==='heat'){
     const e = E(p);
     el.innerHTML = e.status!=='산정' ? `<div class="t">에너지저감 미산정</div><div class="meta">${p.name}: 경계 없음 또는 하천 위주</div>` :
-      `<div class="t">조성 후 여름 지표온도 저감 (기준 시나리오)</div>
-      <div class="row"><span class="k"><i class="sw" style="background:rgb(${INK})"></i>공원 위치 · 공원 일대 −${f2(e.dlst_cell_base)}°C</span>${e.ring_applied==='적용'?`<span class="k"><i class="sw" style="background:rgb(${lerp(B0,B1,.7)})"></i>주변 ${D.E.ring_m||300}m −${f2(e.dlst_ring_base)}°C</span>`:''}</div>
-      <div class="meta" style="margin-top:5px">${e.ring_applied==='적용'?'주변 300m 효과: 특례사업지 실측 퍼짐 비율 · 파랑이 진할수록 더 시원해짐':'1ha 미만이라 주변 300m 효과는 넣지 않음'} · 녹지 ${f2(e.ndvi_now)} → 목표</div>`;
+      `<div class="t">에너지저감 범위</div>
+      <div class="row"><span class="k"><i class="sw" style="background:rgb(${INK})"></i>공원 위치</span>${e.ring_applied==='적용'?`<span class="k"><i class="sw" style="background:rgb(${lerp(B0,B1,.7)})"></i>주변 ${D.E.ring_m||300}m (함께 시원해지는 범위)</span>`:''}</div>
+      <div class="meta" style="margin-top:5px">${e.ring_applied==='적용'?'저감 온도는 오른쪽 카드에':'1ha 미만이라 주변 효과 없음 · 저감 온도는 오른쪽 카드에'}</div>`;
   }
 };
 
