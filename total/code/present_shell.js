@@ -57,19 +57,35 @@ const pIntro = `<div class="pz-hero"><div>
   ${kpi('평가 기준','3','가지','이용성 · 에너지저감 · 사업성')}
   ${kpi('시 부담 추정',`${eok(sum(P,p=>p.minL))}–${eok(sum(P,p=>p.maxH))}`,'억 원','40곳 전체, 땅 보상 + 공원 조성')}
 </div>
-<h3 class="pz-h3" style="margin-top:44px">세 가지 눈으로 봅니다</h3>
-<div class="pz-lenses">
-  <button class="pz-lens" style="--tc:var(--pz-use)" data-go="use"><span class="k">기준 1</span><span class="t">이용성</span><span class="q">누가 이 공원을 쓰게 되나?</span><span class="d">주변에 사는 사람 중 지금 가까운 공원이 없는 사람이 얼마나 되는지 봅니다.</span><span class="go">자세히 →</span></button>
-  <button class="pz-lens" style="--tc:var(--pz-heat)" data-go="heat"><span class="k">기준 2</span><span class="t">에너지저감</span><span class="q">만들면 여름이 얼마나 시원해지나?</span><span class="d">녹지가 늘어 여름철 땅 온도가 얼마나 내려가는지 위성 실측으로 봅니다.</span><span class="go">자세히 →</span></button>
-  <button class="pz-lens" style="--tc:var(--pz-biz)" data-go="biz"><span class="k">기준 3</span><span class="t">사업성</span><span class="q">시가 얼마를 내고, 언제 할 수 있나?</span><span class="d">땅 주인과 땅값으로 시 부담을 계산하고, 실효 시기와 재원으로 단계를 나눕니다.</span><span class="go">자세히 →</span></button>
-</div>
 <section class="pz-block" style="margin-top:22px">
   <h3 class="pz-h3">발표 순서</h3>
   <div class="pz-steps3">
-    <div><div class="t">① 공원이란</div><div class="d">도시공원의 종류와 장기미집행·실효가 무엇인지, 왜 순서가 필요한지</div></div>
-    <div><div class="t">② 세 가지 기준</div><div class="d">기준마다 <b>왜 보는지 → 어떻게 평가하는지 → 대시보드 → 결과</b> 순서로 설명</div></div>
-    <div><div class="t">③ 활용</div><div class="d">대시보드에서 공원을 눌러 필지·근거까지 바로 확인</div></div>
+    <div><div class="t">① 공원이란</div><div class="d">도시공원의 종류, 장기미집행·실효가 무엇이고 왜 순서가 필요한지</div></div>
+    <div><div class="t">② 평가 기준</div><div class="d">공원을 보는 세 가지 눈과, 왜 <b>이용성 → 에너지저감 → 사업성</b> 순서로 보는지</div></div>
+    <div><div class="t">③ 기준별 평가</div><div class="d">기준마다 <b>왜 보나 → 평가 구조 → 대시보드 → 결과</b> 순서로 설명</div></div>
   </div>
+</section>`;
+
+// ---------- 3. 평가 기준 (세 가지 눈과 순서) ----------
+const pFrame = `<div class="pz-eyebrow" style="--tc:var(--pz-ink2)">평가 기준</div>
+<h2 class="pz-h2">세 가지 눈으로 봅니다</h2>
+<p class="pz-lead" style="margin-top:10px">공원 하나를 <b>세 가지 질문</b>으로 차례로 봅니다. 앞의 두 질문은 <b>어떤 공원이 먼저여야 하는지</b>를, 마지막 질문은 <b>언제·어떤 돈으로 할 수 있는지</b>를 답합니다.</p>
+<div class="pz-lenses pz-order">
+  <button class="pz-lens" style="--tc:var(--pz-use)" data-go="use"><span class="k">① 필요한가</span><span class="t">이용성</span><span class="q">누가 이 공원을 쓰게 되나?</span><span class="d">주변에 사는 사람 중 지금 걸어서 갈 공원이 없는 사람이 얼마나 되는지 봅니다.</span><span class="m">핵심 지표 · 신규 수혜 인구(명)</span><span class="go">자세히 →</span></button>
+  <button class="pz-lens" style="--tc:var(--pz-heat)" data-go="heat"><span class="k">② 효과가 있는가</span><span class="t">에너지저감</span><span class="q">만들면 여름이 얼마나 시원해지나?</span><span class="d">녹지가 늘어 여름철 땅 온도가 얼마나 내려가는지 청주 위성 실측으로 봅니다.</span><span class="m">핵심 지표 · 냉각량(°C·ha)</span><span class="go">자세히 →</span></button>
+  <button class="pz-lens" style="--tc:var(--pz-biz)" data-go="biz"><span class="k">③ 할 수 있는가</span><span class="t">사업성</span><span class="q">시가 얼마를 내고, 언제 할 수 있나?</span><span class="d">땅 주인과 땅값으로 시 부담을 계산하고, 실효 시기와 재원으로 단계를 나눕니다.</span><span class="m">핵심 지표 · 시 부담(억 원) · 집행 단계</span><span class="go">자세히 →</span></button>
+</div>
+<section class="pz-block"><h3 class="pz-h3">왜 이 순서인가</h3>
+  <div class="pz-steps3 pz-why3">
+    <div style="--tc:var(--pz-use)"><div class="t"><span>1</span>쓰일 곳인가가 출발점</div><div class="d">공원은 시민이 이용하는 시설입니다. 주변에 사람이 없거나 이미 공원이 충분한 곳이라면 새로 만들 이유가 약합니다. 그래서 <b>필요(이용성)</b>를 먼저 봅니다.</div></div>
+    <div style="--tc:var(--pz-heat)"><div class="t"><span>2</span>같은 필요라면 효과가 큰 곳</div><div class="d">녹지를 새로 만드는 공원은 여름철 열을 낮춰 도시 전체에 이익이 됩니다. 필요가 비슷한 공원 사이에서 <b>환경 효과(에너지저감)</b>로 우선순위를 더 가립니다.</div></div>
+    <div style="--tc:var(--pz-biz)"><div class="t"><span>3</span>마지막으로 실현 가능성</div><div class="d">필요하고 효과가 있는 공원이라도 재원과 시기가 맞아야 실행됩니다. <b>사업성</b>은 앞의 판단을 바꾸기보다, <b>언제·어떤 돈으로</b> 할지를 정합니다.</div></div>
+  </div>
+  ${more('상세보기 — 청주시 평가 기준과의 연결', dl([
+    ['① 공원조성 가치','에너지저감(환경 효과) · 녹지·수변축과의 연결은 이용성의 참고 지표로'],
+    ['② 이용성','이용성 — 주변 인구, 공원 공백, 신규 수혜 인구'],
+    ['③ 개발압력','조성했을 때와 지금 그대로일 때를 비교하는 평가라 따로 점수로 다루지 않음'],
+    ['④ 재정여건 · ⑤ 기존투자','사업성 — 시 부담, 외부 재원, 집행 단계']]))}
 </section>`;
 
 // ---------- 2. 공원이란 ----------
@@ -103,7 +119,7 @@ const pPark = `<div class="pz-eyebrow" style="--tc:var(--pz-ink)">배경</div>
   <div class="pz-steps3">
     <div><div class="t">실효되면 되돌리기 어렵다</div><div class="d">공원 지정이 풀리면 그 땅은 다른 용도로 개발될 수 있어, 도심의 녹지와 휴식 공간이 사라집니다.</div></div>
     <div><div class="t">조성에는 큰돈이 든다</div><div class="d">사유지는 시가 보상하고 사들여야 합니다. ${n}곳 전체의 시 부담은 최대 약 ${eok(sum(P,p=>p.maxH))}억 원으로 추정됩니다.</div></div>
-    <div><div class="t">그래서 근거 있는 순서가 필요하다</div><div class="d">시민에게 쓰임이 크고, 환경 효과가 있고, 재정적으로 가능한 곳부터 — 세 기준으로 나눠 봅니다.</div></div>
+    <div><div class="t">그래서 근거 있는 순서가 필요하다</div><div class="d">시민에게 쓰임이 크고, 환경 효과가 있고, 재정적으로 가능한 곳부터 — 다음 장의 세 기준으로 나눠 봅니다.</div></div>
   </div>
 </section>`;
 
@@ -222,7 +238,7 @@ ${more('상세보기 — '+n+'곳 전체 표', `<table class="pz-t"><thead><tr><
 <section class="pz-block"><h3 class="pz-h3">자료 출처</h3><div class="pz-src">${(document.querySelector('#app footer')||{}).innerHTML||''}</div></section>`;
 
 // ---------- 페이지 넘기기 ----------
-const PAGES = [['intro','주제·목적',pIntro],['park','공원이란',pPark],['use','이용성',pUse],['heat','에너지저감',pHeat],['biz','사업성',pBiz]];
+const PAGES = [['intro','주제·목적',pIntro],['park','공원이란',pPark],['frame','평가 기준',pFrame],['use','이용성',pUse],['heat','에너지저감',pHeat],['biz','사업성',pBiz]];
 const TC = {use:'var(--pz-use)',heat:'var(--pz-heat)',biz:'var(--pz-biz)'};
 $('pzMain').innerHTML = PAGES.map(([id,,h])=>`<div class="pz-page" id="pg-${id}" style="--tc:${TC[id]||'var(--pz-ink)'}">${h}</div>`).join('');
 $('pzSteps').innerHTML = PAGES.map(([id,l],i)=>`<button data-go="${id}"><i>${i+1}</i>${l}</button>`).join('');

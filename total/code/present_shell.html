@@ -124,6 +124,15 @@ table.pz-t tr:hover td{background:var(--pz-soft)}
 .pz-lens .q{font-size:15px;font-weight:600;color:var(--pz-ink2);line-height:1.5}
 .pz-lens .d{font-size:13.5px;color:var(--pz-muted);line-height:1.65}
 .pz-lens .go{margin-top:auto;padding-top:6px;font-size:13px;font-weight:700;color:var(--tc)}
+.pz-lens .m{font-size:12px;font-weight:600;color:var(--pz-ink2);background:var(--pz-soft);border-radius:8px;padding:6px 10px;margin-top:4px}
+.pz-order{gap:28px;margin-top:26px}
+.pz-order .pz-lens{overflow:visible}
+.pz-order .pz-lens:not(:last-child)::after{content:"";position:absolute;right:-19px;top:50%;width:9px;height:9px;border-top:2px solid #b9b6ad;border-right:2px solid #b9b6ad;transform:translateY(-50%) rotate(45deg)}
+.pz-order .pz-lens::before{border-radius:18px 18px 0 0}
+.pz-why3 .t{display:flex;align-items:center;gap:9px}
+.pz-why3 .t span{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--tc);color:#fff;font-size:12px;font-weight:700}
+.pz-why3 > div{border-top:3px solid var(--tc)}
+.pz-why3 .d b{color:var(--pz-ink)}
 /* 공원이란 */
 .pz-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
 .pz-two > .pz-block{margin-top:20px}
@@ -155,6 +164,7 @@ table.pz-t tr:hover td{background:var(--pz-soft)}
 .pz-nav .pos{font-size:12.5px;color:var(--pz-muted);font-variant-numeric:tabular-nums}
 .pz-src{font-size:12px;line-height:1.75;color:var(--pz-muted)}
 @media (max-width:960px){
+  .pz-order .pz-lens::after{display:none}
   .pz-flow,.pz-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .pz-stepc:not(:last-child)::after{display:none}
   .pz-res,.pz-two,.pz-lenses,.pz-steps3,.pz-hero{grid-template-columns:1fr}
