@@ -27,7 +27,7 @@ function period(pt, y0, y1) {
     return im.addBands(im.select('lst').subtract(ee.Number(im.get('med'))).rename('lsta'));
   });
   return {img: anom.select(['lsta', 'ndvi', 'lst']).median(), n: anom.size(),
-          box: ee.Number(anom.aggregate_median('med'))};   // 10km 상자 중앙값(장면별)의 기간 중앙값
+          box: anom.reduceColumns(ee.Reducer.median(), ['med']).get('median')};   // 10km 상자 중앙값(장면별)의 기간 중앙값
 }
 function one(c) {
   var pt = ee.Geometry.Point([c[7], c[6]]);
