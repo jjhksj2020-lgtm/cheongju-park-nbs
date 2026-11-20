@@ -11,7 +11,8 @@ function prep(img) {
   var qa = img.select('QA_PIXEL');
   var m = qa.bitwiseAnd(1 << 1).eq(0).and(qa.bitwiseAnd(1 << 3).eq(0)).and(qa.bitwiseAnd(1 << 4).eq(0)).and(qa.bitwiseAnd(1 << 5).eq(0));
   var sr = img.select(['SR_B4', 'SR_B5']).multiply(0.0000275).add(-0.2);
-  return sr.normalizedDifference(['SR_B5', 'SR_B4']).rename('ndvi').updateMask(m).toFloat();
+  return sr.normalizedDifference(['SR_B5', 'SR_B4']).rename('ndvi').updateMask(m).toFloat()
+    .copyProperties(img, ['system:time_start']);
 }
 var col = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2').merge(ee.ImageCollection('LANDSAT/LC09/C02/T1_L2'))
   .filterBounds(patch.geometry().bounds()).filter(ee.Filter.calendarRange(6, 9, 'month')).filter(ee.Filter.lt('CLOUD_COVER', 40)).map(prep);
