@@ -46,7 +46,7 @@ function one(c) {
   zones.forEach(function (z) {
     props['z_' + z[0]] = zoneVal(d, z[1]);   // 고리 ΔLSTa(후−전). 대조(ctrl) 빼기는 읽을 때 → 빈 값이 있어도 작업이 멈추지 않음
   });
-  return ee.Feature(null, props);
+  return ee.Feature(pt, props);   // 자산 저장은 점 geometry가 필요
 }
 var res = ee.FeatureCollection(CASES.map(one));
 // 72곳은 대화형 5분 제한을 넘으므로 일괄 작업(Tasks → RUN)으로 자산에 저장 → r1_gee_did_read.js로 읽음
