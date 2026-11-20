@@ -1,5 +1,6 @@
 // R1-c 조성 사례 전후 지표온도 DiD (거리별 고리) — Google Earth Engine, 학술용
-// 입력 CASES: 공식 기록으로 조성 연도를 확인한 사례 [id, 공원명, 개장연도, 위도, 경도]
+// 입력 CASES: [id, 공원명, 전 시작연도, 전 끝연도, 후 시작연도, 후 끝연도, 위도, 경도]
+//   전 = 위성 NDVI가 가장 낮던 공사/나대지 시기(trough), 후 = 녹지가 자리잡은 2022~2024 (r1_onset.py가 정함)
 // 공원 범위 = r1_newgreen 자산에서 그 좌표를 포함(없으면 300m 안 가장 큰) "새 녹지 덩어리"(위성 실측 변화 범위)
 var CASES = __CASES__;
 var GREEN = ee.FeatureCollection('projects/cheongju-grpi/assets/r1_newgreen');
@@ -26,33 +27,31 @@ function period(pt, y0, y1) {
   return {img: anom.select(['lsta', 'ndvi']).median(), n: anom.size()};
 }
 function one(c) {
-  var pt = ee.Geometry.Point([c[4], c[3]]);
+  var pt = ee.Geometry.Point([c[7], c[6]]);
   var hit = GREEN.filterBounds(pt.buffer(300)).sort('px', false).first();
   var park = ee.Feature(hit).geometry();
-  var y = c[2];
-  var pre = period(pt, y - 3, y - 1), post = period(pt, y + 1, y + 3), late = period(pt, y + 4, Math.min(y + 6, 2025));
-  var d = post.img.subtract(pre.img), dl = late.img.subtract(pre.img);
+  var pre = period(pt, c[2], c[3]), post = period(pt, c[4], c[5]);
+  var d = post.img.subtract(pre.img);
   var ctrlZone = park.buffer(CTRL[1]).difference(park.buffer(CTRL[0]));
   var stable = d.select('ndvi').abs().lt(STABLE);
   var ctrl = d.select('lsta').updateMask(stable).reduceRegion(ee.Reducer.median(), ctrlZone, 30, null, null, false, 1e9).get('lsta');
-  var stableL = dl.select('ndvi').abs().lt(STABLE);
-  var ctrlL = dl.select('lsta').updateMask(stableL).reduceRegion(ee.Reducer.median(), ctrlZone, 30, null, null, false, 1e9).get('lsta');
   function zoneVal(img, g) { return img.select('lsta').reduceRegion(ee.Reducer.mean(), g, 30, null, null, false, 1e8).get('lsta'); }
   var zones = [['in', park]].concat(RINGS.map(function (r) {
     return [r[0] + '_' + r[1], park.buffer(r[1]).difference(r[0] === 0 ? park : park.buffer(r[0]))];
   }));
-  var props = {id: c[0], name: c[1], year: y, area_ha: park.area(1).divide(1e4), n_pre: pre.n, n_post: post.n, n_late: late.n, ctrl: ctrl,
+  var props = {id: c[0], pre: c[2] + '-' + c[3], post: c[4] + '-' + c[5], area_ha: park.area(1).divide(1e4), n_pre: pre.n, n_post: post.n, ctrl: ctrl,
                ndvi_pre: pre.img.select('ndvi').reduceRegion(ee.Reducer.mean(), park, 30).get('ndvi'),
                ndvi_post: post.img.select('ndvi').reduceRegion(ee.Reducer.mean(), park, 30).get('ndvi')};
   zones.forEach(function (z) {
     props['d_' + z[0]] = ee.Number(zoneVal(d, z[1])).subtract(ee.Number(ctrl));
-    props['dl_' + z[0]] = ee.Number(zoneVal(dl, z[1])).subtract(ee.Number(ctrlL));
   });
   return ee.Feature(null, props);
 }
 var res = ee.FeatureCollection(CASES.map(one));
 res.evaluate(function (fc, e) {
   if (e) { print('ERR|' + e); return; }
-  fc.features.forEach(function (f) { print('R|' + JSON.stringify(f.properties)); });
+  print('R|' + fc.features.map(function (f) { var p = f.properties; return [p.id, p.pre, p.post, (p.area_ha||0).toFixed(2), p.n_pre, p.n_post,
+    p.ctrl == null ? 'na' : p.ctrl.toFixed(2)].concat(['in', '0_100', '100_200', '200_300', '300_500'].map(function (k) { var v = p['d_' + k]; return v == null ? 'na' : v.toFixed(2); }))
+    .concat([p.ndvi_pre == null ? 'na' : p.ndvi_pre.toFixed(2), p.ndvi_post == null ? 'na' : p.ndvi_post.toFixed(2)]).join(','); }).join(';'));
   print('DONE|');
 });
