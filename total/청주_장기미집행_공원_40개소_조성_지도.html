@@ -943,7 +943,7 @@ terrainLayer = function(){
 };
 // 항공사진 범위 밖으로 조금 나간 시 경계(동쪽 끝 등)도 비지 않게, 시 전체를 옅은 색으로 먼저 깐다
 function cityFill(){
-  if(S.bg==='none') return null;
+  if(S.bg==='none' || terrainOn()) return null;   // 3D 지형은 잘라 낸 그림이 겉면이라 깔지 않음
   return new deck.PolygonLayer({id:'city-fill', data:city().polys, getPolygon:d=>d, filled:true, stroked:false, getFillColor:[...C['--gu'],255], pickable:false, updateTriggers:{getFillColor:C['--gu']}});
 }
 function cityLine(){
