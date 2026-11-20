@@ -1030,14 +1030,14 @@ function useCells(p){
   }
   return cellCache[p.id] = out;
 }
-const G0=[214,232,221], G1=[47,125,90], GR=[196,199,194];
+const G0=[190,222,203], G1=[34,112,78], GR=[205,207,203];
 function useParkLayers(p){
   const cs = useCells(p), mx = Math.max(1,...cs.map(c=>c.pop)), up = S.d3, buf = PZU.buffer[String(p.id)];
   const L = [cityBgUnder(), bgLayer(),
     new deck.PolygonLayer({id:'u-served', data:PZU.served, getPolygon:d=>d, filled:true, stroked:false, getFillColor:[...GR,60], pickable:false}),
     new deck.PolygonLayer({id:'u-exist', data:PZU.existing, getPolygon:d=>d, filled:true, stroked:true, getFillColor:[120,140,125,90], getLineColor:[90,105,95,200], lineWidthMinPixels:1, pickable:false}),
-    new deck.PolygonLayer({id:'u-cells', data:cs, getPolygon:d=>d.sq, extruded:up, wireframe:false, getElevation:d=>up?d.pop*1.6:0,
-      getFillColor:d=>d.served?[...GR,200]:[...lerp(G0,G1,Math.sqrt(d.pop/mx)),225], stroked:!up, getLineColor:[255,255,255,200], lineWidthMinPixels:1,
+    new deck.PolygonLayer({id:'u-cells', data:cs, getPolygon:d=>d.sq, extruded:up, wireframe:false, getElevation:d=>up?Math.sqrt(d.pop/mx)*260:0,
+      getFillColor:d=>d.served?[...GR,up?200:130]:[...lerp(G0,G1,Math.sqrt(d.pop/mx)),235], stroked:!up, getLineColor:[255,255,255,200], lineWidthMinPixels:1,
       material:{ambient:.55,diffuse:.55}, pickable:true, updateTriggers:{getElevation:S.d3}, transitions:{getElevation:{duration:900,easing:EASE}}}),
     new deck.PathLayer({id:'u-buffer', data:buf.map(pg=>pg[0]), getPath:d=>d, getColor:[...C['--ink'],200], getWidth:2, widthUnits:'pixels', getDashArray:[6,4], dashJustified:true,
       extensions:deck.PathStyleExtension?[new deck.PathStyleExtension({dash:true})]:[], pickable:false}),
@@ -1108,7 +1108,7 @@ legend = function(){
     el.innerHTML = `<div class="t">걸어서 오는 거리 ${u.buffer_m||''}m 안 인구 (100m 격자)</div>
       <div class="ramp" style="background:linear-gradient(90deg,rgb(${G0}),rgb(${G1}))"></div><div class="ramp-l"><span>적음</span><span>많음</span></div>
       <div class="row" style="margin-top:6px"><span class="k"><i class="sw" style="background:rgb(${G1})"></i>기존 공원 이용권 밖 = 새로 혜택</span><span class="k"><i class="sw" style="background:rgb(${GR})"></i>이미 공원 이용권 안</span><span class="k"><i class="sw" style="background:rgb(120,140,125)"></i>기존 공원</span></div>
-      <div class="meta" style="margin-top:5px">점선 = 이용 거리 · 검은 선 = 공원 경계${S.d3?' · 높이 = 격자 인구':''}<br>${PZU.pop_source} 100m 격자 · 기존 공원 청주시 도시공원정보</div>`;
+      <div class="meta" style="margin-top:5px">점선 = 이용 거리 · 검은 선 = 공원 경계${S.d3?' · 높이 = 격자 인구(제곱근)':''}<br>${PZU.pop_source} 100m 격자 · 기존 공원 청주시 도시공원정보</div>`;
   } else if(S.topic==='heat'){
     const e = E(p);
     el.innerHTML = e.status!=='산정' ? `<div class="t">에너지저감 미산정</div><div class="meta">${p.name}: 경계 없음 또는 하천 위주</div>` :
