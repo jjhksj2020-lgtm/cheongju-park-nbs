@@ -44,7 +44,7 @@ function one(c) {
                ndvi_pre: pre.img.select('ndvi').reduceRegion(ee.Reducer.mean(), park, 30).get('ndvi'),
                ndvi_post: post.img.select('ndvi').reduceRegion(ee.Reducer.mean(), park, 30).get('ndvi')};
   zones.forEach(function (z) {
-    props['d_' + z[0]] = ee.Number(zoneVal(d, z[1])).subtract(ee.Number(ctrl));
+    props['z_' + z[0]] = zoneVal(d, z[1]);   // 고리 ΔLSTa(후−전). 대조(ctrl) 빼기는 읽을 때 → 빈 값이 있어도 작업이 멈추지 않음
   });
   return ee.Feature(null, props);
 }
