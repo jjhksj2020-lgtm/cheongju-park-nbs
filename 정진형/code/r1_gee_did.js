@@ -22,8 +22,8 @@ function period(pt, y0, y1) {
     .filter(ee.Filter.lt('CLOUD_COVER', 40)).map(lst);
   var anom = col.map(function (im) {      // 장면별 10km 상자 중앙값 대비 → 날씨 영향 제거
     var med = im.select('lst').reduceRegion(ee.Reducer.median(), box, 90, null, null, false, 1e8).get('lst');
-    return im.addBands(im.select('lst').subtract(ee.Number(med)).rename('lsta')).set('ok', ee.Algorithms.IsEqual(med, null).not());
-  }).filter(ee.Filter.eq('ok', true));
+    return im.addBands(im.select('lst').subtract(ee.Number(med)).rename('lsta')).set('med', med);
+  }).filter(ee.Filter.notNull(['med']));
   return {img: anom.select(['lsta', 'ndvi']).median(), n: anom.size()};
 }
 function one(c) {
