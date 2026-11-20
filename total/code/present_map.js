@@ -61,6 +61,12 @@ bgLayer = function(){
 // 3D 지형 겉면: 시 전체 화면이면 잘라 낸 그림(배경 없음일 때도 시 모양 단색) → 경계 밖 지형은 보이지 않음
 const _terrainLayer = terrainLayer;
 terrainLayer = function(){
+  if(wide()){
+    const m = demFor(), k = terK(), tex = CUT ? CUT[S.bg==='base'?'base':S.bg==='sat'?'sat':'none'] : (S.bg==='none'?null:asset('img/'+((S.bg==='base'?BM.cityBase:BM.citySat)||{}).file));
+    return new deck.TerrainLayer({id:'terrain-wide-'+k+'-'+S.bg, elevationData:asset('dem/'+m.file), texture:tex, bounds:m.bounds,
+      elevationDecoder:{rScaler:256*k,gScaler:k,bScaler:k/256,offset:(-32768-m.min)*k}, meshMaxError:1, skirtHeight:0,
+      color:C['--gu'], loaders:[loaders.TerrainLoader], loadOptions:{worker:false}, operation:'terrain+draw'});
+  }
   if(S.view!=='city' || !CUT) return _terrainLayer();
   const m = demFor(), k = terK(), tex = CUT[S.bg==='base'?'base':S.bg==='sat'?'sat':'none'];
   return new deck.TerrainLayer({id:'terrain-city-cut-'+k+'-'+S.bg, elevationData:asset('dem/'+m.file), texture:tex, bounds:m.bounds,
@@ -146,7 +152,7 @@ function useCells(p){
 const G0=[190,222,203], G1=[34,112,78], GR=[205,207,203];
 function useParkLayers(p){
   const cs = useCells(p), mx = Math.max(1,...cs.map(c=>c.pop)), up = S.d3, buf = PZU.buffer[String(p.id)];
-  const L = [cityBgUnder(), bgLayer(),
+  const L = [cityBgUnder(), parkImg(),
     new deck.PolygonLayer({id:'u-served', data:PZU.served, getPolygon:d=>d, filled:true, stroked:false, getFillColor:[...GR,60], pickable:false}),
     new deck.PolygonLayer({id:'u-exist', data:PZU.existing, getPolygon:d=>d, filled:true, stroked:true, getFillColor:[120,140,125,90], getLineColor:[90,105,95,200], lineWidthMinPixels:1, pickable:false}),
     new deck.PolygonLayer({id:'u-cells', data:cs, getPolygon:d=>d.sq, extruded:up, wireframe:false, getElevation:d=>up?Math.sqrt(d.pop/mx)*260:0,
@@ -154,6 +160,7 @@ function useParkLayers(p){
       material:{ambient:.55,diffuse:.55}, pickable:true, updateTriggers:{getElevation:S.d3}, transitions:{getElevation:{duration:900,easing:EASE}}}),
     new deck.PathLayer({id:'u-buffer', data:buf.map(pg=>pg[0]), getPath:d=>d, getColor:[...C['--ink'],200], getWidth:2, widthUnits:'pixels', getDashArray:[6,4], dashJustified:true,
       extensions:deck.PathStyleExtension?[new deck.PathStyleExtension({dash:true})]:[], pickable:false}),
+    bldLayer(p),
     new deck.PolygonLayer({id:'park-outline', data:p.poly, getPolygon:d=>d, filled:true, stroked:true, getFillColor:[255,255,255,40], getLineColor:[...C['--ink'],255], lineWidthMinPixels:2.4, pickable:false})];
   return L;
 }
@@ -165,13 +172,25 @@ function heatParkLayers(p){
   const lab = [];
   if(ok){ lab.push({c:p.c, t:`공원 일대 −${f2(e.dlst_cell_base)}°C`}); }
   if(ring){ const r0=ring[0][0]; let top=r0[0]; r0.forEach(q=>{ if(q[1]>top[1]) top=q; }); lab.push({c:[p.c[0], top[1]-0.0006], t:`주변 300m −${f2(e.dlst_ring_base)}°C`}); }
-  return [cityBgUnder(), bgLayer(),
+  return [cityBgUnder(), parkImg(),
     ring ? new deck.PolygonLayer({id:'h-ring', data:ring, getPolygon:d=>d, filled:true, stroked:true, getFillColor:[...col(e.dlst_ring_base),150], getLineColor:[...B1,160], lineWidthMinPixels:1, pickable:true}) : null,
     new deck.PolygonLayer({id:'h-park', data:p.poly, getPolygon:d=>d, filled:true, stroked:true, getFillColor:ok?[...col(e.dlst_cell_base),200]:[...C['--own-unk'],120], getLineColor:[...C['--ink'],255], lineWidthMinPixels:2.4, pickable:true}),
+    bldLayer(p),
     new deck.TextLayer({id:'h-label', data:lab, getPosition:d=>d.c, getText:d=>d.t, getSize:14, getColor:[...C['--ink'],255], background:true, getBackgroundColor:[255,255,255,230], backgroundPadding:[6,3],
       characterSet:'auto', fontFamily:'Pretendard Variable, IBM Plex Sans KR, sans-serif', fontWeight:700, pickable:false})];
 }
 // 공원 사진 범위가 좁아서, 버퍼·고리까지 보이도록 시 전체 항공사진을 밑에 깐다
+// 공원 고해상도 사진: id가 bg-로 시작하지 않아야 3D 지형 위에 덧입혀진다
+function parkImg(){
+  if(S.bg==='none') return null; const m = (D.basemap||{})['s'+S.sel]; if(!m) return null;
+  return new deck.BitmapLayer({id:'pimg-'+m.file, image:asset('img/'+m.file), bounds:m.bounds, opacity:0.95});
+}
+function bldLayer(p){
+  if(!(D.bld&&D.bld[p.id]&&S.showBld)) return null;
+  return new deck.PolygonLayer({id:'bld', data:D.bld[p.id], getPolygon:d=>d.poly, extruded:S.d3, getElevation:d=>d.h, wireframe:false,
+    getFillColor:d=>d.in?[...C['--own-org'],S.d3?245:220]:[...C['--muted'],S.d3?200:120], getLineColor:[...C['--panel'],255], lineWidthMinPixels:0.5, stroked:!S.d3, pickable:true,
+    material:{ambient:.55,diffuse:.6}, updateTriggers:{getFillColor:[S.d3,C['--own-org']]}});
+}
 function cityBgUnder(){
   if(S.bg==='none') return null; const m = S.bg==='base'?BM.cityBase:BM.citySat; if(!m) return null;
   return new deck.BitmapLayer({id:'bg-under-'+S.bg, image:asset('img/'+m.file), bounds:m.bounds, opacity:0.95});
@@ -183,9 +202,11 @@ parkLayers = function(){
   if(S.topic==='heat') return heatParkLayers(p);
   return _parkLayers();
 };
-// 이용성·에너지저감 공원 화면은 범위가 공원 밖까지라 3D 지형을 쓰지 않는다(공원 지형 자료가 공원 둘레만 있음)
-const _terrainOn = terrainOn;
-terrainOn = function(){ return _terrainOn() && !(S.view==='park' && (S.topic==='use'||S.topic==='heat')); };
+// 이용성·에너지저감 공원 화면은 범위(이용 거리 500m·주변 300m)가 공원 둘레 지형 자료보다 넓다
+// → 3D 지형은 시 전체 지형을 쓰고(겉면 = 청주시 항공사진), 공원 고해상도 사진은 그 위에 덧입힌다. 건물·지형 배율 등 기존 3D는 그대로.
+const wide = () => S.view==='park' && (S.topic==='use'||S.topic==='heat');
+const _demFor = demFor;
+demFor = function(){ return wide() ? (D.dem||{}).city : _demFor(); };
 const _viewPark = viewPark;
 viewPark = function(){
   const p = byId[S.sel]; if(!p||!p.poly) return;
@@ -211,9 +232,9 @@ deckgl.setProps({getTooltip: tip});
 const _legend2 = legend;
 legend = function(){
   _legend2();
-  // 이용성·에너지저감 공원 화면에서는 필지용 색·높이·지형·건물 선택이 의미 없으므로 숨긴다
+  // 이용성·에너지저감 공원 화면에서는 필지용 색·높이 선택만 숨긴다(지형·건물·3D는 그대로)
   const own = S.view==='park' && (S.topic==='use'||S.topic==='heat');
-  ['colorBy','heightBy','terSel','bldBtn'].forEach(id=>{ const n=document.getElementById(id); const w=n&&(n.closest('label')||n.closest('.seg')); if(w) w.style.display = own?'none':''; });
+  ['colorBy','heightBy'].forEach(id=>{ const n=document.getElementById(id); const w=n&&(n.closest('label')||n.closest('.seg')); if(w) w.style.display = own?'none':''; });
   if(S.view!=='park') return;
   const el = document.getElementById('legend'), p = byId[S.sel]; if(!p) return;
   if(S.topic==='use' && PZU && PZU.buffer[String(p.id)]){
