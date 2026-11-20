@@ -264,9 +264,9 @@ legend = function(){
   } else if(S.topic==='heat'){
     const e = E(p);
     el.innerHTML = e.status!=='산정' ? `<div class="t">에너지저감 미산정</div><div class="meta">${p.name}: 경계 없음 또는 하천 위주</div>` :
-      `<div class="t">에너지저감 범위</div>
-      <div class="row"><span class="k"><i class="sw" style="background:rgb(${INK})"></i>공원 위치</span>${e.ring_applied==='적용'?`<span class="k"><i class="sw" style="background:rgb(${lerp(B0,B1,.7)})"></i>주변 ${D.E.ring_m||300}m (함께 시원해지는 범위)</span>`:''}</div>
-      <div class="meta" style="margin-top:5px">${e.ring_applied==='적용'?'저감 온도는 오른쪽 카드에':'1ha 미만이라 주변 효과 없음 · 저감 온도는 오른쪽 카드에'}</div>`;
+      `<div class="t">조성 후 여름 지표온도 저감 (기준 시나리오)</div>
+      <div class="row"><span class="k"><i class="sw" style="background:rgb(${INK})"></i>공원 위치 · 공원 일대 −${f2(e.dlst_cell_base)}°C</span>${e.ring_applied==='적용'?`<span class="k"><i class="sw" style="background:rgb(${lerp(B0,B1,.7)})"></i>주변 ${D.E.ring_m||300}m −${f2(e.dlst_ring_base)}°C</span>`:''}</div>
+      <div class="meta" style="margin-top:5px">${e.ring_applied==='적용'?'주변 300m 효과: 특례사업지 실측 퍼짐 비율 · 파랑이 진할수록 더 시원해짐':'1ha 미만이라 주변 300m 효과는 넣지 않음'} · 녹지 ${f2(e.ndvi_now)} → 목표</div>`;
   }
 };
 
