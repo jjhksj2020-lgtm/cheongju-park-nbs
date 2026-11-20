@@ -4,7 +4,7 @@
 //  3) 처음 화면은 청주시 경계에 꼭 맞게.
 (function(){
 try{ if(typeof deck!=='object' || !deck || typeof deck.DeckGL!=='function' || !deckgl) return; }catch(e){ return; }   // 지도 엔진을 못 불러왔으면 손대지 않음
-const ELEV = 0.22;   // 기둥 높이(최대 6,000) → 공원 블록 높이 최대 약 1.3km. "살짝" 솟게
+const ELEV = 0.3;    // 기둥 높이(최대 6,000) → 공원 블록 높이 최대 약 1.8km
 const EASE = t => 1-Math.pow(1-t,3);
 
 // --- 청주시 경계 (4개 구 합집합) ---
@@ -67,6 +67,11 @@ terrainLayer = function(){
     elevationDecoder:{rScaler:256*k,gScaler:k,bScaler:k/256,offset:(-32768-m.min)*k}, meshMaxError:4, skirtHeight:0,
     color:C['--gu'], loaders:[loaders.TerrainLoader], loadOptions:{worker:false}, operation:'terrain+draw'});
 };
+// 항공사진 범위 밖으로 조금 나간 시 경계(동쪽 끝 등)도 비지 않게, 시 전체를 옅은 색으로 먼저 깐다
+function cityFill(){
+  if(S.bg==='none') return null;
+  return new deck.PolygonLayer({id:'city-fill', data:city().polys, getPolygon:d=>d, filled:true, stroked:false, getFillColor:[...C['--gu'],255], pickable:false, updateTriggers:{getFillColor:C['--gu']}});
+}
 function cityLine(){
   return new deck.PathLayer({id:'city-line', data:city().polys.map(pg=>pg[0]), getPath:d=>d, getColor:[...C['--ink'],170], getWidth:1.6, widthUnits:'pixels', pickable:false, updateTriggers:{getColor:C['--ink']}});
 }
@@ -76,7 +81,7 @@ cityLayers = function(){
   const ps = D.parks.filter(p=>p.c);
   const up = S.d3 && S.heightCity!=='none';
   const h = p => up ? cityHeight(p)*ELEV : 0;
-  const L = [bgLayer(), guLayer(), cityLine(), guLabels()];
+  const L = [cityFill(), bgLayer(), guLayer(), cityLine(), guLabels()];
   // 공원 경계 모양 그대로: 2D는 납작한 면 + 검은 테두리, 3D는 같은 모양이 값만큼 솟음
   L.push(new deck.PolygonLayer({id:'park-poly', data:ps.filter(p=>p.poly).flatMap(p=>p.poly.map(poly=>({p,poly}))), getPolygon:d=>d.poly,
     extruded:true, wireframe:true, getElevation:d=>h(d.p), getFillColor:d=>[...cityColor(d.p), up?245:225], getLineColor:[...C['--ink'],235],
@@ -99,7 +104,10 @@ viewCity = function(){
   const w = el.clientWidth||900, hh = el.clientHeight||560;
   const vp = new deck.WebMercatorViewport({width:w, height:hh});
   const f = vp.fitBounds([[b[0],b[1]],[b[2],b[3]]], {padding:Math.round(Math.min(w,hh)*0.05)});
-  fly({longitude:f.longitude, latitude:f.latitude-(S.d3?0.035:0), zoom:f.zoom+(S.d3?0.45:0), pitch:S.d3?52:0, bearing:S.d3?-14:0});
+  if(!S.d3) return fly({longitude:f.longitude, latitude:f.latitude, zoom:f.zoom, pitch:0, bearing:0});
+  // 3D: 공원이 모인 도심 쪽으로 기울이며 확대 (공원 위치의 중앙값)
+  const ps = D.parks.filter(p=>p.c&&p.area<1e6), med = a => { a=[...a].sort((x,y)=>x-y); return a[Math.floor(a.length/2)]; };
+  fly({longitude:med(ps.map(p=>p.c[0])), latitude:med(ps.map(p=>p.c[1]))-0.045, zoom:f.zoom+1.1, pitch:55, bearing:-14});
 };
 
 // 범례 아래 줄: '원 크기 = 공원 면적' 대신
