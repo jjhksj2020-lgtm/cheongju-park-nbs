@@ -20,7 +20,7 @@ var wc = ee.Image('ESA/WorldCover/v200/2021').select('Map');
 var smod = ee.Image('JRC/GHSL/P2023A/GHS_SMOD/2015').select('smod_code');
 var urban = smod.gte(21).reproject('EPSG:4326', null, 1000).focal_max(1000, 'circle', 'meters');   // 교외 이상 + 1km
 var cand = pre.lt(NDVI_PRE_MAX).and(post.gt(NDVI_POST_MIN)).and(wc.eq(10).or(wc.eq(30))).and(urban).selfMask().rename('c');
-var vec = cand.addBands(pre).addBands(post).reduceToVectors({
+var vec = cand.reduceToVectors({
   geometry: AOI, scale: 30, geometryType: 'polygon', eightConnected: true, labelProperty: 'c',
   reducer: ee.Reducer.countEvery(), maxPixels: 1e10, bestEffort: false, tileScale: 4});
 vec = vec.filter(ee.Filter.gte('count', MIN_PIX));
