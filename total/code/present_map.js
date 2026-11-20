@@ -142,11 +142,18 @@ function useCells(p){
   if(cellCache[p.id]) return cellCache[p.id];
   const buf = PZU && PZU.buffer[String(p.id)]; if(!buf) return cellCache[p.id] = [];
   const bbx = bb(buf), h = 0.00045, w = 0.00056;     // 100m 격자 반 칸(위도·경도)
+  const pf = parkFeature(p), pb = bb(p.poly);
   const out = [];
   for(const [x,y,pop,vul] of PZU.cells){
     if(x<bbx[0]-w||x>bbx[2]+w||y<bbx[1]-h||y>bbx[3]+h) continue;
     if(!inside([x,y], buf)) continue;
-    out.push({x,y,pop,vul, served: inside([x,y], PZU.served), sq:[[x-w,y-h],[x+w,y-h],[x+w,y+h],[x-w,y+h],[x-w,y-h]]});
+    const sq = [[x-w,y-h],[x+w,y-h],[x+w,y+h],[x-w,y+h],[x-w,y-h]], base = {x,y,pop,vul, served: inside([x,y], PZU.served)};
+    // 공원 안쪽은 빼고 공원 밖 부분만 남긴다(공원은 검은색으로 따로)
+    if(x+w<pb[0]||x-w>pb[2]||y+h<pb[1]||y-h>pb[3]){ out.push({...base, sq}); continue; }
+    let d = null; try{ d = turf.difference(turf.polygon([sq]), pf); }catch(e){ d = turf.polygon([sq]); }
+    if(!d) continue;
+    const parts = d.geometry.type==='Polygon' ? [d.geometry.coordinates] : d.geometry.coordinates;
+    parts.forEach(rg=>out.push({...base, sq:rg[0], holes:rg.slice(1)}));
   }
   return cellCache[p.id] = out;
 }
@@ -156,31 +163,31 @@ function useParkLayers(p){
   const L = [cityBgUnder(), parkImg(),
     new deck.PolygonLayer({id:'u-served', data:PZU.served, getPolygon:d=>d, filled:true, stroked:false, getFillColor:[...GR,60], pickable:false}),
     new deck.PolygonLayer({id:'u-exist', data:PZU.existing, getPolygon:d=>d, filled:true, stroked:true, getFillColor:[120,140,125,90], getLineColor:[90,105,95,200], lineWidthMinPixels:1, pickable:false}),
-    new deck.PolygonLayer({id:'u-cells', data:cs, getPolygon:d=>d.sq, extruded:up, wireframe:false, getElevation:d=>up?Math.sqrt(d.pop/mx)*260:0,
+    new deck.PolygonLayer({id:'u-cells', data:cs, getPolygon:d=>d.holes&&d.holes.length?[d.sq,...d.holes]:d.sq, extruded:up, wireframe:false, getElevation:d=>up?Math.sqrt(d.pop/mx)*260:0,
       getFillColor:d=>d.served?[...GR,up?200:130]:[...lerp(G0,G1,Math.sqrt(d.pop/mx)),235], stroked:!up, getLineColor:[255,255,255,200], lineWidthMinPixels:1,
       material:{ambient:.55,diffuse:.55}, pickable:true, updateTriggers:{getElevation:S.d3}, transitions:{getElevation:{duration:900,easing:EASE}}}),
     new deck.PathLayer({id:'u-buffer', data:buf.map(pg=>pg[0]), getPath:d=>d, getColor:[...C['--ink'],200], getWidth:2, widthUnits:'pixels', getDashArray:[6,4], dashJustified:true,
       extensions:deck.PathStyleExtension?[new deck.PathStyleExtension({dash:true})]:[], pickable:false}),
     bldLayer(p),
-    new deck.PolygonLayer({id:'park-outline', data:p.poly, getPolygon:d=>d, filled:true, stroked:true, getFillColor:[255,255,255,40], getLineColor:[...C['--ink'],255], lineWidthMinPixels:2.4, pickable:false})];
+    parkBlack(p)];
   return L;
 }
 const B0=[214,231,245], B1=[33,102,172];
 function heatParkLayers(p){
   const e = E(p), ok = e.status==='산정', ring = ok && e.ring_applied==='적용' ? heatRing(p) : null;
-  const mx = Math.max(...D.parks.filter(q=>E(q).status==='산정').map(q=>E(q).dlst_cell_base||0), 0.01);
-  const col = v => lerp(B0,B1,Math.min(1,Math.sqrt((v||0)/mx)));
-  const lab = [];
-  if(ok){ lab.push({c:p.c, t:`공원 일대 −${f2(e.dlst_cell_base)}°C`}); }
-  if(ring){ const r0=ring[0][0]; let top=r0[0]; r0.forEach(q=>{ if(q[1]>top[1]) top=q; }); lab.push({c:[p.c[0], top[1]-0.0006], t:`주변 300m −${f2(e.dlst_ring_base)}°C`}); }
+  const mx = Math.max(...D.parks.filter(q=>E(q).status==='산정').map(q=>E(q).dlst_ring_base||0), 0.01);
+  const col = v => lerp(B0,B1,Math.min(1,0.35+0.65*Math.sqrt((v||0)/mx)));
   return [cityBgUnder(), parkImg(),
-    ring ? new deck.PolygonLayer({id:'h-ring', data:ring, getPolygon:d=>d, filled:true, stroked:true, getFillColor:[...col(e.dlst_ring_base),150], getLineColor:[...B1,160], lineWidthMinPixels:1, pickable:true}) : null,
-    new deck.PolygonLayer({id:'h-park', data:p.poly, getPolygon:d=>d, filled:true, stroked:true, getFillColor:ok?[...col(e.dlst_cell_base),200]:[...C['--own-unk'],120], getLineColor:[...C['--ink'],255], lineWidthMinPixels:2.4, pickable:true}),
+    ring ? new deck.PolygonLayer({id:'h-ring', data:ring, getPolygon:d=>d, filled:true, stroked:true, getFillColor:[...col(e.dlst_ring_base),165], getLineColor:[...B1,200], lineWidthMinPixels:1.2, pickable:true}) : null,
     bldLayer(p),
-    new deck.TextLayer({id:'h-label', data:lab, getPosition:d=>d.c, getText:d=>d.t, getSize:14, getColor:[...C['--ink'],255], background:true, getBackgroundColor:[255,255,255,230], backgroundPadding:[6,3],
-      characterSet:'auto', fontFamily:'Pretendard Variable, IBM Plex Sans KR, sans-serif', fontWeight:700, pickable:false})];
+    parkBlack(p, 'h-park')];
 }
 // 공원 사진 범위가 좁아서, 버퍼·고리까지 보이도록 시 전체 항공사진을 밑에 깐다
+// 공원 위치는 검은색으로 분명하게 (주변 색칠 위에)
+const INK = [26,34,48];
+function parkBlack(p, id='park-black'){
+  return new deck.PolygonLayer({id, data:p.poly, getPolygon:d=>d, filled:true, stroked:true, getFillColor:[...INK,235], getLineColor:[255,255,255,255], lineWidthMinPixels:1.5, pickable:true});
+}
 // 공원 고해상도 사진: id가 bg-로 시작하지 않아야 3D 지형 위에 덧입혀진다
 function parkImg(){
   if(S.bg==='none') return null; const m = (D.basemap||{})['s'+S.sel]; if(!m) return null;
@@ -232,6 +239,7 @@ viewPark = function(){
 const _tip = tip;
 tip = function(info){
   const o = info.object, l = info.layer; if(!o||!l) return _tip(info);
+  if(l.id==='park-black'){ const q=byId[S.sel], u=U(q); return {html:`<div class="tt"><b>${q.name}</b> · ${q.loc}<br>신규 수혜 ${Math.round(u.new_served_pop||0).toLocaleString('ko-KR')}명 · 주변 인구 ${Math.round(u.E1_pop||0).toLocaleString('ko-KR')}명</div>`, style:ttStyle()}; }
   if(l.id==='u-cells') return {html:`<div class="tt"><b>100m 격자 인구 ${Math.round(o.pop).toLocaleString('ko-KR')}명</b><br>${o.served?'기존 공원 이용권 안':'기존 공원 이용권 밖 → 이 공원으로 새로 혜택'}${o.vul!=null?`<br>아동·고령 ${Math.round(o.vul*100)}%`:''}</div>`, style:ttStyle()};
   if(l.id==='h-ring'){ const e=E(byId[S.sel]); return {html:`<div class="tt"><b>주변 ${D.E.ring_m||300}m</b> · −${f2(e.dlst_ring_base)}°C (범위 ${f2(e.dlst_ring_low)}~${f2(e.dlst_ring_high)})<br>특례사업지 실측 퍼짐 비율 적용</div>`, style:ttStyle()}; }
   if(l.id==='h-park'){ const e=E(byId[S.sel]); return {html:`<div class="tt"><b>공원 일대</b> · −${f2(e.dlst_cell_base)}°C (범위 ${f2(e.dlst_cell_low)}~${f2(e.dlst_cell_high)})<br>지금 녹지 ${f2(e.ndvi_now)} → 조성 후 목표</div>`, style:ttStyle()}; }
@@ -252,14 +260,13 @@ legend = function(){
     el.innerHTML = `<div class="t">걸어서 오는 거리 ${u.buffer_m||''}m 안 인구 (100m 격자)</div>
       <div class="ramp" style="background:linear-gradient(90deg,rgb(${G0}),rgb(${G1}))"></div><div class="ramp-l"><span>적음</span><span>많음</span></div>
       <div class="row" style="margin-top:6px"><span class="k"><i class="sw" style="background:rgb(${G1})"></i>기존 공원 이용권 밖 = 새로 혜택</span><span class="k"><i class="sw" style="background:rgb(${GR})"></i>이미 공원 이용권 안</span><span class="k"><i class="sw" style="background:rgb(120,140,125)"></i>기존 공원</span></div>
-      <div class="meta" style="margin-top:5px">점선 = 이용 거리 · 검은 선 = 공원 경계${S.d3?' · 높이 = 격자 인구(제곱근)':''}<br>${PZU.pop_source} 100m 격자 · 기존 공원 청주시 도시공원정보</div>`;
+      <div class="row" style="margin-top:4px"><span class="k"><i class="sw" style="background:rgb(${INK})"></i>공원 위치</span></div><div class="meta" style="margin-top:5px">점선 = 이용 거리 · 격자는 공원 밖만${S.d3?' · 높이 = 격자 인구(제곱근)':''}<br>${PZU.pop_source} 100m 격자 · 기존 공원 청주시 도시공원정보</div>`;
   } else if(S.topic==='heat'){
     const e = E(p);
     el.innerHTML = e.status!=='산정' ? `<div class="t">에너지저감 미산정</div><div class="meta">${p.name}: 경계 없음 또는 하천 위주</div>` :
       `<div class="t">조성 후 여름 지표온도 저감 (기준 시나리오)</div>
-      <div class="ramp" style="background:linear-gradient(90deg,rgb(${B0}),rgb(${B1}))"></div><div class="ramp-l"><span>0°C</span><span>더 시원해짐</span></div>
-      <div class="row" style="margin-top:6px"><span class="k"><i class="sw" style="background:rgb(${B1})"></i>공원 일대 −${f2(e.dlst_cell_base)}°C</span>${e.ring_applied==='적용'?`<span class="k"><i class="sw" style="background:rgba(${B1},.45)"></i>주변 ${D.E.ring_m||300}m −${f2(e.dlst_ring_base)}°C</span>`:''}</div>
-      <div class="meta" style="margin-top:5px">${e.ring_applied==='적용'?'주변 300m 효과: 특례사업지 실측 퍼짐 비율':'1ha 미만이라 주변 300m 효과는 넣지 않음'} · 녹지 ${f2(e.ndvi_now)} → 목표</div>`;
+      <div class="row"><span class="k"><i class="sw" style="background:rgb(${INK})"></i>공원 위치 · 공원 일대 −${f2(e.dlst_cell_base)}°C</span>${e.ring_applied==='적용'?`<span class="k"><i class="sw" style="background:rgb(${lerp(B0,B1,.7)})"></i>주변 ${D.E.ring_m||300}m −${f2(e.dlst_ring_base)}°C</span>`:''}</div>
+      <div class="meta" style="margin-top:5px">${e.ring_applied==='적용'?'주변 300m 효과: 특례사업지 실측 퍼짐 비율 · 파랑이 진할수록 더 시원해짐':'1ha 미만이라 주변 300m 효과는 넣지 않음'} · 녹지 ${f2(e.ndvi_now)} → 목표</div>`;
   }
 };
 
