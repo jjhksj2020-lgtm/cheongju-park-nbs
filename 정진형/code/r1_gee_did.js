@@ -21,9 +21,10 @@ function period(pt, y0, y1) {
     .filterBounds(pt).filterDate(y0 + '-01-01', y1 + '-12-31').filter(ee.Filter.calendarRange(6, 9, 'month'))
     .filter(ee.Filter.lt('CLOUD_COVER', 40)).map(lst);
   var anom = col.map(function (im) {      // 장면별 10km 상자 중앙값 대비 → 날씨 영향 제거
-    var med = im.select('lst').reduceRegion(ee.Reducer.median(), box, 90, null, null, false, 1e8).get('lst');
-    return im.addBands(im.select('lst').subtract(ee.Number(med)).rename('lsta')).set('med', med);
-  }).filter(ee.Filter.notNull(['med']));
+    return im.set('med', im.select('lst').reduceRegion(ee.Reducer.median(), box, 90, null, null, false, 1e8).get('lst'));
+  }).filter(ee.Filter.notNull(['med'])).map(function (im) {
+    return im.addBands(im.select('lst').subtract(ee.Number(im.get('med'))).rename('lsta'));
+  });
   return {img: anom.select(['lsta', 'ndvi']).median(), n: anom.size()};
 }
 function one(c) {
