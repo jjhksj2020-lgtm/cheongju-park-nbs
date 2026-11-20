@@ -949,9 +949,10 @@ bgLayer = function(){
 const _terrainLayer = terrainLayer;
 terrainLayer = function(){
   if(wide()){
-    const m = demFor(), k = terK(), tex = CUT ? CUT[S.bg==='base'?'base':S.bg==='sat'?'sat':'none'] : (S.bg==='none'?null:asset('img/'+((S.bg==='base'?BM.cityBase:BM.citySat)||{}).file));
-    return new deck.TerrainLayer({id:'terrain-wide-'+k+'-'+S.bg, elevationData:asset('dem/'+m.file), texture:tex, bounds:m.bounds,
-      elevationDecoder:{rScaler:256*k,gScaler:k,bScaler:k/256,offset:(-32768-m.min)*k}, meshMaxError:2, skirtHeight:0,
+    const W = wideCrop(); if(!W) return null;            // 잘라 내는 중이면 다음 그리기에서
+    const k = terK(), tex = S.bg==='none' ? null : W[S.bg==='base'?'base':'sat'];
+    return new deck.TerrainLayer({id:'terrain-wide-'+S.sel+'-'+k+'-'+S.bg, elevationData:W.dem, texture:tex, bounds:W.bounds,
+      elevationDecoder:{rScaler:256*k,gScaler:k,bScaler:k/256,offset:(-32768-W.min)*k}, meshMaxError:0.5, skirtHeight:0,
       color:C['--gu'], loaders:[loaders.TerrainLoader], loadOptions:{worker:false}, operation:'terrain+draw'});
   }
   if(S.view!=='city' || !CUT) return _terrainLayer();
@@ -1094,6 +1095,37 @@ parkLayers = function(){
 const wide = () => S.view==='park' && (S.topic==='use'||S.topic==='heat');
 const _demFor = demFor;
 demFor = function(){ return wide() ? (D.dem||{}).city : _demFor(); };
+// 넓은 공원 화면용 지형: 시 전체 지형·항공사진에서 공원 주변(이용 거리 + 여유)만 잘라 쓴다 → 작아서 바로 뜬다
+const WIDE = {};
+function wideBounds(){
+  const p = byId[S.sel]; const poly = S.topic==='use' && PZU && PZU.buffer[String(S.sel)] ? PZU.buffer[String(S.sel)] : (heatRing(p)?[...p.poly,...heatRing(p)]:p.poly);
+  const b = bb(poly), mx = 0.012, my = 0.01; return [b[0]-mx, b[1]-my, b[2]+mx, b[3]+my];
+}
+function cropImg(src, srcB, want){   // 웹 메르카토르 그림에서 want 범위를 잘라 data URL로
+  return new Promise(res=>{ const img = new Image(); img.onload = ()=>{
+    const ym = l => Math.log(Math.tan(Math.PI/4 + l*Math.PI/360));
+    const W = img.naturalWidth, H = img.naturalHeight;
+    const X = x => (x-srcB[0])/(srcB[2]-srcB[0])*W, Y = y => (ym(srcB[3])-ym(y))/(ym(srcB[3])-ym(srcB[1]))*H;
+    const x0 = Math.max(0,Math.floor(X(want[0]))), x1 = Math.min(W,Math.ceil(X(want[2]))), y0 = Math.max(0,Math.floor(Y(want[3]))), y1 = Math.min(H,Math.ceil(Y(want[1])));
+    const cv = document.createElement('canvas'); cv.width = x1-x0; cv.height = y1-y0;
+    cv.getContext('2d').drawImage(img, x0, y0, x1-x0, y1-y0, 0, 0, x1-x0, y1-y0);
+    const lon = px => srcB[0]+px/W*(srcB[2]-srcB[0]);
+    const lat = py => { const v = ym(srcB[3]) - py/H*(ym(srcB[3])-ym(srcB[1])); return (2*Math.atan(Math.exp(v))-Math.PI/2)*180/Math.PI; };
+    res({url: cv.toDataURL('image/png'), bounds:[lon(x0), lat(y1), lon(x1), lat(y0)]});
+  }; img.onerror = ()=>res(null); img.src = src; });
+}
+function wideCrop(){
+  const key = S.topic+'-'+S.sel; if(WIDE[key] && WIDE[key].dem) return WIDE[key]; if(WIDE[key]) return null;
+  WIDE[key] = {};
+  const m = (D.dem||{}).city, want = wideBounds();
+  (async ()=>{
+    const d = await cropImg(asset('dem/'+m.file), m.bounds, want); if(!d) return;
+    const out = {dem:d.url, bounds:d.bounds, min:m.min};
+    for(const [k,b] of [['sat',BM.citySat],['base',BM.cityBase]]) if(b){ const t = await cropImg(asset('img/'+b.file), b.bounds, d.bounds); out[k] = t&&t.url; }
+    WIDE[key] = out; if(wide() && S.topic+'-'+S.sel===key) render();
+  })();
+  return null;
+}
 // 지형 배율: 원래 공원 화면처럼 '높이차 × 배율 ≤ 화면 폭의 1/4' (높이차는 그 공원 둘레 지형 자료로)
 const _terK = terK;
 terK = function(){
