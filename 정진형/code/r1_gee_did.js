@@ -49,10 +49,5 @@ function one(c) {
   return ee.Feature(null, props);
 }
 var res = ee.FeatureCollection(CASES.map(one));
-res.evaluate(function (fc, e) {
-  if (e) { print('ERR|' + e); return; }
-  print('R|' + fc.features.map(function (f) { var p = f.properties; return [p.id, p.pre, p.post, (p.area_ha||0).toFixed(2), p.n_pre, p.n_post,
-    p.ctrl == null ? 'na' : p.ctrl.toFixed(2)].concat(['in', '0_100', '100_200', '200_300', '300_500'].map(function (k) { var v = p['d_' + k]; return v == null ? 'na' : v.toFixed(2); }))
-    .concat([p.ndvi_pre == null ? 'na' : p.ndvi_pre.toFixed(2), p.ndvi_post == null ? 'na' : p.ndvi_post.toFixed(2)]).join(','); }).join(';'));
-  print('DONE|');
-});
+// 72곳은 대화형 5분 제한을 넘으므로 일괄 작업(Tasks → RUN)으로 자산에 저장 → r1_gee_did_read.js로 읽음
+Export.table.toAsset({collection: res, description: 'r1_did', assetId: 'projects/cheongju-grpi/assets/r1_did'});
