@@ -35,6 +35,8 @@ function one(c) {
   var ctrlZone = park.buffer(CTRL[1]).difference(park.buffer(CTRL[0]));
   var stable = d.select('ndvi').abs().lt(STABLE);
   var ctrl = d.select('lsta').updateMask(stable).reduceRegion(ee.Reducer.median(), ctrlZone, 30, null, null, false, 1e9).get('lsta');
+  var stableL = dl.select('ndvi').abs().lt(STABLE);
+  var ctrlL = dl.select('lsta').updateMask(stableL).reduceRegion(ee.Reducer.median(), ctrlZone, 30, null, null, false, 1e9).get('lsta');
   function zoneVal(img, g) { return img.select('lsta').reduceRegion(ee.Reducer.mean(), g, 30, null, null, false, 1e8).get('lsta'); }
   var zones = [['in', park]].concat(RINGS.map(function (r) {
     return [r[0] + '_' + r[1], park.buffer(r[1]).difference(r[0] === 0 ? park : park.buffer(r[0]))];
@@ -44,7 +46,7 @@ function one(c) {
                ndvi_post: post.img.select('ndvi').reduceRegion(ee.Reducer.mean(), park, 30).get('ndvi')};
   zones.forEach(function (z) {
     props['d_' + z[0]] = ee.Number(zoneVal(d, z[1])).subtract(ee.Number(ctrl));
-    props['dl_' + z[0]] = zoneVal(dl, z[1]);
+    props['dl_' + z[0]] = ee.Number(zoneVal(dl, z[1])).subtract(ee.Number(ctrlL));
   });
   return ee.Feature(null, props);
 }
