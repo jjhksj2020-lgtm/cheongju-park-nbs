@@ -42,10 +42,11 @@ for sub in ('img', 'dem'):
         if fn.endswith('.json'): continue
         mime = 'image/jpeg' if fn.endswith('.jpg') else 'image/png'
         assets[f'{sub}/{fn}'] = f'data:{mime};base64,' + base64.b64encode(open(f'{d}/{fn}', 'rb').read()).decode()
-t = open(f'{C}/total_template.html', encoding='utf-8').read()
-page = t.replace('__DATA__', json.dumps(B, ensure_ascii=False, separators=(',', ':'))).replace('const D = ', 'const __ASSETS__ = ' + json.dumps(assets) + ';\nconst D = ', 1)
-out = f'{T}/청주_장기미집행_공원_40개소_조성_지도.html'
-open(out, 'w', encoding='utf-8').write('<!doctype html>\n<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n' + page + '\n</html>\n')
+# 발표판: 지도 앱 앞에 주제·목적 → 공원이란 → 이용성 → 에너지저감 → 사업성 페이지를 붙인다 (code/present.py)
+sys.path.insert(0, C)
+import present
+out = present.OUT
+open(out, 'w', encoding='utf-8').write(present.wrap(present.page_of(assets, B)))
 n = sum(1 for p in B['parks'] if p['E'].get('status') == '산정')
 nu = sum(1 for p in B['parks'] if p['U'].get('status') == '산정')
 print(f'total/청주_장기미집행_공원_40개소_조성_지도.html {os.path.getsize(out)//1024} KB · 공원 40 (열저감 산정 {n}, 이용성 산정 {nu}) · 사진·지형 {len(assets)}')
