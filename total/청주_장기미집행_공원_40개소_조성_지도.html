@@ -1065,7 +1065,7 @@ function heatParkLayers(p){
   const mx = Math.max(...D.parks.filter(q=>E(q).status==='산정').map(q=>E(q).dlst_ring_base||0), 0.01);
   const col = v => lerp(B0,B1,Math.min(1,0.35+0.65*Math.sqrt((v||0)/mx)));
   return [cityBgUnder(), parkImg(),
-    ring ? new deck.PolygonLayer({id:'h-ring', data:ring, getPolygon:d=>d, filled:true, stroked:true, getFillColor:[...col(e.dlst_ring_base),165], getLineColor:[...B1,200], lineWidthMinPixels:1.2, pickable:true}) : null,
+    ring ? new deck.PolygonLayer({id:'h-ring', data:ring, getPolygon:d=>d, filled:true, stroked:true, getFillColor:[...col(e.dlst_ring_base),125], getLineColor:[...B1,200], lineWidthMinPixels:1.2, pickable:true}) : null,
     bldLayer(p),
     parkBlack(p, 'h-park')];
 }
