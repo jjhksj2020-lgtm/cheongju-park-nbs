@@ -1,4 +1,4 @@
-"""biz/code/map_template.html(사업성 지도 틀)에 열저감·이용성 화면을 더해 통합 지도 틀 total/code/total_template.html 을 만든다.
+"""biz/code/map_template.html(사업성 지도 틀)에 열저감·이용성·우선순위 화면을 더해 통합 지도 틀 total/code/total_template.html 을 만든다.
 사업성 지도 틀이 바뀌면 다시 실행: python total/code/make_template.py"""
 import os
 C = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(os.path.dirname(C))
@@ -294,6 +294,137 @@ R("  ['biz','heat'].forEach(k=>$('tp-'+k).setAttribute('aria-pressed',k===tp));\
   "  ['biz','heat','use'].forEach(k=>$('tp-'+k).setAttribute('aria-pressed',k===tp));\n  S.colorCity = {biz:'pub',heat:'kind',use:'d1'}[tp]; S.heightCity = {biz:'cost',heat:'cool',use:'new'}[tp];\n  S.colorPark = tp==='biz'?'cost':'use';")
 R("$('tp-biz').onclick=()=>setTopic('biz'); $('tp-heat').onclick=()=>setTopic('heat');", "$('tp-biz').onclick=()=>setTopic('biz'); $('tp-heat').onclick=()=>setTopic('heat'); $('tp-use').onclick=()=>setTopic('use');")
 R("지표온도(기온 아님).</footer>", "지표온도(기온 아님). 이용성: SGIS 2024 100m 격자 인구(국가데이터처)·행안부 연령별 주민등록(2026-10)·청주시 도시공원정보(2025-11)·미조성공원 현황(2026-09)·V-World 주소 검색·환경부 토지피복지도 2025·OSM 하천·2030 청주시 공원녹지기본계획, build_edc.py 산출.</footer>")
+
+# ================= 우선순위 (조성형·보전형 → 조성형 순위, need/edc build_priority·build_hotspot) =================
+R('· <b>이용성</b>: 주변에 누가 살고 지금 공원이 얼마나 모자라나 · 기준일',
+  '· <b>이용성</b>: 주변에 누가 살고 지금 공원이 얼마나 모자라나 · <b>우선순위</b>: 만들 곳(조성형)과 지킬 곳(보전형)을 나누고 조성형 안에서 순서 · 기준일')
+R('      <button id="tp-use" aria-pressed="false">이용성</button>', '      <button id="tp-use" aria-pressed="false">이용성</button>\n      <button id="tp-prio" aria-pressed="false">우선순위</button>')
+R("  park:{color:[", """  cityPrio:{color:[['rank','조성형 순위 (보전형은 회색)'],['kind','조성형 · 보전형'],['hot','주변 열 핫스팟 비율'],['expo','열 노출 변화']], height:[['expo','열 노출 변화 (제곱근 눈금)'],['none','없음']]},
+  park:{color:[""")
+R("S.topic==='use'?OPTS.cityUse:OPTS.city)", "S.topic==='use'?OPTS.cityUse:S.topic==='prio'?OPTS.cityPrio:OPTS.city)")
+R("function cityColor(p){\n", r"""const RP = p => p.R||{};
+const prioOK = p => RP(p).status==='산정';
+const RH = p => RP(p).hot||{};
+const ROK = D.parks.filter(prioOK);
+const RBUILD = ROK.filter(p=>RP(p).kind==='조성형'), RKEEP = ROK.filter(p=>RP(p).kind==='보전형');
+const maxExpo = Math.max(...ROK.map(p=>Math.abs(RP(p).exposure||0)));
+// 조성형 순위 = 열 취약(주변 핫스팟 비율) 등수 + 열 노출 감소 등수 (가중치 없음, 작을수록 먼저, 같으면 열 노출 감소가 큰 쪽)
+const RRANK = (()=>{ const r={}, by=(f)=>[...RBUILD].sort((a,b)=>f(b)-f(a));
+  by(p=>RH(p).hot2_share||0).forEach((p,i)=>(r[p.id]={h:i+1}));
+  by(p=>-(RP(p).exposure||0)).forEach((p,i)=>(r[p.id].e=i+1));
+  [...RBUILD].sort((a,b)=>(r[a.id].h+r[a.id].e)-(r[b.id].h+r[b.id].e)||RP(a).exposure-RP(b).exposure).forEach((p,i)=>(r[p.id].rank=i+1));
+  return r; })();
+const sgn = (v,d=2) => v==null?'—':(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(d);
+const RKCOL = {'조성형':'--own-ind','보전형':'--own-loc'};
+function refs(keys){ const L=(D.R.refs||{}).items||{}; return keys.filter(k=>L[k]).map(k=>`<span class="pill" title="${L[k].cite}">${L[k].short}</span>`).join(' '); }
+function prioColor(p){
+  const r=RP(p); if(!prioOK(p)) return C['--own-unk'];
+  if(S.colorCity==='kind') return C[RKCOL[r.kind]||'--own-unk'];
+  if(S.colorCity==='hot') return seq(RH(p).hot2_share||0);
+  if(S.colorCity==='expo') return seq(Math.sqrt(Math.abs(r.exposure||0)/maxExpo));
+  return r.kind==='조성형' ? seq(1-(RRANK[p.id].rank-1)/Math.max(1,RBUILD.length-1)) : C['--own-unk'];
+}
+function prioTip(p){ const r=RP(p); if(!prioOK(p)) return '우선순위 미산정';
+  return r.kind==='조성형' ? `조성형 ${RRANK[p.id].rank}위 / ${RBUILD.length} · 주변 핫스팟 ${pct(RH(p).hot2_share)} · 열 노출 감소 ${Math.round(-r.exposure)} 인·°C`
+    : `보전형 · 개발되면 바로 옆 ${sgn(r.t_edge)}°C · 지키면 피하는 열 노출 ${Math.round(r.exposure)} 인·°C`; }
+function prioLegend(){
+  const ramp=(t,a,b)=>`<div class="t">${t}</div><div class="ramp" style="background:linear-gradient(90deg,var(--seq0),var(--seq1),var(--seq2),var(--seq3))"></div><div class="ramp-l"><span>${a}</span><span>${b}</span></div>`;
+  let h;
+  if(S.colorCity==='kind') h=`<div class="t">공원 유형</div><div class="row"><span class="k">${sw('--own-ind')}조성형 ${RBUILD.length}곳 — 만들면 시원해질 곳</span><span class="k">${sw('--own-loc')}보전형 ${RKEEP.length}곳 — 이미 숲, 지켜야 할 곳</span></div>`;
+  else if(S.colorCity==='hot') h=ramp('주변 열 핫스팟 비율 (공원 경계+150m 중 시가지 상위 20%)','0%',pct(Math.max(...ROK.map(p=>RH(p).hot2_share||0))));
+  else if(S.colorCity==='expo') h=ramp('열 노출 변화 크기 (범위 안 주민 × 온도 변화, 제곱근 눈금)','0',Math.round(maxExpo)+' 인·°C');
+  else h=ramp(`조성형 순위 (진할수록 먼저) · 보전형은 회색`,`${RBUILD.length}위`,'1위');
+  h+=`<div class="meta" style="margin-top:4px">${sw('--own-unk')} 미산정: ${D.parks.filter(p=>!prioOK(p)).map(p=>p.name).join('·')}</div>`;
+  h+= S.d3&&S.heightCity!=='none' ? `<div class="meta" style="margin-top:5px">기둥 높이 = 열 노출 변화 크기 (제곱근, 최고 ${Math.round(maxExpo)} 인·°C)</div>` : `<div class="meta" style="margin-top:5px">원 크기 = 공원 면적</div>`;
+  return h;
+}
+function prioSummary(){
+  const sum=a=>a.reduce((s,p)=>s+(RP(p).exposure||0),0);
+  const top=[...RBUILD].sort((a,b)=>RRANK[a.id].rank-RRANK[b.id].rank).slice(0,5);
+  const keepTop=[...RKEEP].sort((a,b)=>RP(b).exposure-RP(a).exposure).slice(0,4);
+  const k=D.R.coef.keep;
+  return `<h2>40개소 요약 · 우선순위</h2><div class="meta">질문: 어디를 만들고(조성형) 어디를 지키나(보전형), 조성형은 어디부터 만드나</div>
+    <dl class="kv"><dt>조성형</dt><dd>${RBUILD.length}곳 · 열 노출 ${sgn(sum(RBUILD),0)} 인·°C</dd>
+    <dt>보전형</dt><dd>${RKEEP.length}곳 · 개발되면 ${sgn(sum(RKEEP),0)} 인·°C</dd>
+    <dt>조성형 1~5위</dt><dd>${top.map(p=>p.name).join(' · ')}</dd></dl>
+    <div class="note">조성형 순위 = 주변 열 핫스팟 비율 등수 + 열 노출 감소 등수(순위합·Borda, 가중치 없음 ${refs(['oecd2008'])}). 보전형은 개발되면 개발된 자리 ${sgn(k.in)}°C, 바로 옆 ${sgn(k.bands[0][1])}°C 더워져(조성 효과의 약 5배), 지키는 것만으로 효과가 큽니다. 지켜서 피하는 열 노출이 큰 곳: ${keepTop.map(p=>`${p.name} ${sgn(RP(p).exposure,0)}`).join(', ')}. 개발 압력 자료가 없어 보전형 순위는 매기지 않았습니다.</div>
+    <details class="ev"><summary>생활권 순위 (배경)</summary><table>${D.R.zones.map(z=>`<tr><th>${z.zone}</th><td>수요 ${z.D} · 환경 ${z.E??'—'} · 종합 ${z.P??'—'}</td></tr>`).join('')}</table></details>
+    ${prioRefs()}`;
+}
+function prioRefs(){ const L=(D.R.refs||{}).items||{}; const ks=Object.keys(L);
+  return ks.length?`<details class="ev"><summary>참고문헌 (${(D.R.refs||{}).style||''})</summary><ol style="margin:6px 0 0 16px;padding:0;font-size:11.5px;line-height:1.55">${ks.map(k=>`<li>${L[k].cite}</li>`).join('')}</ol></details>`:''; }
+function prioCard(p){
+  const r=RP(p), h=RH(p);
+  const head=`<h2>${p.name} ${prioOK(p)?`<span class="pill" style="color:var(${RKCOL[r.kind]})">${r.kind}</span>`:'<span class="pill warn">미산정</span>'}</h2><div class="meta">${p.loc} · ${p.type} · ${m2(p.area)}</div>`;
+  if(!prioOK(p)) return head+`<div class="note">${r.note||'공원 경계가 없어 산정하지 못함.'}</div>`;
+  const build=r.kind==='조성형';
+  const story = build
+    ? `공원으로 만들면 공원 안 지표온도 ${r.t_in==null?'(0.4ha 미만, 위성으로 못 봄)':'약 <b>'+sgn(r.t_in)+'°C</b>'}, 경계 밖 0~100m 약 <b>${sgn(r.t_edge)}°C</b>. 효과가 닿는 ${r.range_m}m 안 <b>${Math.round(r.pop_in_range).toLocaleString('ko-KR')}명</b>(아동·고령 ${pct(r.vulnerable)}) → 열 노출 <b>${Math.round(-r.exposure)} 인·°C</b> 감소.`
+    : `개발되면 개발된 자리 약 <b>${sgn(r.t_in)}°C</b>, 바로 옆 0~100m 약 <b>${sgn(r.t_edge)}°C</b> 더워집니다. 공원으로 지키면 ${r.range_m}m 안 <b>${Math.round(r.pop_in_range).toLocaleString('ko-KR')}명</b>이 이 상승을 피합니다(${sgn(r.exposure,0)} 인·°C).`;
+  return head+`<div class="note" style="margin-top:6px">${story}</div><dl class="kv">
+    ${build?`<dt>조성형 순위</dt><dd><b>${RRANK[p.id].rank}위</b> / ${RBUILD.length} (핫스팟 ${RRANK[p.id].h}등 + 열 노출 ${RRANK[p.id].e}등)</dd>`:''}
+    <dt>주변 열 핫스팟 비율</dt><dd>${pct(h.hot2_share)}</dd>
+    <dt>여름 지표온도 · NDVI (경계+150m)</dt><dd>${h.lst==null?'—':h.lst.toFixed(1)+'°C · '+h.ndvi.toFixed(2)}</dd>
+    <dt>${build?'공원 안 (조성 시)':'개발된 자리 (개발 시)'}</dt><dd>${r.t_in==null?'—':sgn(r.t_in)+'°C'}</dd>
+    ${r.bands.map(b=>`<dt>경계 밖 ${b.from}~${b.to}m</dt><dd>${sgn(b.dt)}°C · ${Math.round(b.pop).toLocaleString('ko-KR')}명</dd>`).join('')}
+    <dt>아동·고령 비율</dt><dd>${pct(r.vulnerable)}</dd>
+    <dt>열 노출 변화</dt><dd>${sgn(r.exposure,0)} 인·°C</dd>
+    <dt>서비스권 밖 (참고)</dt><dd>${pct(h.unserved)}</dd>
+    <dt>토지피복 (공원 안)</dt><dd>${Object.entries(r.lc).slice(0,3).map(([k,v])=>k+' '+Math.round(v*100)+'%').join(' · ')}</dd></dl>
+    <details class="ev"><summary>숫자의 근거</summary><table>
+    <tr><th>온도 변화</th><td>${r.basis}. 본 연구 분석(전국 사례 Landsat 8·9 여름 지표온도 전후 비교) ${refs(['landsat','gee','parklist','dw'])}</td></tr>
+    <tr><th>효과 범위</th><td>면적 구간별 ${r.range_m}m (본 연구 실측 프로필) ${refs(['suh2020','park2016'])}</td></tr>
+    <tr><th>핫스팟</th><td>여름 NDVI·지표온도 5년, 시가지 상위 20% 면적 비율 ${refs(['landsat','dw','gee'])}</td></tr>
+    <tr><th>주민</th><td>SGIS 100m 격자 인구, 행정동 연령별 주민등록 ${refs(['sgis','mois'])}</td></tr>
+    <tr><th>토지피복</th><td>${refs(['egis'])}</td></tr>
+    </table></details>`;
+}
+function prioList(){
+  const key=p=>!prioOK(p)?3e3:RP(p).kind==='조성형'?RRANK[p.id].rank:1e3-RP(p).exposure;
+  const ps=[...D.parks].sort((a,b)=>key(a)-key(b));
+  $('list').innerHTML=ps.map(p=>{const r=RP(p); return `<button role="listitem" data-id="${p.id}" aria-current="${S.sel===p.id}"><span class="n">${prioOK(p)&&r.kind==='조성형'?RRANK[p.id].rank:p.id}</span>
+    <span style="min-width:0"><span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name} <span class="meta">${prioOK(p)?r.kind:'미산정'}</span></span>
+    <span class="mini" title="주변 핫스팟 ${pct(RH(p).hot2_share)}"><i style="width:${(RH(p).hot2_share||0)*100}%;background:var(--seq2)"></i></span></span>
+    <span class="v">${prioOK(p)?sgn(r.exposure,0):'—'}</span></button>`;}).join('');
+  $('list').querySelectorAll('button').forEach(b=>b.onclick=()=>select(+b.dataset.id, S.view==='park'));
+}
+function prioChart(){
+  const ps=[...RBUILD].sort((a,b)=>RRANK[a.id].rank-RRANK[b.id].rank);
+  const mx=Math.max(...ps.map(p=>-RP(p).exposure));
+  $('priorows').innerHTML=ps.map(p=>{const r=RP(p),h=RH(p); return `<div class="crow"><span class="nm" title="${p.name}">${RRANK[p.id].rank}. ${p.name}</span>
+    <span class="cbar" style="position:relative;background:var(--soft)" title="주변 핫스팟 ${pct(h.hot2_share)} · 열 노출 감소 ${Math.round(-r.exposure)} 인·°C"><span style="position:absolute;left:0;top:0;width:${(h.hot2_share||0)*100}%;height:50%;background:var(--seq2)"></span><span style="position:absolute;left:0;top:50%;width:${Math.sqrt(-r.exposure/mx)*100}%;height:50%;background:var(--own-ind)"></span></span>
+    <span class="num">${pct(h.hot2_share)}</span><span class="num pc">${Math.round(-r.exposure)}</span></div>`;}).join('');
+}
+function cityColor(p){
+""")
+R("  if(S.topic==='use') return useColor(p);", "  if(S.topic==='use') return useColor(p);\n  if(S.topic==='prio') return prioColor(p);")
+R("function cityHeight(p){\n", """function cityHeight(p){
+  if(S.topic==='prio'){ if(!prioOK(p)||S.heightCity!=='expo') return 0; return Math.sqrt(Math.abs(RP(p).exposure||0)/maxExpo)*6000; }
+""")
+R("<br>${S.topic==='use'?useTip(p):", "<br>${S.topic==='prio'?prioTip(p):S.topic==='use'?useTip(p):")
+R("  if(S.view==='city' && S.topic==='use'){ h=useLegend(); }", "  if(S.view==='city' && S.topic==='prio'){ h=prioLegend(); }\n  else if(S.view==='city' && S.topic==='use'){ h=useLegend(); }")
+R("""<button data-tp="use" aria-pressed="${S.topic==='use'}">이용성 (주민·생활권)</button>""",
+  """<button data-tp="use" aria-pressed="${S.topic==='use'}">이용성 (주민·생활권)</button><button data-tp="prio" aria-pressed="${S.topic==='prio'}">우선순위</button>""")
+R("  if(S.topic==='use'){ $('card').innerHTML=topicTabs()+(p?useCard(p):useSummary()); bindTabs(); return; }",
+  "  if(S.topic==='prio'){ $('card').innerHTML=topicTabs()+(p?prioCard(p):prioSummary()); bindTabs(); return; }\n  if(S.topic==='use'){ $('card').innerHTML=topicTabs()+(p?useCard(p):useSummary()); bindTabs(); return; }")
+R("function list(){\n  if(S.topic==='use') return useList();\n", "function list(){\n  if(S.topic==='prio') return prioList();\n  if(S.topic==='use') return useList();\n")
+R("""    <div id="userows"></div>
+    </div>
+""", """    <div id="userows"></div>
+    </div>
+    <div id="priochart" hidden>
+    <h2>조성형 순위 — 주변 열 핫스팟 비율과 열 노출 감소</h2>
+    <div class="meta" style="margin-bottom:10px">위 막대 = 주변 핫스팟 비율(열 취약), 아래 막대 = 열 노출 감소(범위 안 주민 × 온도 저감, 제곱근 눈금). 순위 = 두 기준 등수의 합.</div>
+    <div class="chead"><span>공원</span><span>핫스팟 · 열 노출</span><span style="text-align:right">핫스팟</span><span class="pc" style="text-align:right">인·°C</span></div>
+    <div id="priorows"></div>
+    </div>
+""")
+R("$('usechart').hidden=S.topic!=='use';\n  if(S.topic==='use'){ useChart(); return; }",
+  "$('usechart').hidden=S.topic!=='use'; $('priochart').hidden=S.topic!=='prio';\n  if(S.topic==='use'){ useChart(); return; }\n  if(S.topic==='prio'){ prioChart(); return; }")
+R("  ['biz','heat','use'].forEach(k=>$('tp-'+k).setAttribute('aria-pressed',k===tp));\n  S.colorCity = {biz:'pub',heat:'kind',use:'d1'}[tp]; S.heightCity = {biz:'cost',heat:'cool',use:'new'}[tp];",
+  "  ['biz','heat','use','prio'].forEach(k=>$('tp-'+k).setAttribute('aria-pressed',k===tp));\n  S.colorCity = {biz:'pub',heat:'kind',use:'d1',prio:'rank'}[tp]; S.heightCity = {biz:'cost',heat:'cool',use:'new',prio:'expo'}[tp];")
+R("$('tp-use').onclick=()=>setTopic('use');", "$('tp-use').onclick=()=>setTopic('use'); $('tp-prio').onclick=()=>setTopic('prio');")
+R("build_edc.py 산출.</footer>", "build_edc.py 산출. 우선순위: Landsat 8·9 C2 L2 지표온도(USGS)·Dynamic World(Google)·환경부 토지피복지도 2025·SGIS 100m 격자 인구, Google Earth Engine 처리, build_priority.py·build_hotspot.py 산출 — 지표온도(기온 아님), 참고문헌은 카드 요약의 '참고문헌'. 발표판 항공사진은 확대하면 공원 주변 V-World 고해상도 사진을 겹쳐 보여 줌.</footer>")
 
 open(f'{C}/total_template.html', 'w', encoding='utf-8').write(t)
 print('total/code/total_template.html', len(t))

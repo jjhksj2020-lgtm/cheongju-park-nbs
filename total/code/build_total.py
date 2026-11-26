@@ -1,4 +1,4 @@
-"""사업성 + 열저감 + 이용성 통합 지도 → total/청주_장기미집행_공원_40개소_조성_지도.html (한 파일, 더블클릭으로 열림)
+"""사업성 + 열저감 + 이용성 + 우선순위 통합 지도 → total/청주_장기미집행_공원_40개소_조성_지도.html (한 파일, 더블클릭으로 열림)
 
 각 파트의 계산(사업성 biz/, 열저감 energy/, 이용성 need/edc/)을 먼저 돌리고(읽기만, 파트 폴더는 고치지 않음) 결과를 한 지도에 합친다.
   python total/code/build_total.py            # 세 파트 계산 → 지도 데이터 → 통합 지도
@@ -7,7 +7,7 @@
 import base64, json, os, subprocess, sys
 C = os.path.dirname(os.path.abspath(__file__)); T = os.path.dirname(C); ROOT = os.path.dirname(T)
 if '--no-run' not in sys.argv:
-    for s in ['biz/code/biz_engine.py', 'biz/code/build_mapdata.py', 'energy/code/energy_engine.py', 'energy/code/build_mapdata.py', 'need/edc/code/build_edc.py']:
+    for s in ['biz/code/biz_engine.py', 'biz/code/build_mapdata.py', 'energy/code/energy_engine.py', 'energy/code/build_mapdata.py', 'need/edc/code/build_edc.py', 'need/edc/code/build_priority.py', 'need/edc/code/build_hotspot.py']:
         r = subprocess.run([sys.executable, f'{ROOT}/{s}'], capture_output=True, text=True)
         if r.returncode: sys.exit(f'{s} 실패:\n{r.stderr}')
         print('실행', s)
@@ -34,7 +34,22 @@ for s in UM['sites']:
 for p in B['parks']:
     p['U'] = uv.get(str(p['id']), {'status': '미산정'})
 B['U'] = {k: UM[k] for k in ('asof', 'pop_source', 'landcover', 'existing_parks', 'zones', 'params', 'buffer_m')}
-B['asof'] = f"사업성 {B['asof']} · 열저감 {EN['asof']} · 이용성 {UM['asof']}"
+# 우선순위(조성형·보전형, 열 핫스팟, 열 노출 변화) 공원 값을 R 로 붙인다 — need/out/priority_map.json + hotspot_map.json + need/edc/code/references.yaml
+import yaml
+PM = json.load(open(f'{ROOT}/need/out/priority_map.json', encoding='utf-8'))
+HP = f'{ROOT}/need/out/hotspot_map.json'
+HM = json.load(open(HP, encoding='utf-8')) if os.path.exists(HP) else {'meta': {'gee': False}, 'zones': [], 'sites': {}, 'sens': []}
+RF = f'{ROOT}/need/edc/code/references.yaml'
+rv = {}
+for s in PM['sites']:
+    sid = s['site_id']
+    rv[sid] = {**{k: v for k, v in s.items() if k not in ('site_id', 'name', 'type')}, **{'hot': HM['sites'].get(sid, {})}}
+for p in B['parks']:
+    p['R'] = rv.get(str(p['id']), {'status': '미산정'})
+B['R'] = {'asof': PM['asof'], 'coef': PM['coef'], 'hot': HM['meta'], 'sens': HM.get('sens', []),
+          'zones': [{k: v for k, v in z.items() if k != 'geo'} for z in HM['zones']],
+          'refs': yaml.safe_load(open(RF, encoding='utf-8')) if os.path.exists(RF) else {}}
+B['asof'] = f"사업성 {B['asof']} · 열저감 {EN['asof']} · 이용성 {UM['asof']} · 우선순위 {PM['asof']}"
 assets = {}
 for sub in ('img', 'dem'):
     d = f'{ROOT}/biz/data/map/{sub}'
@@ -47,6 +62,13 @@ sys.path.insert(0, C)
 import present
 out = present.OUT
 open(out, 'w', encoding='utf-8').write(present.wrap(present.page_of(assets, B)))
+# V-World 실시간 배경용 키 파일. 키는 .env에만 있고, 이 파일은 git에 올리지 않는다(.gitignore). HTML 옆에 두면 발표판이 V-World 타일을 쓴다
+envf = f'{ROOT}/.env'
+vk = [l.split('=', 1)[1].strip() for l in open(envf, encoding='utf-8') if l.startswith('VWORLD_KEY=')] if os.path.exists(envf) else []
+if vk:
+    open(f'{T}/vworld_key.js', 'w', encoding='utf-8').write(f'window.VWORLD_KEY = {json.dumps(vk[0])};\n')
+    print('V-World 키 파일 total/vworld_key.js (git 제외)')
 n = sum(1 for p in B['parks'] if p['E'].get('status') == '산정')
 nu = sum(1 for p in B['parks'] if p['U'].get('status') == '산정')
-print(f'total/청주_장기미집행_공원_40개소_조성_지도.html {os.path.getsize(out)//1024} KB · 공원 40 (열저감 산정 {n}, 이용성 산정 {nu}) · 사진·지형 {len(assets)}')
+nr = sum(1 for p in B['parks'] if p['R'].get('status') == '산정')
+print(f'total/청주_장기미집행_공원_40개소_조성_지도.html {os.path.getsize(out)//1024} KB · 공원 40 (열저감 산정 {n}, 이용성 산정 {nu}, 우선순위 산정 {nr}) · 사진·지형 {len(assets)}')

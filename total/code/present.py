@@ -1,4 +1,4 @@
-"""발표용 껍데기를 통합 지도에 씌운다 — 주제·목적 → 공원이란 → 이용성 → 에너지저감 → 사업성.
+"""발표용 껍데기를 통합 지도에 씌운다 — 주제·목적 → 공원이란 → 이용성 → 에너지저감 → 사업성 → 종합 우선순위.
 지도 앱(total_template.html)은 그대로 두고, 앞에 설명 페이지(present_shell.html)와 페이지 넘기기(present_shell.js)를 붙이고,
 지도 보정(present_map.js: 청주시 경계 모양 배경, 3D에서 공원 모양이 솟는 블록, 시 경계에 맞춘 첫 화면)을 덧붙인다.
 
@@ -40,7 +40,8 @@ def wrap(page):
     mapjs = open(f'{C}/present_map.js', encoding='utf-8').read()   # 청주시 모양 배경 · 3D 공원 블록 · 처음 화면 맞춤
     page = page.replace('<div class="wrap">', '<div class="wrap" id="app">', 1)
     page = page.replace('<title>청주 장기미집행 공원 40개소 조성 지도</title>', f'<title>{TITLE}</title>', 1)
-    body = shell + page + '\n<script>\nconst PZU = ' + json.dumps(edc_geo(), ensure_ascii=False, separators=(',', ':')) + ';\n' + mapjs + '</script>\n<script>\nconst PZ = ' + json.dumps(pz(), ensure_ascii=False) + ';\n' + js + '</script>\n'
+    # V-World 키는 HTML에 넣지 않고 옆 파일(vworld_key.js, git 제외)에서 읽는다 — 없으면 404로 넘어가고 파일 안 사진을 씀
+    body = '<script src="vworld_key.js"></script>\n' + shell + page + '\n<script>\nconst PZU = ' + json.dumps(edc_geo(), ensure_ascii=False, separators=(',', ':')) + ';\n' + mapjs + '</script>\n<script>\nconst PZ = ' + json.dumps(pz(), ensure_ascii=False) + ';\n' + js + '</script>\n'
     return ('<!doctype html>\n<html lang="ko" data-theme="light"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">\n' + body + '\n</html>\n')
 

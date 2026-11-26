@@ -7,3 +7,6 @@ data/raw/*.zip
 .DS_Store
 .env
 energy/out/
+
+# V-World 키 파일(build_total.py가 .env에서 만듦) — 올리지 않음
+total/vworld_key.js

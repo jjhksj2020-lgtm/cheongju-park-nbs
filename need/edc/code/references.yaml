@@ -1,0 +1,75 @@
+# 우선순위 대시보드 참고문헌 — 국토계획(대한국토·도시계획학회지) 참고문헌 양식
+#   배열: 국내 → 영문 → 인터넷 자료. 학술지 "저자, 연도. "제목", 「학술지」, 권(호): 쪽." + doi
+#   인터넷·데이터·법령은 인터넷 자료 양식 준용: "기관, 작성일(또는 읽은 날), "제목", URL"
+# 2026-11-26 원문·공식 메타데이터 확인. short = 본문 인용 표기, cite = 참고문헌 목록 표기, verified = 확인 수준
+# 팀 내부 분석(전국 신규 공원 72곳 조성 전후, 도시 숲 일부 개발 561곳 전후, 40곳 주변 프로필)은 미발표라 목록에 넣지 않고 본문에 "본 연구 분석"으로 적는다.
+style: 국토계획 참고문헌 양식
+items:
+  kang2018:
+    short: '강완모 외, 2018'
+    cite: '강완모·송영근·성현찬·이동근, 2018. "생태네트워크와 접근성 분석에 의한 서울시 미집행 도시공원의 보전 우선순위 평가", 「한국환경복원기술학회지」, 21(2): 53-64. doi: 10.13087/kosert.2018.21.2.53.'
+    verified: '원문'
+  park2016:
+    short: '박종화·조기혁, 2016'
+    cite: '박종화·조기혁, 2016. "공원 크기에 따른 공원의 온도저감 효과 분석 - 일산 신도시를 대상으로", 「국토계획」, 51(5): 247-261. doi: 10.17208/jkpa.2016.10.51.5.247.'
+    verified: '원문'
+  suh2020:
+    short: '서정은·오규식, 2020'
+    cite: '서정은·오규식, 2020. "도시공원 및 주변환경의 특성이 도시공간의 온도저감에 미치는 영향", 「한국환경복원기술학회지」, 23(5): 1-14. doi: 10.13087/kosert.2020.23.5.1.'
+    verified: '원문'
+  cj2030:
+    short: '청주시, 2020'
+    cite: '청주시, 2020. 「2030 청주시 공원녹지기본계획」, 청주. (재인용 - 청주시, 「2040 청주도시기본계획」, p.421, <표 11-2> 청주시 생활권별 공원현황)'
+    verified: '재인용 쪽 확인(원본 미확인)'
+  dw:
+    short: 'Brown et al., 2022'
+    cite: 'Brown, C.F., Brumby, S.P., Guzder-Williams, B., Birch, T., Hyde, S.B., Mazzariello, J., Czerwinski, W., Pasquarella, V.J., Haertel, R., Ilyushchenko, S., Schwehr, K., Weisse, M., Stolle, F., Hanson, C., Guinan, O., Moore, R., and Tait, A.M., 2022. "Dynamic World, Near real-time global 10 m land use land cover mapping", Scientific Data, 9: 251. doi: 10.1038/s41597-022-01307-4.'
+    verified: '서지'
+  gee:
+    short: 'Gorelick et al., 2017'
+    cite: 'Gorelick, N., Hancher, M., Dixon, M., Ilyushchenko, S., Thau, D., and Moore, R., 2017. "Google Earth Engine - Planetary-scale geospatial analysis for everyone", Remote Sensing of Environment, 202: 18-27. doi: 10.1016/j.rse.2017.06.031.'
+    verified: '서지'
+  norton2015:
+    short: 'Norton et al., 2015'
+    cite: 'Norton, B.A., Coutts, A.M., Livesley, S.J., Harris, R.J., Hunter, A.M., and Williams, N.S.G., 2015. "Planning for cooler cities - A framework to prioritise green infrastructure to mitigate high temperatures in urban landscapes", Landscape and Urban Planning, 134: 127-138. doi: 10.1016/j.landurbplan.2014.10.018.'
+    verified: '원문'
+  oecd2008:
+    short: 'OECD·JRC, 2008'
+    cite: 'OECD and JRC(Nardo, M., Saisana, M., Saltelli, A., Tarantola, S., Hoffman, A., and Giovannini, E.), 2008. Handbook on Constructing Composite Indicators - Methodology and User Guide, Paris - OECD Publishing. (순위 정규화 p.27, 순위합(Borda) p.102, 보상성 p.110, 민감도 분석 pp.117-118)'
+    verified: '원문'
+  landsat:
+    short: 'USGS EROS, 2020'
+    cite: 'Earth Resources Observation and Science (EROS) Center, 2020. Landsat 8-9 Operational Land Imager / Thermal Infrared Sensor Level-2, Collection 2 [Data set], U.S. Geological Survey. doi: 10.5066/P9OGBGM6. (지표온도 = DN × 0.00341802 + 149.0 K, USGS, 2024. Landsat 8-9 Collection 2 Level 2 Science Product Guide, LSDS-1619 v6)'
+    verified: '원문'
+  wu2025:
+    short: 'Wu et al., 2025'
+    cite: 'Wu, H., Zeng, Q., Chen, Q., and Dewancker, B., 2025. "Impact of newly constructed parks on urban thermal environment - A comparative analysis of 20 parks before-and-after construction", Journal of Environmental Management, 373: 123548. doi: 10.1016/j.jenvman.2024.123548.'
+    verified: '서지'
+  worldcover:
+    short: 'Zanaga et al., 2022'
+    cite: 'Zanaga, D., Van De Kerchove, R., Daems, D., De Keersmaecker, W., Brockmann, C., Kirches, G., Wevers, J., Cartus, O., Santoro, M., Fritz, S., Lesiv, M., Herold, M., Tsendbazar, N.-E., Xu, P., Ramoino, F., and Arino, O., 2022. ESA WorldCover 10 m 2021 v200 [Data set], Zenodo. doi: 10.5281/zenodo.7254221.'
+    verified: '서지'
+  ef2023:
+    short: '기후에너지환경부, 2025'
+    cite: '기후에너지환경부, 2025.12.18. "전력배출계수 갱신 주기 3년에서 1년으로 단축, 국제사회 기후공시 등 기업의 탄소규제 대응 강화"(보도자료, 2023년 전력배출계수 0.4173 tCO2eq/MWh), https://www.korea.kr/briefing/pressReleaseView.do?newsId=156735726'
+    verified: '보도자료·기사(첨부 원문 미확인)'
+  egis:
+    short: '기후에너지환경부, 토지피복지도'
+    cite: '기후에너지환경부, 2026.11.26. 읽음, "토지피복지도(중분류, 2025)", 환경공간정보서비스, https://egis.mcee.go.kr'
+    verified: '사이트'
+  law:
+    short: '「도시공원법 시행규칙」'
+    cite: '국가법령정보센터, 2026.11.26. 읽음, "도시공원 및 녹지 등에 관한 법률 시행규칙(국토교통부령 제1615호, 2026.8.27. 시행) 제4조(1인당 6㎡)·제6조 관련 [별표 3](유치거리)", https://www.law.go.kr/법령/도시공원및녹지등에관한법률시행규칙'
+    verified: '시행일 확인(조문은 사본으로 확인)'
+  parklist:
+    short: '공공데이터포털, 전국도시공원정보'
+    cite: '공공데이터포털, 2026.11.26. 읽음, "전국도시공원정보표준데이터", https://www.data.go.kr/data/15012890/standard.do'
+    verified: '사이트'
+  sgis:
+    short: '국가데이터처, SGIS'
+    cite: '국가데이터처, 2026.11.18. 자료제공, "SGIS 격자통계(인구, 100m, 2024)", 통계지리정보서비스, https://sgis.mods.go.kr'
+    verified: '사이트'
+  mois:
+    short: '행정안전부, 주민등록 인구통계'
+    cite: '행정안전부, 2026.11.26. 읽음, "주민등록 인구통계 - 행정동별 연령별 인구현황(2026.10)", https://jumin.mois.go.kr'
+    verified: '사이트'

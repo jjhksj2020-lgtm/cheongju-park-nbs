@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>공원 우선순위 시험판</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f6f4; --surface: #fcfcfb; --surface-2: #f0efec; --border: #e2e1dc;
+  --text: #0b0b0b; --text-2: #52514e; --muted: #85837d; --accent: #1c5cab;
+  --build: #d95926; --keep: #0f7a3a; --na: #a3a29b;
+  --cool1: #cde2fb; --cool2: #86b6ef; --cool3: #3987e5; --cool4: #1c5cab;
+  --warm1: #fbd9c9; --warm2: #f2a07c; --warm3: #e0622f; --warm4: #a8401a;
+  --s1: #cde2fb; --s2: #86b6ef; --s3: #3987e5; --s4: #1c5cab; --s5: #0d366b;
+  --lc-시가지: #8f8d85; --lc-농업: #e0b23a; --lc-산림: #2f8f3a; --lc-초지: #9ccc65; --lc-습지: #4fb0a5; --lc-나지: #c98a5a; --lc-수역: #3987e5;
+  --tag-real: #0f7a3a; --tag-sub: #8a5a00; --tag-asm: #6b4fb0; --tag-na: #85837d; --sel: #e34948;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121211; --surface: #1a1a19; --surface-2: #232321; --border: #33332f;
+    --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8d85; --accent: #6da7ec;
+    --build: #e87a4a; --keep: #3fb26a; --na: #6e6d67;
+    --cool1: #184f95; --cool2: #256abf; --cool3: #3987e5; --cool4: #86b6ef;
+    --warm1: #5a2410; --warm2: #93401c; --warm3: #d95926; --warm4: #f2a07c;
+    --s1: #184f95; --s2: #256abf; --s3: #3987e5; --s4: #86b6ef; --s5: #cde2fb;
+    --tag-real: #5fc98a; --tag-sub: #e0a93a; --tag-asm: #b4a6f0; --sel: #e66767;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121211; --surface: #1a1a19; --surface-2: #232321; --border: #33332f;
+  --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8d85; --accent: #6da7ec;
+  --build: #e87a4a; --keep: #3fb26a; --na: #6e6d67;
+  --cool1: #184f95; --cool2: #256abf; --cool3: #3987e5; --cool4: #86b6ef;
+  --warm1: #5a2410; --warm2: #93401c; --warm3: #d95926; --warm4: #f2a07c;
+  --s1: #184f95; --s2: #256abf; --s3: #3987e5; --s4: #86b6ef; --s5: #cde2fb;
+  --tag-real: #5fc98a; --tag-sub: #e0a93a; --tag-asm: #b4a6f0; --sel: #e66767;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 "Pretendard", "Noto Sans KR", system-ui, sans-serif; }
+header { padding: 16px 20px 0; border-bottom: 1px solid var(--border); background: var(--surface); }
+h1 { margin: 0; font-size: 19px; font-weight: 700; }
+header p { margin: 4px 0 10px; color: var(--text-2); font-size: 13px; }
+.chain { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12px; color: var(--text-2); margin-bottom: 12px; }
+.chain span.n { padding: 2px 8px; border-radius: 999px; background: var(--surface-2); }
+.chain span.n.todo { border: 1px dashed var(--muted); background: none; color: var(--muted); }
+.tabs { display: flex; gap: 2px; overflow-x: auto; }
+.tabs button { font: inherit; font-size: 14px; padding: 9px 14px; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--text-2); cursor: pointer; white-space: nowrap; }
+.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 700; }
+.wrap { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; padding: 16px 20px; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+#map { height: 640px; border-radius: 10px; }
+.intro { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-2); }
+.intro b { color: var(--text); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; font-size: 12px; align-items: center; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; vertical-align: -2px; margin-right: 4px; }
+.legend label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.sum { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.sum div { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
+.sum .big { font-size: 18px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+#card { padding: 14px 16px; }
+#card h2 { margin: 0; font-size: 17px; }
+#card .sub { color: var(--text-2); font-size: 12px; margin: 2px 0 10px; }
+.story { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; font-size: 13px; line-height: 1.65; margin-bottom: 12px; }
+.sec { margin: 14px 0 6px; font-size: 12px; font-weight: 700; color: var(--text-2); display: flex; gap: 6px; align-items: center; }
+.sec.on { color: var(--accent); }
+.kv { display: grid; grid-template-columns: auto 1fr auto; gap: 5px 10px; align-items: baseline; font-size: 13px; }
+.kv .k { color: var(--text-2); }
+.kv .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.tag { font-size: 10px; padding: 1px 6px; border-radius: 4px; border: 1px solid currentColor; white-space: nowrap; }
+.tag.실자료 { color: var(--tag-real); } .tag.대체자료 { color: var(--tag-sub); } .tag.가정 { color: var(--tag-asm); } .tag.미산정 { color: var(--tag-na); }
+.pill { font-size: 11px; padding: 1px 8px; border-radius: 999px; color: #fff; font-weight: 600; }
+.lcbar { display: flex; height: 12px; border-radius: 3px; overflow: hidden; gap: 2px; margin: 4px 0; }
+.lcleg { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 11px; color: var(--text-2); }
+.note { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+.empty { color: var(--muted); font-size: 13px; padding: 24px 0; text-align: center; }
+.tablewrap { margin: 0 20px 16px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+th:nth-child(-n+3), td:nth-child(-n+3) { text-align: left; }
+th { position: sticky; top: 0; background: var(--surface-2); color: var(--text-2); font-weight: 600; }
+tbody tr { cursor: pointer; } tbody tr:hover { background: var(--surface-2); } tbody tr.sel { background: color-mix(in srgb, var(--sel) 14%, transparent); }
+.bar { display: inline-block; height: 6px; border-radius: 0 3px 3px 0; vertical-align: middle; margin-right: 6px; }
+.evid { margin: 0 20px 16px; padding: 14px 16px; }
+.evid h3 { margin: 0 0 8px; font-size: 15px; }
+.evid table td, .evid table th { white-space: normal; text-align: left; }
+footer { padding: 0 20px 24px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.leaflet-container { background: var(--surface-2); font: inherit; }
+@media (max-width: 900px) {
+  .wrap { grid-template-columns: 1fr; padding: 12px 16px; }
+  #map { height: 420px; }
+  .tablewrap, .evid { margin-left: 16px; margin-right: 16px; }
+  header, footer { padding-left: 16px; padding-right: 16px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>청주 장기미집행 공원 40개소 · 우선순위 시험판</h1>
+  <p>40곳을 먼저 <b>조성형</b>(만들면 시원해질 곳)과 <b>보전형</b>(이미 숲이라 지켜야 할 곳)으로 나누고, 조성형 안에서 어디부터 만들지 정합니다. 공원을 누르면 그 공원의 근거가 나옵니다.</p>
+  <div class="chain" aria-label="논리 흐름">
+    <span class="n">① 현황·유형 (조성형 / 보전형)</span>→<span class="n">② 조성형: 열 핫스팟 → 온도 저감·범위 → 주민 → 열 노출 감소</span>→<span class="n todo">냉방 전력(kWh)</span>→<span class="n todo">탄소(tCO₂)</span>
+  </div>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+</header>
+
+<div class="wrap">
+  <div class="panel"><div id="map" role="application" aria-label="공원 지도"></div></div>
+  <aside class="panel">
+    <div class="intro" id="intro"></div>
+    <div id="card"><div class="empty">지도나 표에서 공원을 고르세요.</div></div>
+  </aside>
+</div>
+
+<div class="tablewrap panel"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+<section class="evid panel" id="evid"></section>
+<footer id="foot"></footer>
+
+<script>
+const D = __DATA__;
+const $ = s => document.querySelector(s);
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt = (v, d = 0) => v == null || v === '' ? '–' : Number(v).toLocaleString('ko-KR', { maximumFractionDigits: d, minimumFractionDigits: d });
+const sg = (v, d = 2) => v == null ? '–' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
+const pct = v => v == null ? '–' : Math.round(v * 100) + '%';
+const tag = t => `<span class="tag ${t}">${t}</span>`;
+const S = D.sites, OK = S.filter(s => s.status === '산정');
+const KIND = { '조성형': '--build', '보전형': '--keep', '미산정': '--na' };
+const LCG = ['시가지', '농업', '나지', '초지', '산림', '습지', '수역'];
+
+// ---------- ⓪ 열 핫스팟 (build_hotspot.py) ----------
+const HOT = D.hot || { meta: { gee: false }, zones: [], sites: {}, grade_geo: null };
+const hs = s => HOT.sites[s.site_id] || {};
+const GEE = HOT.meta.gee;
+const GCOL = ['', '--warm1', '--warm2', '--warm4'];
+const gtxt = g => g == null ? '–' : ['없음', '1 (시 평균 미만)', '2 (시 평균 이상)', '3 (평균 2배 이상)'][g];
+// 조성형 순위: 열 취약(핫스팟 면적 비율)과 열 노출 감소(범위 안 인구 × 온도 저감) 각각의 순위를 더한 값(가중치 없음, 작을수록 먼저)
+const BUILD = OK.filter(s => s.kind === '조성형');
+const BR = (() => {
+  const r = {}, rk = (f) => { [...BUILD].sort((a, b) => f(b) - f(a)).forEach((s, i) => { (r[s.site_id] ||= {})[f.name] = i + 1; }); };
+  const heat = s => hs(s).hot2_share || 0, expo = s => -(s.exposure || 0);
+  rk(heat); rk(expo);
+  [...BUILD].sort((a, b) => (r[a.site_id].heat + r[a.site_id].expo) - (r[b.site_id].heat + r[b.site_id].expo) || expo(b) - expo(a))
+    .forEach((s, i) => { r[s.site_id].rank = i + 1; });
+  return r;
+})();
+const KEEP = OK.filter(s => s.kind === '보전형');
+const TABS = [
+  { k: 'type', label: '① 현황·유형', zones: true, introFn: () => typeIntro(),
+    color: s => css(KIND[s.kind] || '--na'),
+    legend: () => Object.entries(KIND).map(([k, c]) => `<span><i style="background:${css(c)}"></i>${k} ${S.filter(s => s.kind === k).length}곳</span>`).join('') + `<span>바탕: 생활권 종합 점수(진할수록 높음)</span>`,
+    cols: [['면적', s => fmt(s.ha, 2) + 'ha'], ['주된 피복', s => s.lc ? Object.keys(s.lc)[0] : '–'], ['녹화 가능', s => s.restorable_ha == null ? '–' : fmt(s.restorable_ha, 2) + 'ha'],
+           ['범위 안 주민', s => s.pop_in_range == null ? '–' : fmt(s.pop_in_range) + '명'], ['열 노출 변화', s => s.exposure == null ? '–' : sg(s.exposure, 0) + ' 인·°C']],
+    sort: s => (s.kind === '조성형' ? 0 : s.kind === '보전형' ? 1 : 2) * 1e6 - Math.abs(s.exposure || 0) },
+  { k: 'build', label: '② 조성형: 어디부터 만들까', heat: true, rings: true, introFn: () => buildIntro(),
+    filter: s => s.kind === '조성형',
+    color: s => s.kind !== '조성형' ? css('--na') : seqc(hs(s).hot2_share || 0, 1, 'warm'),
+    legend: () => `<span>조성형 색 = 주변 핫스팟 비율</span>${[1, 2, 3, 4].map(i => `<i style="background:${css('--warm' + i)};margin:0"></i>`).join('')}<span>높음</span><span><i style="background:${css('--na')}"></i>보전형</span>`
+      + (HOT.grade_geo ? `<span>바탕: 시가지 핫스팟(상위 30/20/10%)</span>` : '') + `<span>점선 = 냉각 효과 범위</span>`,
+    cols: [['핫스팟 비율', s => pct(hs(s).hot2_share), s => hs(s).hot2_share || 0, '--warm3'],
+           ['경계 밖 저감', s => s.t_edge == null ? '–' : sg(s.t_edge) + '°C'], ['범위', s => s.range_m + 'm'],
+           ['범위 안 주민', s => fmt(s.pop_in_range) + '명'], ['아동·고령', s => pct(s.vulnerable)],
+           ['열 노출 감소', s => fmt(Math.abs(s.exposure)) + ' 인·°C', s => Math.abs(s.exposure || 0), '--cool3'], ['서비스권 밖', s => pct(hs(s).unserved)]],
+    sort: s => BR[s.site_id] ? BR[s.site_id].rank : 999 },
+  { k: 'energy', label: '③ 에너지·탄소',
+    intro: `<b>열 노출 변화 = Σ(거리 구간 인구 × 구간 온도 변화)</b>, 단위 인·°C. 냉방 전력(kWh)·탄소로 바꾸는 계수(정진형 R2·R3)가 나오면 이 칸을 kWh·tCO₂로 바꿉니다. 파랑은 조성으로 줄어드는 노출, 빨강은 지켜서 피하는 노출입니다.`,
+    color: s => s.exposure == null ? css('--na') : s.exposure < 0 ? seqc(-s.exposure, maxExp, 'cool') : seqc(s.exposure, maxExp, 'warm'),
+    legend: () => `<span><i style="background:${css('--cool3')}"></i>조성 시 감소</span><span><i style="background:${css('--warm3')}"></i>보전 시 피하는 상승</span><span>색이 진할수록 큼</span>`,
+    cols: [['열 노출 변화', s => s.exposure == null ? '–' : sg(s.exposure, 0) + ' 인·°C', s => Math.abs(s.exposure || 0), null], ['냉방 전력', () => '미산정'], ['탄소', () => '미산정']],
+    sort: s => -Math.abs(s.exposure || 0) },
+];
+let tab = TABS[0], sel = null;
+const maxPop = Math.max(...OK.map(s => s.pop_in_range));
+const maxExp = Math.max(...OK.map(s => Math.abs(s.exposure)));
+function tcol(t) { if (t == null) return css('--na'); if (t > 0) return css(t >= 1.5 ? '--warm3' : '--warm2'); return css(t <= -0.6 ? '--cool4' : '--cool2'); }
+function seq(v, mx) { if (v == null) return css('--na'); const i = Math.min(4, Math.floor(Math.sqrt(v / mx) * 5)); return css(['--s1', '--s2', '--s3', '--s4', '--s5'][i]); }
+function seqc(v, mx, h) { const i = Math.min(3, Math.floor(Math.sqrt(v / mx) * 4)); return css(`--${h}${i + 1}`); }
+
+// ---------- 지도 ----------
+const map = L.map('map', { preferCanvas: true }).setView([36.64, 127.47], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+const ll = r => r.map(c => [c[1], c[0]]);
+const polys = g => g.map(p => p.map(ll));
+const L0 = L.layerGroup().addTo(map), L1 = L.layerGroup().addTo(map), L2 = L.layerGroup().addTo(map);
+const centroid = g => { const r = g[0][0]; let x = 0, y = 0; r.forEach(c => { x += c[0]; y += c[1]; }); return [y / r.length, x / r.length]; };
+function draw() {
+  L0.clearLayers(); L1.clearLayers(); L2.clearLayers();
+  if (tab.zones && HOT.zones.length) {
+    const zs = HOT.zones, key = GEE ? 'P' : 'D', mx = Math.max(...zs.map(z => z[key] || 0));
+    zs.forEach(z => L0.addLayer(L.polygon(polys(z.geo), { color: css('--text-2'), weight: 1, fillColor: css('--s3'), fillOpacity: 0.05 + 0.3 * (z[key] || 0) / mx })
+      .bindTooltip(`${z.zone} · ${key === 'P' ? '종합' : '수요'} ${z[key]}`)));
+  }
+  if (tab.heat && HOT.grade_geo) Object.entries(HOT.grade_geo).forEach(([g, geo]) => L0.addLayer(L.polygon(polys(geo), { stroke: false, fillColor: css(GCOL[g]), fillOpacity: 0.6, interactive: false })));
+  S.forEach(s => {
+    const g = D.geo[s.site_id]; if (!g) return;
+    const c = tab.color(s), on = sel === s.site_id;
+    if (tab.rings && g.reach && (!tab.filter || tab.filter(s))) L1.addLayer(L.polygon(polys(g.reach), { color: c, weight: on ? 2 : 1, dashArray: '4 4', fillOpacity: on ? 0.12 : 0.05, fillColor: c }));
+    // 공원은 경계로 그린다. 시 전체를 볼 때(줌 DOT_ZOOM 미만)는 경계가 너무 작아 위치 점을 함께 둔다
+    L2.addLayer(L.polygon(polys(g.park), { color: on ? css('--sel') : c, weight: on ? 3 : 2, fillColor: c, fillOpacity: 0.45 })
+      .bindTooltip(`${s.name} · ${s.kind}`).on('click', () => pick(s.site_id)));
+    if (map.getZoom() < DOT_ZOOM)
+      L2.addLayer(L.circleMarker(centroid(g.park), { radius: on ? 8 : 5, color: on ? css('--sel') : css('--surface'), weight: 2, fillColor: c, fillOpacity: 1 })
+        .bindTooltip(`${s.name} · ${s.kind}`).on('click', () => pick(s.site_id)));
+  });
+}
+const DOT_ZOOM = 14;
+let lastDots = map.getZoom() < DOT_ZOOM;
+map.on('zoomend', () => { const d = map.getZoom() < DOT_ZOOM; if (d !== lastDots) { lastDots = d; draw(); } });
+
+// ---------- 탭·소개 ----------
+$('#tabs').innerHTML = TABS.map((t, i) => `<button role="tab" aria-selected="${i === 0}" data-k="${t.k}">${t.label}</button>`).join('');
+$('#tabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; tab = TABS.find(t => t.k === b.dataset.k);
+  document.querySelectorAll('#tabs button').forEach(x => x.setAttribute('aria-selected', x === b)); render(); };
+function typeIntro() {
+  const p = HOT.meta.params, sum = a => a.reduce((t, s) => t + (s.exposure || 0), 0);
+  const top = [...KEEP].sort((a, b) => b.exposure - a.exposure).slice(0, 4);
+  const kc = D.coef.keep;
+  let h = `<b>조성형</b>은 지금 농지·시가지·나지라 공원으로 만들면 시원해지는 곳, <b>보전형</b>은 이미 숲·녹지라 개발되면 더워지는 곳입니다(정진형 R1-f 위성 분류).
+  <div class="sum"><div>조성형 ${BUILD.length}곳<div class="big">${sg(sum(BUILD), 0)}</div>인·°C · 만들면 줄어드는 열 노출 → <b>② 탭에서 순위</b></div>
+  <div>보전형 ${KEEP.length}곳<div class="big">${sg(sum(KEEP), 0)}</div>인·°C · 개발되면 늘어날 열 노출(지키면 피함)</div></div>
+  <div class="story" style="margin:10px 0 0">보전형은 개발되면 개발된 자리 <b>${sg(kc.in)}°C</b>, 바로 옆 0~100m <b>${sg(kc.bands[0][1])}°C</b> 더워집니다(전국 숲 개발 561곳 실측). 나대지를 공원으로 만들 때(약 −1°C)보다 변화가 약 5배 큽니다. 지켜서 피하는 열 노출이 큰 곳: ${top.map(s => `<b>${s.name}</b> ${sg(s.exposure, 0)}`).join(', ')}. 개발 압력 자료가 아직 없어 보전형 순위는 따로 매기지 않았습니다.</div>`;
+  if (p && HOT.zones.length) {
+    const key = GEE ? 'P' : 'D';
+    h += `<table style="margin-top:10px;font-size:12px"><thead><tr><th>생활권 (배경)</th><th>수요 D</th><th>환경 E</th><th>종합 P</th></tr></thead><tbody>${HOT.zones.map(z =>
+      `<tr><td>${z.zone}</td><td>${z.D}</td><td>${z.E ?? '–'}</td><td>${z.P ?? '–'}</td></tr>`).join('')}</tbody></table>
+      <div class="note">D = 평균(공원 부족 = (법정 ${p.park_std_m2_per_cap}㎡ − 1인당 조성면적)/${p.park_std_m2_per_cap}㎡, 서비스권 밖 인구 비율) × 100 · E = 평균(NDVI 취약, 지표온도 취약) × 100 · P = 0.5D + 0.5E. 지도 바탕은 ${key === 'P' ? '종합 P' : '수요 D'}.</div>`;
+  }
+  return h;
+}
+function buildScatter() {
+  const W = 360, Hh = 230, m = { l: 44, r: 12, t: 12, b: 34 }, iw = W - m.l - m.r, ih = Hh - m.t - m.b;
+  const ym = Math.max(...BUILD.map(s => Math.abs(s.exposure))), X = v => m.l + v * iw, Y = v => m.t + (1 - Math.sqrt(v / ym)) * ih;
+  const yt = [0, 10, 50, 100, 200, 400].filter(v => v <= ym * 1.05);
+  return `<svg viewBox="0 0 ${W} ${Hh}" width="100%" role="img" aria-label="조성형 산점도: 가로 핫스팟 비율, 세로 열 노출 감소" style="margin-top:10px">
+    ${yt.map(v => `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${css('--border')}"/><text x="${m.l - 4}" y="${Y(v) + 4}" font-size="10" text-anchor="end" fill="${css('--muted')}">${v}</text>`).join('')}
+    ${[0, 0.25, 0.5, 0.75, 1].map(v => `<text x="${X(v)}" y="${Hh - m.b + 14}" font-size="10" text-anchor="middle" fill="${css('--muted')}">${v * 100}%</text>`).join('')}
+    <text x="${m.l + iw / 2}" y="${Hh - 4}" font-size="11" text-anchor="middle" fill="${css('--text-2')}">주변 핫스팟 비율 (열 취약) →</text>
+    <text transform="translate(11 ${m.t + ih / 2}) rotate(-90)" font-size="11" text-anchor="middle" fill="${css('--text-2')}">열 노출 감소 (인·°C) →</text>
+    ${[...BUILD].sort((a, b) => BR[b.site_id].rank - BR[a.site_id].rank).map(s => { const x = X(hs(s).hot2_share || 0), y = Y(Math.abs(s.exposure)), r = BR[s.site_id].rank;
+      return `<g style="cursor:pointer" onclick="pick('${s.site_id}', true)"><circle cx="${x}" cy="${y}" r="${sel === s.site_id ? 8 : 6}" fill="${seqc(hs(s).hot2_share || 0, 1, 'warm')}" stroke="${css(sel === s.site_id ? '--text' : '--surface')}" stroke-width="2"><title>${r}위 ${s.name}: 핫스팟 ${pct(hs(s).hot2_share)}, 열 노출 감소 ${fmt(Math.abs(s.exposure))} 인·°C</title></circle>
+        ${r <= 5 ? `<text x="${x + (x > W - 90 ? -9 : 9)}" y="${y + 4}" font-size="10" text-anchor="${x > W - 90 ? 'end' : 'start'}" fill="${css('--text')}">${r}. ${s.name}</text>` : ''}</g>`; }).join('')}
+  </svg>`;
+}
+function buildIntro() {
+  const p = HOT.meta.params;
+  return `조성형 ${BUILD.length}곳을 교수님 기준 세 가지로 봅니다. <b>열 취약</b> = 경계+${p ? p.sample_buffer_m : 150}m 중 시가지 핫스팟(상위 20%) 면적 비율, <b>주민</b> = 냉각 범위 안 인구, <b>에너지 효과</b> = 열 노출 감소(주민 × 온도 저감, 전력 환산 전 대리 지표).
+  <b>순위 = 열 취약 순위 + 열 노출 감소 순위</b>(가중치 없음, 작을수록 먼저). 오른쪽 위로 갈수록 먼저 만들 곳입니다.${GEE ? buildScatter() : '<div class="note">GEE 결과가 없어 핫스팟 비율은 미산정입니다.</div>'}`;
+}
+function intro() {
+  let h = (tab.introFn ? tab.introFn() : tab.intro) + `<div class="legend">${tab.legend()}</div>`;
+  if (tab.k === 'energy') {
+    const b = OK.filter(s => s.kind === '조성형'), k = OK.filter(s => s.kind === '보전형');
+    const sum = a => a.reduce((t, s) => t + s.exposure, 0);
+    h += `<div class="sum"><div>조성형 ${b.length}곳 합<div class="big">${sg(sum(b), 0)}</div>인·°C (시원해짐)</div><div>보전형 ${k.length}곳 합<div class="big">${sg(sum(k), 0)}</div>인·°C (개발 시 상승, 지키면 피함)</div></div>`;
+  }
+  $('#intro').innerHTML = h;
+}
+
+// ---------- 카드 ----------
+function card() {
+  const s = S.find(x => x.site_id === sel);
+  if (!s) { $('#card').innerHTML = '<div class="empty">지도나 표에서 공원을 고르세요.</div>'; return; }
+  const pill = `<span class="pill" style="background:${css(KIND[s.kind] || '--na')}">${s.kind}</span>`;
+  if (s.status !== '산정') { $('#card').innerHTML = `<h2>${s.name}</h2><div class="sub">${s.type} ${pill}</div><div class="story">${s.note || '미산정'}</div>`; return; }
+  const build = s.kind === '조성형';
+  const story = build
+    ? `지금 <b>${s.land === '공원' ? '일부만 조성된(초지·시가지)' : s.land}</b> 상태인 이 땅을 공원으로 만들면 공원 안 지표온도가 ${s.t_in == null ? '측정 범위 밖(0.4ha 미만)' : `약 <b>${sg(s.t_in)}°C</b>`}, 경계 밖 0~100m는 약 <b>${sg(s.t_edge)}°C</b> 바뀝니다. 효과가 닿는 ${s.range_m}m 안에 <b>${fmt(s.pop_in_range)}명</b>(아동·고령 ${pct(s.vulnerable)})이 살아, 열 노출이 <b>${fmt(Math.abs(s.exposure))} 인·°C</b> 줄어듭니다.`
+    : `지금 <b>${s.land}</b>인 이 땅이 개발되면 개발된 자리는 약 <b>${sg(s.t_in)}°C</b>, 바로 옆 0~100m는 약 <b>${sg(s.t_edge)}°C</b> 더워집니다. 공원으로 지키면 ${s.range_m}m 안 <b>${fmt(s.pop_in_range)}명</b>(아동·고령 ${pct(s.vulnerable)})이 이 상승을 피합니다(<b>${sg(s.exposure, 0)} 인·°C</b>).`;
+  const ON = { type: ['type'], build: ['hot', 'cool', 'people'], energy: ['energy'] };
+  const sec = (k, t) => `<div class="sec ${(ON[tab.k] || []).includes(k) ? 'on' : ''}">${t}</div>`;
+  const lc = LCG.filter(g => s.lc[g]).map(g => [g, s.lc[g]]);
+  const prof = s.now_profile || [];
+  const pmax = Math.max(1, ...prof.map(p => Math.abs(p[1])));
+  const profSvg = prof.length ? `<svg viewBox="0 0 300 70" width="100%" role="img" aria-label="현재 경계 밖 시가지 온도 프로필">
+      <line x1="0" y1="35" x2="300" y2="35" stroke="${css('--border')}"/>
+      ${prof.map((p, i) => { const w = 300 / prof.length, h = Math.abs(p[1]) / pmax * 32, y = p[1] < 0 ? 35 : 35 - h;
+        return `<rect x="${i * w + 2}" y="${y}" width="${w - 4}" height="${Math.max(1, h)}" rx="2" fill="${css(p[1] < 0 ? '--cool3' : '--warm3')}"><title>${p[0]}m: ${sg(p[1])}°C</title></rect>`; }).join('')}
+    </svg><div class="lcleg"><span>${prof[0][0]}m</span><span style="margin-left:auto">${prof[prof.length - 1][0]}m</span></div>` : '<div class="note">주변 시가지 픽셀이 적어 현재 프로필 없음</div>';
+  $('#card').innerHTML = `<h2>${s.name}</h2><div class="sub">${s.type} · ${fmt(s.ha, 2)}ha ${pill}</div>
+  <div class="story">${story}</div>
+  ${sec('hot', build ? `열 취약 · 조성형 순위 ${BR[s.site_id] ? BR[s.site_id].rank + ' / ' + BUILD.length : '–'}` : '열 취약 (참고)')}
+  <div class="kv">
+    <span class="k">핫스팟 면적 비율 (경계+150m)</span><span class="v">${pct(hs(s).hot2_share)}</span>${tag(GEE ? '실자료' : '미산정')}
+    <span class="k">공원 핫스팟 등급</span><span class="v">${gtxt(hs(s).grade)}</span>${tag(GEE ? '가정' : '미산정')}
+    <span class="k">여름 지표온도 · NDVI (경계+150m)</span><span class="v">${hs(s).lst == null ? '–' : hs(s).lst.toFixed(1) + '°C · ' + hs(s).ndvi.toFixed(2)}</span>${tag(GEE ? '실자료' : '미산정')}
+    <span class="k">공원 공백 등급 (서비스권 밖 ${pct(hs(s).unserved)})</span><span class="v">${hs(s).gap ?? '–'}</span>${tag('가정')}
+  </div>
+  ${sec('type', '① 현황·유형')}
+  <div class="lcbar">${lc.map(([g, v]) => `<span title="${g} ${pct(v)}" style="width:${v * 100}%;background:${css('--lc-' + g)}"></span>`).join('')}</div>
+  <div class="lcleg">${lc.map(([g, v]) => `<span><i class="dot" style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${css('--lc-' + g)}"></i> ${g} ${pct(v)}</span>`).join('')}</div>
+  <div class="kv" style="margin-top:6px">
+    <span class="k">녹화 가능 면적 (시가지·농업·나지)</span><span class="v">${fmt(s.restorable_ha, 2)}ha</span>${tag('가정')}
+    <span class="k">공원 안 여름 NDVI</span><span class="v">${s.ndvi_in.toFixed(2)}</span>${tag('실자료')}
+  </div>
+  ${sec('cool', '② 온도 변화·범위')}
+  <div class="kv">
+    <span class="k">${build ? '공원 안 (조성 시)' : '개발된 자리 (개발 시)'}</span><span class="v">${s.t_in == null ? '–' : sg(s.t_in) + '°C'}</span>${tag('대체자료')}
+    ${s.bands.map(b => `<span class="k">경계 밖 ${b.from}~${b.to}m</span><span class="v">${sg(b.dt)}°C</span>${tag(build && s.t_in == null ? '가정' : '대체자료')}`).join('')}
+    <span class="k">효과 범위</span><span class="v">${s.range_m}m</span>${tag('가정')}
+  </div>
+  <div class="note">계수: ${s.basis}. 범위: 면적 구간별 제안값(정진형 08 §3-7).</div>
+  <div class="note" style="margin-top:8px">현재 경계 밖 시가지 지표온도 (2020~25 여름, 600~1,500m 기준 대비, 실측)</div>
+  ${profSvg}
+  ${sec('people', '③ 범위 안 주민')}
+  <div class="kv">
+    ${s.bands.map(b => `<span class="k">${b.from}~${b.to}m 인구</span><span class="v">${fmt(b.pop)}명</span>${tag('실자료')}`).join('')}
+    <span class="k">아동·고령 비율</span><span class="v">${pct(s.vulnerable)}</span>${tag('실자료')}
+    <span class="k">그중 아동·고령</span><span class="v">${fmt(s.vulnerable_pop)}명</span>${tag('실자료')}
+    <span class="k">지금 공원 서비스권 밖 (D1)</span><span class="v">${pct(s.unserved)}</span>${tag('실자료')}
+  </div>
+  ${sec('energy', '에너지·탄소')}
+  <div class="kv">
+    <span class="k">열 노출 변화</span><span class="v">${sg(s.exposure, 0)} 인·°C</span>${tag('대체자료')}
+    <span class="k">냉방 전력</span><span class="v">–</span>${tag('미산정')}
+    <span class="k">탄소 (× ${D.coef.ef} tCO₂/MWh)</span><span class="v">–</span>${tag('미산정')}
+  </div>
+  <div class="note">전력 계수는 정진형 R2(지표온도→기온)·R3(기온→건물 냉방 전력, 건축HUB 건물에너지) 결과가 나오면 채웁니다.</div>`;
+}
+
+// ---------- 표 ----------
+function table() {
+  const cols = tab.cols;
+  $('#tbl thead').innerHTML = `<tr><th>#</th><th>공원</th><th>유형</th>${cols.map(c => `<th>${c[0]}</th>`).join('')}</tr>`;
+  const rows = [...S].filter(tab.filter || (() => true)).sort((a, b) => (a.status === '산정' ? 0 : 1) - (b.status === '산정' ? 0 : 1) || tab.sort(a) - tab.sort(b));
+  $('#tbl tbody').innerHTML = rows.map((s, i) => `<tr data-id="${s.site_id}" class="${sel === s.site_id ? 'sel' : ''}"><td>${s.status === '산정' ? i + 1 : '–'}</td><td>${s.name}</td>
+    <td><span class="pill" style="background:${css(KIND[s.kind] || '--na')}">${s.kind}</span></td>
+    ${cols.map(c => { const v = c[1](s); if (!c[2] || s.status !== '산정') return `<td>${v}</td>`;
+      const mx = Math.max(...OK.map(c[2])); const w = Math.round(c[2](s) / mx * 60);
+      return `<td><span class="bar" style="width:${w}px;background:${c[3] ? css(c[3]) : tab.color(s)}"></span>${v}</td>`; }).join('')}</tr>`).join('');
+}
+$('#tbl tbody').onclick = e => { const r = e.target.closest('tr'); if (r) pick(r.dataset.id, true); };
+
+function pick(id, fly) {
+  sel = id; render();
+  const g = D.geo[id]; if (fly && g) map.flyTo(centroid(g.park), 15, { duration: 0.6 });
+}
+function render() { draw(); intro(); card(); table(); }
+
+// ---------- 근거 ----------
+const C = D.coef;
+$('#evid').innerHTML = `<h3>숫자의 근거</h3><table><thead><tr><th>무엇</th><th>값</th><th>근거</th></tr></thead><tbody>
+<tr><td>조성 효과 (나대지·농지 → 공원)</td><td>0.4~0.6ha 공원 안 ${sg(C.build['04_06'].in)}°C · 0~100m ${sg(C.build['04_06'].bands[0][1])}°C<br>0.6~1ha ${sg(C.build['06_1'].in)} · ${sg(C.build['06_1'].bands[0][1])}°C<br>1ha 이상 ${sg(C.build.ge1.in)} · 0~100m ${sg(C.build.ge1.bands[0][1])} · 100~200m ${sg(C.build.ge1.bands[1][1])}°C</td><td>정진형 R1: 전국 신규 공원 72곳 조성 전·후 Landsat 8/9 여름 지표온도(이중차분, 사례 안 300~500m 대비 중앙값). 정진형/08 §3-2·3-5</td></tr>
+<tr><td>0.4ha 미만 소공원</td><td>경계 밖 ${sg(C.build.lt04.bands[0][1])}°C (상한)</td><td>위성 해상도(약 1ha) 밖. 국내 소규모 녹지 기온 실측의 상한. 정진형/09 §3</td></tr>
+<tr><td>숲이 개발될 때 (보전 효과)</td><td>개발된 자리 ${sg(C.keep.in)}°C · 0~100m ${sg(C.keep.bands[0][1])} · 100~200m ${sg(C.keep.bands[1][1])} · 200~300m ${sg(C.keep.bands[2][1])}°C</td><td>정진형 R1-h: 전국 도시 숲 일부 개발 561곳 전·후. 정진형/09 §2, data/r3_did_summary.txt</td></tr>
+<tr><td>효과 범위</td><td>${C.range_by_ha.map(r => `${r[0]}ha 이상 ${r[1]}m`).join(' · ')}</td><td>정진형 08 §3-7 제안(우리 40곳 주변 실측 프로필 + R1 감쇠 길이 약 60m). 문헌: 서정은·오규식(2020) 수원 공원 냉각 범위 30~300m, 평균 93m</td></tr>
+<tr><td>열 핫스팟 등급</td><td>시가지 안 취약도 상위 30/20/10% → 1/2/3</td><td>Landsat 8/9 여름 NDVI·지표온도 5년, Dynamic World 시가지(건물·나지). 취약도 = (0.6−NDVI)/0.4 + (LST−28)/12 — 인천 녹지 취약지 대시보드 로직 값 그대로(가정, 청주 검증 전). GEE 스크립트 need/edc/code/gee/hotspot_gee.js</td></tr>
+<tr><td>공원 핫스팟 면적 비율 · 등급</td><td>경계+150m 중 픽셀 등급 2·3 비율. 20% 이상(시 평균) → 2, 40% 이상 → 3</td><td>열센서 원해상도가 100m라 '최고 1칸'(인천 규칙)은 1~2% 만으로 등급이 올라가 면적 비율로 바꿈. 20%는 정의상 시가지 평균, 40%는 가정</td></tr>
+<tr><td>조성형 순위</td><td>열 취약(핫스팟 비율) 순위 + 열 노출 감소 순위, 가중치 없음</td><td>교수님 기준(열 취약·주민·에너지 효과). 주민과 에너지 효과는 열 노출 감소 하나에 함께 들어 있음. 공원 공백(서비스권 밖)은 참고로만 표시 — 40곳 전체에 '핫스팟 ∧ 공백' 한 줄 기준을 쓰면 기준값에 따라 9곳 → 0곳으로 바뀌어 순위 기준에서 뺌</td></tr>
+<tr><td>범위 안 인구 · 아동·고령</td><td>—</td><td>SGIS 2024 100m 격자 총인구, 행안부 행정동 연령별 인구(2026.10)</td></tr>
+<tr><td>토지피복 · 녹화 가능 면적</td><td>시가지·농업·나지 = 녹화 가능 (가정)</td><td>환경부 토지피복지도 중분류 2025</td></tr>
+<tr><td>탄소 배출계수</td><td>${C.ef} tCO₂eq/MWh</td><td>2023 전력 배출계수 (정진형/README R5)</td></tr>
+</tbody></table>`;
+$('#foot').innerHTML = `시험판 (${D.asof}) · need/edc/code/build_priority.py → build_priority_page.py · 온도는 모두 <b>지표온도(Landsat)</b>로, 기온보다 크게 나옵니다. 계수는 전국 사례 중앙값이라 개별 공원 값은 ±1°C 정도 흩어질 수 있습니다. 어린이공원152(경계 없음), 생태공원3(초대형 기반시설)은 미산정입니다.`;
+render();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+</script>
+</body>
+</html>

@@ -54,7 +54,7 @@ const pIntro = `<div class="pz-hero"><div>
 <div class="pz-kpis" style="--cols:4;margin-top:26px">
   ${kpi('대상 공원',n,'곳',`소공원·어린이공원 ${small}곳, 근린·주제공원 ${n-small}곳`)}
   ${kpi('실효 시점',`${y0}–${y1}`,'',`${PZ.stage1_expiry_max}년까지 ${early}곳이 먼저 풀림`)}
-  ${kpi('평가 기준','3','가지','이용성 · 에너지저감 · 사업성')}
+  ${D.R?kpi('평가 단계','3','단계','현황·유형 → 조성형 순위 → 에너지·탄소'):kpi('평가 기준','3','가지','이용성 · 에너지저감 · 사업성')}
   ${kpi('시 부담 추정',`${eok(sum(P,p=>p.minL))}–${eok(sum(P,p=>p.maxH))}`,'억 원','40곳 전체, 땅 보상 + 공원 조성')}
 </div>`;
 
@@ -120,7 +120,7 @@ const uTop = [...UO].sort((a,b)=>U(b).new_served_pop-U(a).new_served_pop);
 const u5 = uTop.slice(0,5), u5s = sum(u5,p=>U(p).new_served_pop);
 const uMiss = P.filter(p=>!useOK(p)).map(p=>p.name).join('·');
 const B = UM.buffer_m;
-const pUse = `${head('use','기준 1','이용성','누가 이 공원을 쓰게 되나?')}
+const pUse = `${head('use',D.R?'부록':'기준 1','이용성','누가 이 공원을 쓰게 되나?')}
 <section class="pz-block pz-why"><h3 class="pz-h3"><span class="n">1</span>왜 보나</h3><p>공원은 <b>사람이 이용할 때</b> 가치가 생깁니다. 주변에 사는 사람이 많고, 그중 <b>지금 걸어서 갈 만한 공원이 없는 사람</b>이 많을수록 새로 만들었을 때 혜택이 큽니다.</p>
   <ul><li>청주시 기준 ② 이용성</li><li>걸어서 이용하는 거리 기준</li><li>100m 격자 실제 인구</li></ul></section>
 ${sec(2,'평가 구조',`<div class="pz-flow" style="--cols:3">
@@ -156,7 +156,7 @@ const hBuild = HO.filter(p=>E(p).kind==='조성형'), hKeep = HO.filter(p=>E(p).
 const hStable = HO.filter(p=>E(p).grade_stable==='확정').length;
 const yr = s => s.slice(0,4);
 const e1 = E(h5[0]);
-const pHeat = `${head('heat','기준 2','에너지저감','공원을 만들면 여름이 얼마나 시원해지나?')}
+const pHeat = `${head('heat',D.R?'부록':'기준 2','에너지저감','공원을 만들면 여름이 얼마나 시원해지나?')}
 <section class="pz-block pz-why" style="--tc:var(--pz-heat)"><h3 class="pz-h3"><span class="n">1</span>왜 보나</h3><p>녹지는 여름철 땅의 온도를 낮춰 도심 열섬과 <b>냉방 에너지 부담</b>을 줄입니다. 지금 녹지가 적은 곳에 공원을 만들수록 효과가 큽니다. 이 평가는 근거가 확실한 범위까지만 계산해, <b>청주 위성으로 실제 측정한 온도 변화(°C)</b>로 효과를 나타냅니다.</p>
   <ul><li>청주시 기준 ① 공원조성 가치(환경)</li><li>청주 위성 실측 계수만 사용</li><li>판정에 넣지 않는 참고 지표</li></ul></section>
 ${sec(2,'평가 구조',`<div class="pz-flow" style="--cols:4">
@@ -195,7 +195,7 @@ const pubA = P.filter(p=>p.pub!=null&&p.type!=='생태공원'), pubShare = sum(p
 const allPub = P.filter(p=>p.pub===1).length, spec = P.filter(p=>p.special);
 const bTop = [...P].sort((a,b)=>(b.maxH||0)-(a.maxH||0)), b5 = bTop.slice(0,5);
 const W = PZ.wolmyeong, wComp = W.area_m2*R.high, wCons = W.area_m2*R.klow;
-const pBiz = `${head('biz','기준 3','사업성','시가 얼마를 내야 하고, 언제 할 수 있나?')}
+const pBiz = `${head('biz',D.R?'④ 실행':'기준 3','사업성','시가 얼마를 내야 하고, 언제 할 수 있나?')}
 <section class="pz-block pz-why" style="--tc:var(--pz-biz)"><h3 class="pz-h3"><span class="n">1</span>왜 보나</h3><p>${n}곳을 실효 전에 모두 조성하기에는 재원이 한정되어 있습니다. <b>땅 주인과 땅값</b>으로 시가 실제로 낼 돈을 계산하고, <b>실효 시기와 외부 재원</b>으로 먼저 할 곳(1단계)과 나중에 할 곳(2단계)을 나눕니다.</p>
   <ul><li>청주시 기준 ④ 재정여건 · ⑤ 기존투자</li><li>필지 단위 소유·공시지가</li><li>청주 실제 사업비로 검증</li></ul></section>
 ${sec(2,'평가 구조',`<div class="pz-flow" style="--cols:4">
@@ -228,9 +228,143 @@ ${more('상세보기 — '+n+'곳 전체 표', `<table class="pz-t"><thead><tr><
   ${bTop.map((p,i)=>`<tr><td>${i+1}</td><td>${p.name}</td><td>${p.loc}</td><td class="r">${p.expiry}</td><td class="r">${pc(p.pub)}</td><td class="r">${p.comp==null?'—':eok(p.comp)+'억'}</td><td class="r">${p.cons==null?'미산정':eok(p.cons)+'억'}</td><td class="r">${eok(p.maxH)}억</td><td>${p.stage}</td></tr>`).join('')}</tbody></table>`)}`,`style="--tc:var(--pz-biz)"`)}
 <section class="pz-block"><h3 class="pz-h3">자료 출처</h3><div class="pz-src">${(document.querySelector('#app footer')||{}).innerHTML||''}</div></section>`;
 
+// ---------- 우선순위 흐름 (교수님 방향: 유형 → 조성형 순위 → 에너지·탄소, 사업성은 실행) ----------
+const RP = p => p.R||{}, RH = p => RP(p).hot||{};
+const prioOK = p => RP(p).status==='산정';
+const RO = P.filter(prioOK), RB = RO.filter(p=>RP(p).kind==='조성형'), RK = RO.filter(p=>RP(p).kind==='보전형');
+const sg = (v,d=2) => v==null?'—':(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(d);
+// 조성형 순위 = 열 취약(주변 핫스팟 비율) 등수 + 열 노출 감소 등수 (지도 앱 RRANK와 같은 규칙)
+const RR = (()=>{ const r={}, by=f=>[...RB].sort((a,b)=>f(b)-f(a));
+  by(p=>RH(p).hot2_share||0).forEach((p,i)=>(r[p.id]={h:i+1}));
+  by(p=>-(RP(p).exposure||0)).forEach((p,i)=>(r[p.id].e=i+1));
+  [...RB].sort((a,b)=>(r[a.id].h+r[a.id].e)-(r[b.id].h+r[b.id].e)||RP(a).exposure-RP(b).exposure).forEach((p,i)=>(r[p.id].rank=i+1));
+  return r; })();
+const rTop = [...RB].sort((a,b)=>RR[a.id].rank-RR[b.id].rank), r5 = rTop.slice(0,5);
+// 방법 강건성(OECD·JRC 2008 Step 7): 순위합 대신 정규화 가중합(가중치 0.3·0.5·0.7, 열 노출 원값/로그)으로 바꿔도 순위가 유지되나
+const ROB = (()=>{ if(!RB.length) return [];
+  const H=p=>RH(p).hot2_share||0, X=p=>-RP(p).exposure, LX=p=>Math.log1p(X(p));
+  const mm=f=>{const v=RB.map(f), lo=Math.min(...v), hi=Math.max(...v); return p=>(f(p)-lo)/((hi-lo)||1);};
+  const base=Object.fromEntries(rTop.map((p,i)=>[p.id,i])), top5=new Set(r5.map(p=>p.id)), n=RB.length;
+  const out=[];
+  for(const [lab,xf] of [['정규화 가중합',mm(X)],['정규화 가중합(열 노출 로그)',mm(LX)]]) for(const w of [0.3,0.5,0.7]){
+    const hf=mm(H), o=[...RB].sort((a,b)=>(w*hf(b)+(1-w)*xf(b))-(w*hf(a)+(1-w)*xf(a)));
+    const d2=o.reduce((s,p,i)=>s+(i-base[p.id])**2,0), rho=1-6*d2/(n*(n*n-1));
+    out.push({lab:`${lab} · 열 취약 ${w}`, top:o.slice(0,5).filter(p=>top5.has(p.id)).length, rho, shift:o.reduce((s,p,i)=>s+Math.abs(i-base[p.id]),0)/n});
+  }
+  return out; })();
+// 파레토(비지배): 두 기준 모두에서 다른 조성형보다 뒤지지 않는 공원
+const PARETO = RB.filter(p=>!RB.some(q=>q!==p && (RH(q).hot2_share||0)>=(RH(p).hot2_share||0) && -RP(q).exposure>=-RP(p).exposure && ((RH(q).hot2_share||0)>(RH(p).hot2_share||0) || -RP(q).exposure>-RP(p).exposure)));
+const kTop = [...RK].sort((a,b)=>RP(b).exposure-RP(a).exposure);
+const RC = D.R ? D.R.coef : {build:{},keep:{in:0,bands:[[0,0]]},ef:0};
+const bSum = -sum(RB,p=>RP(p).exposure), kSum = sum(RK,p=>RP(p).exposure);
+const RL = (D.R&&D.R.refs&&D.R.refs.items)||{};
+const cite = ks => ks.filter(k=>RL[k]).map(k=>RL[k].short).join('; ');
+const refList = () => Object.keys(RL).length ? more('참고문헌 ('+(D.R.refs.style||'')+')', `<ol class="pz-refs">${Object.values(RL).map(x=>`<li>${x.cite}</li>`).join('')}</ol>`) : '';
+const HP = (D.R&&D.R.hot&&D.R.hot.params)||{sample_buffer_m:150};
+const ZN = (D.R&&D.R.zones)||[];
+
+// ---------- 2. 평가 기준 (새 틀) ----------
+const pFrame2 = `<div class="pz-eyebrow" style="--tc:var(--pz-ink2)">평가 기준</div>
+<h2 class="pz-h2">세 단계로 순서를 정합니다</h2>
+<p class="pz-lead" style="margin-top:10px">공원을 만들면 <b>지역 기온이 내려가고 → 냉방 전력이 줄고 → 탄소가 줄어듭니다</b>. 이 효과가 큰 곳부터 하기 위해 <b>열 취약성 · 주변 주민 · 에너지 효과</b>를 기준으로 봅니다. 사업성은 순서를 바꾸기보다 <b>언제·어떤 돈으로</b> 할지를 정합니다.</p>
+<div class="pz-lenses pz-order">
+  <button class="pz-lens" style="--tc:var(--pz-prio)" data-go="type"><span class="k">① 무엇인가</span><span class="t">현황·유형</span><span class="q">만들 곳인가, 지킬 곳인가?</span><span class="d">공원 안 땅 상태로 조성형(지금 농지·시가지)과 보전형(이미 숲)을 나눕니다.</span><span class="m">조성형 ${RB.length}곳 · 보전형 ${RK.length}곳</span><span class="go">자세히 →</span></button>
+  <button class="pz-lens" style="--tc:var(--pz-prio)" data-go="rank"><span class="k">② 어디부터</span><span class="t">조성형 우선순위</span><span class="q">어디를 먼저 만들까?</span><span class="d">주변이 뜨겁고(열 취약), 효과 범위에 주민이 많아 열 노출이 크게 줄어드는 곳부터.</span><span class="m">핵심 지표 · 핫스팟 비율 · 열 노출 감소(인·°C)</span><span class="go">자세히 →</span></button>
+  <button class="pz-lens" style="--tc:var(--pz-prio)" data-go="carbon"><span class="k">③ 얼마나</span><span class="t">에너지·탄소</span><span class="q">전력·탄소를 얼마나 줄이나?</span><span class="d">열 노출 변화를 냉방 전력(kWh)과 탄소(tCO₂)로 바꿔 청주시 감축 목표에 대한 기여를 봅니다.</span><span class="m">핵심 지표 · kWh · tCO₂ (계수 확보 중)</span><span class="go">자세히 →</span></button>
+</div>
+<section class="pz-block"><h3 class="pz-h3">왜 이 순서인가</h3>
+  <div class="pz-steps3 pz-why3">
+    <div style="--tc:var(--pz-prio)"><div class="t"><span>1</span>성격이 다르면 질문도 다르다</div><div class="d">숲인 공원은 만들어도 더 시원해지지 않지만, 개발되면 크게 더워집니다. 그래서 <b>만들 곳</b>과 <b>지킬 곳</b>을 먼저 나눕니다.</div></div>
+    <div style="--tc:var(--pz-prio)"><div class="t"><span>2</span>만들 곳은 효과 순으로</div><div class="d">같은 공원이라도 <b>뜨거운 동네, 사람이 많은 곳</b>에 만들어야 시원해지는 사람이 많습니다.</div></div>
+    <div style="--tc:var(--pz-biz)"><div class="t"><span>3</span>마지막으로 실행</div><div class="d"><b>사업성</b>(시 부담·실효 시기)으로 같은 순위 안에서 언제·어떤 재원으로 할지 정합니다.</div></div>
+  </div>
+  ${more('상세보기 — 이전 평가 틀(이용성·에너지저감·사업성)은?', dl([
+    ['이용성 지표','신규 수혜 인구 등은 부록에 그대로 두고, 범위 안 주민·아동·고령 비율로 ②에 들어감'],
+    ['에너지저감 1차 모델','청주 픽셀 계수 모델은 부록에 두고, ②·③은 전국 공원 조성·숲 개발 전후 실측 계수를 씀'],
+    ['사업성','④ 실행 단계로 그대로 씀']]))}
+</section>`;
+
+// ---------- 3. ① 현황·유형 ----------
+const pType = !D.R ? '' : `${head('type','①','현황·유형','만들 곳인가, 지킬 곳인가?')}
+<section class="pz-block pz-why" style="--tc:var(--pz-prio)"><h3 class="pz-h3"><span class="n">1</span>왜 보나</h3><p>40곳 중에는 지금 <b>농지·시가지·나지</b>라 공원으로 만들면 시원해질 곳과, 이미 <b>숲</b>이라 더 시원해질 여지는 없지만 <b>개발되면 크게 더워질</b> 곳이 섞여 있습니다. 두 종류는 묻는 질문이 다르므로 먼저 나눕니다.</p>
+  <ul><li>위성 식생지수(NDVI)</li><li>환경부 토지피복지도</li><li>전국 전후 실측 비교</li></ul></section>
+${sec(2,'유형 기준',`<div class="pz-flow" style="--cols:2">
+  ${stepc('조성형','만들면 시원해지는 곳',`지금 농지·시가지·나지. 전국 신규 공원 72곳 조성 전후: 공원 안 ${sg(RC.build.ge1?RC.build.ge1.in:null)}°C(1ha 이상), 경계 밖 0~100m ${sg(RC.build.ge1?RC.build.ge1.bands[0][1]:null)}°C.`,'조성 시 온도 저감',cite(['landsat','parklist']))}
+  ${stepc('보전형','개발되면 더워지는 곳',`이미 숲·녹지. 전국 도시 숲 일부 개발 561곳 전후: 개발된 자리 ${sg(RC.keep.in)}°C, 바로 옆 ${sg(RC.keep.bands[0][1])}°C — 조성 효과의 약 5배.`,'개발 시 온도 상승',cite(['landsat','dw']),true)}
+</div>`)}
+${dash('type','색 = 조성형(주황) · 보전형(초록) · 3D 기둥 = 열 노출 변화 크기 · 공원을 누르면 오른쪽에 근거')}
+${sec(4,'결과',`<div class="pz-kpis" style="--cols:4">
+  ${kpi('조성형',RB.length,'곳',`만들면 열 노출 ${nf(bSum)} 인·°C 감소`)}
+  ${kpi('보전형',RK.length,'곳',`지키면 ${nf(kSum)} 인·°C 증가를 피함`,true)}
+  ${kpi('미산정',P.length-RO.length,'곳',P.filter(p=>!prioOK(p)).map(p=>p.name).join('·'))}
+  ${kpi('생활권 1위',ZN[0]?ZN[0].zone:'—','',ZN[0]?`종합 ${ZN[0].P??ZN[0].D} (공원 부족 + 열)`:'')}
+</div>
+<div class="pz-res"><div><p class="pz-sub">보전형 — 지켜서 피하는 열 노출이 큰 곳</p>
+  ${rank(kTop.slice(0,5).map(p=>({p,v:RP(p).exposure})), Math.max(...kTop.slice(0,5).map(p=>RP(p).exposure)), r=>`+${nf(r.v)}<small>인·°C</small>`)}</div>
+  <div class="pz-take" style="--tc:var(--pz-prio)"><div class="h">해석</div>
+  <p>보전형은 대부분 0.1~0.3ha 소공원이라 주변 주민이 적지만, 개발되면 변화 폭이 조성 효과보다 훨씬 큽니다.</p>
+  <ul><li>보전형은 순위 대신 <b>지켜야 할 곳</b>으로 표시합니다(개발 압력 자료 확보 후 순위).</li><li>조성형 ${RB.length}곳은 다음 장에서 순서를 정합니다.</li></ul></div></div>
+${more('상세보기 — 생활권 순위(배경)', `<table class="pz-t"><thead><tr><th>생활권</th><th class="r">수요 D</th><th class="r">환경 E</th><th class="r">종합 P</th></tr></thead><tbody>${ZN.map(z=>`<tr><td>${z.zone}</td><td class="r">${z.D}</td><td class="r">${z.E??'—'}</td><td class="r">${z.P??'—'}</td></tr>`).join('')}</tbody></table><p class="pz-cap">D = 평균(공원 부족(법정 1인당 6㎡ 대비), 서비스권 밖 인구 비율) × 100 · E = 평균(NDVI 취약, 지표온도 취약) × 100 · P = 0.5D + 0.5E</p>`)}`,`style="--tc:var(--pz-prio)"`)}`;
+
+// ---------- 4. ② 조성형 우선순위 ----------
+const pRank = !D.R ? '' : `${head('rank','②','조성형 우선순위','어디를 먼저 만들까?')}
+<section class="pz-block pz-why" style="--tc:var(--pz-prio)"><h3 class="pz-h3"><span class="n">1</span>왜 보나</h3><p>공원을 만들면 주변이 시원해지지만, 그 효과가 <b>얼마나 뜨거운 동네에서, 몇 명에게</b> 닿는지는 공원마다 다릅니다. 열에 취약하고 주민이 많은 곳부터 만들어야 같은 예산으로 시원해지는 사람이 많습니다.</p>
+  <ul><li>열 취약성</li><li>주변 주민</li><li>에너지 효과</li></ul></section>
+${sec(2,'평가 구조',`<div class="pz-flow" style="--cols:3">
+  ${stepc('① 열 취약','주변이 얼마나 뜨거운가',`공원 경계+${HP.sample_buffer_m}m 중 여름 열 핫스팟(시가지 안 취약도 상위 20%) 면적 비율.`,'핫스팟 비율',cite(['landsat','dw','gee']))}
+  ${stepc('② 열 노출 감소','몇 명이 얼마나 시원해지나',`거리별 온도 저감(전국 신규 공원 72곳 전후 실측) × 그 거리 안 주민 수. 주민과 에너지 효과를 함께 담는 지표.`,'주민 × 온도 저감 (인·°C)',cite(['sgis','mois','landsat']))}
+  ${stepc('③ 조성형 순위','무엇부터 만드나',`①의 등수와 ②의 등수를 더해 작은 순(순위합·Borda 규칙). 순위는 이상치에 영향을 받지 않아, 값이 1~356으로 크게 치우친 ②에 알맞습니다.`,'등수 합',cite(['oecd2008']),true)}
+</div>
+${more('상세보기 — 방법의 근거와 강건성', dl([
+  ['순위합(Borda)',`각 기준의 순위를 더하는 합성 방법. 단순하고 이상치에 영향을 받지 않지만 값의 크기 정보는 잃습니다 (${cite(['oecd2008'])}, p.102).`],
+  ['다른 연구의 방식',`열 노출·취약 인구 우선지역은 점수를 합치기보다 기준을 겹쳐 모두 높은 곳을 고르는 경우가 많고(${cite(['norton2015'])}), 미집행 공원 우선순위 연구도 기준별 순위와 그 교집합을 씀(${cite(['kang2018'])}).`],
+  ['파레토(두 기준 모두 앞선 곳)',`${PARETO.map(p=>p.name).join(', ')||'없음'} — 두 기준 모두에서 다른 조성형에 뒤지지 않습니다.`],
+  ['강건성 점검',`방법·가중치를 바꿔 순위가 유지되는지 확인 (${cite(['oecd2008'])}, pp.117-118). 상위 5곳 유지 ${ROB.filter(r=>r.top===5).length}/${ROB.length}개 조건, 순위상관 ${Math.min(...ROB.map(r=>r.rho)).toFixed(2)}~${Math.max(...ROB.map(r=>r.rho)).toFixed(2)}`]]))
+}
+${more('상세보기 — 강건성 표', `<table class="pz-t"><thead><tr><th>비교 방법</th><th class="r">상위 5곳 일치</th><th class="r">순위상관(스피어만)</th><th class="r">평균 순위 이동</th></tr></thead><tbody>${ROB.map(r=>`<tr><td>${r.lab}</td><td class="r">${r.top}/5</td><td class="r">${r.rho.toFixed(2)}</td><td class="r">${r.shift.toFixed(1)}</td></tr>`).join('')}</tbody></table><p class="pz-cap">기준 = 순위합. 정규화 가중합 = 두 기준을 0~1로 바꿔 가중 평균.</p>`)}`)}
+${dash('rank','색 = 조성형 순위(진할수록 먼저, 보전형 회색) · 3D 기둥 = 열 노출 변화 · 공원을 누르면 오른쪽에 근거')}
+${sec(4,'결과',`<div class="pz-kpis" style="--cols:4">
+  ${kpi('조성형 1위',r5[0].name,'',`주변 핫스팟 ${pc(RH(r5[0]).hot2_share)} · 범위 안 ${nf(RP(r5[0]).pop_in_range)}명`,true)}
+  ${kpi('상위 5곳 비중',pc(sum(r5,p=>-RP(p).exposure)/bSum),'','조성형 열 노출 감소 중')}
+  ${kpi('열 노출 감소 합',nf(bSum),'인·°C',`조성형 ${RB.length}곳`)}
+  ${kpi('핫스팟 50% 이상',RB.filter(p=>(RH(p).hot2_share||0)>=0.5).length,'곳','모두 도심 시가지')}
+</div>
+<div class="pz-res"><div><p class="pz-sub">조성형 상위 5곳</p><div class="pz-legend" style="margin-top:2px"><span><i style="background:var(--pz-prio)"></i>열 노출 감소 (인·°C)</span></div>
+  ${rank(r5.map(p=>({p,v:-RP(p).exposure})), Math.max(...r5.map(p=>-RP(p).exposure)), r=>`${nf(r.v)}<small>핫스팟 ${pc(RH(r.p).hot2_share)}</small>`)}</div>
+  <div class="pz-take" style="--tc:var(--pz-prio)"><div class="h">해석</div>
+  <p><b>${r5[0].name}</b>은 주변 ${pc(RH(r5[0]).hot2_share)}가 열 핫스팟이고 효과 범위 안에 ${nf(RP(r5[0]).pop_in_range)}명이 살아, 두 기준 모두 1등입니다.</p>
+  <ul><li>상위 5곳은 모두 도심 시가지의 공원입니다.</li><li>외곽 소공원은 공원이 부족하지만 주변 주민이 적어 하위권입니다.</li></ul></div></div>
+${more('상세보기 — 조성형 '+RB.length+'곳 전체 표', `<table class="pz-t"><thead><tr><th>순위</th><th>공원</th><th>위치</th><th class="r">핫스팟 비율</th><th class="r">경계 밖 저감</th><th class="r">범위</th><th class="r">범위 안 주민</th><th class="r">아동·고령</th><th class="r">열 노출 감소</th></tr></thead><tbody>
+  ${rTop.map(p=>{const r=RP(p);return `<tr><td>${RR[p.id].rank}</td><td>${p.name}</td><td>${p.loc}</td><td class="r">${pc(RH(p).hot2_share)}</td><td class="r">${sg(r.t_edge)}°C</td><td class="r">${r.range_m}m</td><td class="r">${nf(r.pop_in_range)}</td><td class="r">${pc(r.vulnerable)}</td><td class="r">${nf(-r.exposure)}</td></tr>`}).join('')}</tbody></table>`)}
+${refList()}`,`style="--tc:var(--pz-prio)"`)}`;
+
+// ---------- 5. ③ 에너지·탄소 ----------
+const pCarbon = !D.R ? '' : `${head('carbon','③','에너지·탄소','전력과 탄소를 얼마나 줄이나?')}
+<section class="pz-block pz-why" style="--tc:var(--pz-prio)"><h3 class="pz-h3"><span class="n">1</span>왜 보나</h3><p>공원이 동네 기온을 낮추면 여름 <b>냉방 전력</b>이 줄고, 그만큼 <b>탄소 배출</b>이 줄어듭니다. 이를 청주시가 줄여야 하는 탄소량과 비교해 공원 조성·보전의 기여를 숫자로 보여 줍니다.</p>
+  <ul><li>기온 → 전력 → 탄소</li><li>건물별 전력 사용량</li><li>국가 전력 배출계수</li></ul></section>
+${sec(2,'계산 사슬',`<div class="pz-flow" style="--cols:4">
+  ${stepc('① 열 노출 변화','지금 계산됨',`범위 안 주민 × 온도 변화. 조성형 ${nf(bSum)} 인·°C 감소, 보전형 ${nf(kSum)} 인·°C 증가 회피.`,'인·°C',cite(['landsat','sgis']))}
+  ${stepc('② 지표온도 → 기온','계수 확보 중','위성 지표온도 변화를 실제 기온 변화로 바꾸는 청주 비율(기상 관측소 + 같은 날 위성).','기온 변화 (°C)','기상청 AWS (확보 중)')}
+  ${stepc('③ 기온 → 냉방 전력','계수 확보 중','건물별 월 전력 사용량과 주변 온도를 맞대어 1°C당 냉방 전력 변화를 구합니다.','kWh/°C','건축HUB 건물에너지 (신청 중)')}
+  ${stepc('④ 탄소','계수 있음',`줄어든 전력 × 국가 전력 배출계수 ${RC.ef} tCO₂eq/MWh.`,'tCO₂/년',cite(['ef2023']),true)}
+</div>`)}
+${dash('carbon','색·3D 기둥 = 열 노출 변화 크기 · 공원을 누르면 오른쪽에 근거')}
+${sec(4,'결과',`<div class="pz-kpis" style="--cols:4">
+  ${kpi('조성형 열 노출 감소',nf(bSum),'인·°C',`${RB.length}곳 합`)}
+  ${kpi('보전형 열 노출 회피',nf(kSum),'인·°C',`${RK.length}곳 합`)}
+  ${kpi('냉방 전력','미산정','','②·③ 계수 확보 후',true)}
+  ${kpi('탄소','미산정','',`배출계수 ${RC.ef} tCO₂eq/MWh`)}
+</div>
+<div class="pz-take" style="--tc:var(--pz-prio);margin-top:14px"><div class="h">지금 말할 수 있는 것</div>
+  <p>전력·탄소 계수가 나오기 전까지는 <b>열 노출 변화(인·°C)</b>로 공원 간 효과를 비교합니다. 순서는 계수가 나와도 크게 바뀌지 않습니다(같은 계수를 곱하므로). 계수가 확보되면 이 칸을 kWh·tCO₂로 바꿉니다.</p></div>
+${refList()}`,`style="--tc:var(--pz-prio)"`)}`;
+
 // ---------- 페이지 넘기기 ----------
-const PAGES = [['intro','주제·배경',pIntro+pPark],['frame','평가 기준',pFrame],['use','이용성',pUse],['heat','에너지저감',pHeat],['biz','사업성',pBiz]];
-const TC = {use:'var(--pz-use)',heat:'var(--pz-heat)',biz:'var(--pz-biz)'};
+const PAGES = D.R ? [['intro','주제·배경',pIntro+pPark],['frame','평가 기준',pFrame2],['type','① 현황·유형',pType],['rank','② 조성형 우선순위',pRank],['carbon','③ 에너지·탄소',pCarbon],['biz','④ 실행 (사업성)',pBiz],['use','부록 · 이용성',pUse],['heat','부록 · 열저감 1차',pHeat]]
+  : [['intro','주제·배경',pIntro+pPark],['frame','평가 기준',pFrame],['use','이용성',pUse],['heat','에너지저감',pHeat],['biz','사업성',pBiz]];
+const TC = {use:'var(--pz-use)',heat:'var(--pz-heat)',biz:'var(--pz-biz)',type:'var(--pz-prio)',rank:'var(--pz-prio)',carbon:'var(--pz-prio)'};
+// 페이지 → 지도 주제·색·높이 (우선순위 세 장은 같은 주제를 색만 바꿔 씀)
+const PTOPIC = {type:['prio','kind','expo'], rank:['prio','rank','expo'], carbon:['prio','expo','expo']};
 $('pzMain').innerHTML = PAGES.map(([id,,h])=>`<div class="pz-page" id="pg-${id}" style="--tc:${TC[id]||'var(--pz-ink)'}">${h}</div>`).join('');
 $('pzSteps').innerHTML = PAGES.map(([id,l],i)=>`<button data-go="${id}"><i>${i+1}</i>${l}</button>`).join('');
 const app = document.getElementById('app'); $('pzHome').appendChild(app);
@@ -246,7 +380,7 @@ function go(i, push=true){
   const slot = $('slot-'+id);
   if(slot){
     if(!HAS_DECK){ slot.innerHTML = '<div class="pz-offline">지도 엔진(deck.gl)을 불러오지 못했습니다. 인터넷에 연결된 상태에서 파일을 다시 열어 주세요. 설명과 결과는 그대로 볼 수 있습니다.</div>'; }
-    else { slot.appendChild(app); try{ S.sel=null; if(S.topic!==id) setTopic(id); setView('city'); }catch(e){ console.error(e); } }
+    else { slot.appendChild(app); try{ S.sel=null; const tp=PTOPIC[id]||[id]; if(S.topic!==tp[0]) setTopic(tp[0]); if(tp[1]){ S.colorCity=tp[1]; S.heightCity=tp[2]; } setView('city'); if(tp[1]){ fillSelects(); list(); render(); } }catch(e){ console.error(e); } }
   }
   if(push) history.replaceState(null,'','#'+id);
   window.scrollTo({top:0,behavior:'instant'});

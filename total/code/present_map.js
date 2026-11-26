@@ -1,5 +1,5 @@
 // 발표판 지도 보정 — 지도 앱(total_template.html)은 고치지 않고, 같은 이름의 함수만 바꿔 끼운다.
-//  1) 배경(항공사진·일반지도)과 3D 지형을 사각형이 아니라 청주시 경계 모양으로 잘라 보여 준다.
+//  1) 배경(항공사진·일반지도)과 3D 지형은 받은 범위 전체를 보여 주고 청주시 경계선을 그린다('배경 없음'일 때만 시 모양으로 자름).
 //  2) 도시 화면 3D: 원기둥 대신 공원 경계(검은 테두리) 모양 그대로 살짝 솟아오르고, 카메라가 기울며 확대된다.
 //  3) 처음 화면은 청주시 경계에 꼭 맞게.
 (function(){
@@ -46,7 +46,9 @@ async function prepareCut(){
   const sat = BM.citySat, base = BM.cityBase, rgb = C['--gu'];
   const [a,b,c] = await Promise.all([sat?cutImage(asset('img/'+sat.file)):null, base?cutImage(asset('img/'+base.file)):null,
     cutImage(null, `rgb(${rgb.join(',')})`, (sat||base).w, (sat||base).h)]);
-  CUT = {sat:a, base:b, none:c};
+  // 2026-11-26: 항공사진·일반지도는 자르지 않고 받은 범위 전체를 보여 주고 청주시 경계선만 그린다(주변 지역이 함께 보이게).
+  //   '배경 없음'일 때만 시 모양 단색(c)을 쓴다. 자르려면 아래를 {sat:a, base:b, none:c} 로 되돌리면 된다.
+  CUT = {sat: sat?asset('img/'+sat.file):a, base: base?asset('img/'+base.file):b, none:c};
   if(S.view==='city') render();
 }
 // 2D 바닥 그림: 시 전체 화면이면 잘라 낸 그림
@@ -272,3 +274,19 @@ legend = function(){
 
 prepareCut();
 })();
+
+// 배경 지도: V-World 실시간 타일(국토교통부). 키는 HTML에 넣지 않고 옆 파일 vworld_key.js(window.VWORLD_KEY, git 제외)에서 읽는다.
+// 키 파일이 없으면(공유받은 파일 등) 파일 안에 있는 V-World 사진을 쓴다: 시 전체(약 30m/픽셀) + 공원별 고해상도(img/s{id}).
+const _bgLow = bgLayer;
+const VW = k => `https://api.vworld.kr/req/wmts/1.0.0/${window.VWORLD_KEY}/${k}/{z}/{y}/{x}.${k==='Satellite'?'jpeg':'png'}`;
+const vwTiles = (k, op) => new deck.TileLayer({id:'vw-'+k, data:VW(k), minZoom:6, maxZoom:19, tileSize:256, maxRequests:12,
+  renderSubLayers: props => { const {west,south,east,north} = props.tile.bbox;
+    return new deck.BitmapLayer(props, {data:null, image:props.data, bounds:[west,south,east,north], opacity:op}); }});
+bgLayer = function(){
+  if(S.view!=='city' || S.bg==='none' || S.d3) return _bgLow();
+  if(window.VWORLD_KEY && typeof deck.TileLayer==='function')
+    return S.bg==='sat' ? [vwTiles('Satellite',1), vwTiles('Hybrid',1)] : [vwTiles('Base',1)];
+  const low = _bgLow(); if(S.bg!=='sat') return low;
+  const BMh = D.basemap||{};
+  return [low, ...D.parks.map(p=>BMh['s'+p.id]).filter(Boolean).map(m=>new deck.BitmapLayer({id:'bg-hi-'+m.file, image:asset('img/'+m.file), bounds:m.bounds, opacity:0.97}))];
+};
