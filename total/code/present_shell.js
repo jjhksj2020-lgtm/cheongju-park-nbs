@@ -292,12 +292,12 @@ const pFrame2 = `<div class="pz-eyebrow" style="--tc:var(--pz-ink2)">평가 기�
   <div class="pz-steps3 pz-why3">
     <div style="--tc:var(--pz-prio)"><div class="t"><span>1</span>대상지 성격에 따른 구분</div><div class="d">이미 녹지가 형성된 부지는 조성에 따른 추가 냉각 효과가 작은 반면, 개발 시 열환경이 크게 악화됩니다. 따라서 <b>조성 대상지</b>와 <b>보전 대상지</b>를 먼저 구분합니다.</div></div>
     <div style="--tc:var(--pz-prio)"><div class="t"><span>2</span>조성 대상지는 효과 순으로</div><div class="d">동일한 규모의 공원이라도 <b>열 취약도가 높고 거주 인구가 많은 지역</b>에 조성할수록 냉각 효과의 수혜 인구가 커집니다.</div></div>
-    <div style="--tc:var(--pz-biz)"><div class="t"><span>3</span>집행 계획</div><div class="d"><b>사업성</b>(시 재정 부담·실효 시기)을 바탕으로 우선순위 내에서 집행 시기와 재원 조달 방안을 결정합니다.</div></div>
+    <div style="--tc:var(--pz-prio)"><div class="t"><span>3</span>탄소로 연결</div><div class="d">조성형 상위 대상지의 냉각 효과를 <b>냉방 전력과 탄소 배출 감소량</b>으로 환산해, 청주시 감축 목표에 대한 기여를 제시합니다.</div></div>
   </div>
   ${more('상세보기 — 기존 평가 틀(이용성·에너지저감·사업성)과의 관계', dl([
-    ['이용성 지표','신규 수혜 인구 등은 부록에 수록하고, 냉각 범위 내 거주 인구·아동·고령 비율로 ②에 반영'],
-    ['에너지저감 1차 모델','청주 픽셀 계수 모델은 부록에 수록하고, ②·③에는 전국 공원 조성·녹지 개발 전후 실측 계수를 적용'],
-    ['사업성','④ 집행 계획 단계로 활용']]))}
+    ['이용성 지표','냉각 범위 내 거주 인구·아동·고령 비율로 ②에 반영'],
+    ['에너지저감 1차 모델','②·③에는 청주 픽셀 계수 대신 전국 공원 조성·녹지 개발 전후 실측 계수를 적용'],
+    ['사업성','표준품셈 공사비로 다시 산정한 뒤 집행 계획 단계에서 활용(이 발표판에는 아직 넣지 않음)']]))}
 </section>`;
 
 // ---------- 3. ① 현황·유형 ----------
@@ -364,6 +364,45 @@ const fx = (v,d=0) => v==null?'—':(+v).toLocaleString('ko-KR',{maximumFraction
 const rng = (a,d) => a ? `${fx(a[0],d??(a[0]<10?1:0))}~${fx(a[2],d??(a[2]<10?1:0))}` : '산정 예정';
 const top5 = r5, E5 = top5.map(p=>({p, e:enCalc(p)}));
 const sumE = k => EN ? E5.reduce((s,x)=>s+x.e[k][1],0) : null;
+
+// ③ 페이지: ① 지표온도 저감 계산 자세히 — 전국 실측 계수(면적 구간) → 상위 5곳에 적용
+function step1Detail(){
+  const B = RC.build||{}, EV = D.R.evidence||{};
+  const cls = [['04_06','0.4~0.6ha'],['06_1','0.6~1ha'],['ge1','1ha 이상'],['lt04','0.4ha 미만']];
+  const pick = ha => ha<0.4?'lt04':ha<0.6?'04_06':ha<1?'06_1':'ge1';
+  const lab = Object.fromEntries(cls);
+  const band = (c,lo) => { const b=(B[c]||{}).bands||[]; const f=b.find(x=>x[0]>lo); return f?sg(f[1])+'°C':'—'; };
+  return `<div><ol class="pz-refs" style="font-size:14px">
+    <li><b>전국 신규 공원 찾기</b> — 전국 공원 목록과 위성 식생지수를 맞대어, 2013~15년에 맨땅·공사지(식생지수 0.25 미만)였다가 2022~24년에 녹지(0.5 초과)가 된 신규 공원 72곳을 골랐습니다.</li>
+    <li><b>조성 전·후 지표온도 비교</b> — ${EV.method||''}.</li>
+    <li><b>효과 = (공원 쪽 전·후 변화) − (같은 사례 바깥 300~500m 고리의 전·후 변화)</b>. 같은 시기 주변 개발과 해마다 다른 날씨의 영향을 뺀 값입니다(이중차분).</li>
+    <li><b>면적 구간별 중앙값</b>을 계수로 씁니다(아래 표 1).</li>
+    <li><b>상위 5곳의 면적</b>(도시계획시설 공원 경계)으로 구간을 골라 그 계수를 적용합니다(아래 표 2).</li>
+  </ol>
+  <p class="pz-cap" style="margin-top:10px"><b>표 1. 공원 조성 전·후 여름 지표온도 변화 계수</b> (전국 실측 중앙값, 본 연구 분석)</p>
+  <table class="pz-t"><thead><tr><th>새 녹지 면적</th><th class="r">사례</th><th class="r">공원 안</th><th class="r">경계 밖 0~100m</th><th class="r">100~200m</th></tr></thead><tbody>
+  ${cls.map(([c,l])=>{const b=B[c]||{};return `<tr><td>${l}</td><td class="r">${b.n?b.n+'곳':'—'}</td><td class="r">${b.in==null?'—':sg(b.in)+'°C'}</td><td class="r">${band(c,0)}${c==='lt04'?' <small>(가정)</small>':''}</td><td class="r">${band(c,100)}</td></tr>`;}).join('')}
+  </tbody></table>
+  <p class="pz-cap">0.4ha 미만은 위성 열센서 해상도(약 100m)보다 작아 실측 사례가 없어, 경계 밖 −0.3°C를 상한으로 가정했습니다(근거 문헌 원문 미확인).</p>
+  <p class="pz-cap" style="margin-top:10px"><b>표 2. 상위 5곳 적용</b></p>
+  <table class="pz-t"><thead><tr><th>순위</th><th>공원</th><th class="r">면적</th><th>적용 구간</th><th class="r">공원 안</th>${[[0,100],[100,200]].map(([a,b])=>`<th class="r">경계 밖 ${a}~${b}m</th>`).join('')}<th class="r">효과 범위</th></tr></thead><tbody>
+  ${top5.map(p=>{const r=RP(p),c=pick(r.ha||0),bd=(lo,hi)=>{const x=r.bands.find(b=>b.from<hi&&b.to>lo);return x?`${sg(x.dt)}°C<br><small>${x.from}~${x.to}m · ${nf(x.pop)}명</small>`:'—';};
+    return `<tr><td>${RR[p.id].rank}</td><td>${p.name}</td><td class="r">${(r.ha||0).toFixed(2)}ha</td><td>${lab[c]}</td><td class="r">${r.t_in==null?'—':sg(r.t_in)+'°C'}</td><td class="r">${bd(0,100)}</td><td class="r">${bd(100,200)}</td><td class="r">${r.range_m}m</td></tr>`;}).join('')}
+  </tbody></table>
+  <p class="pz-cap">효과 범위는 면적에 따라 0.4ha 미만 50m, 1~5ha 200m로 둡니다(우리 40곳 주변 실측 프로필). 각 칸 아래 작은 글씨는 그 거리 구간과 안에 사는 주민 수(SGIS 100m 격자)입니다.</p></div>`;
+}
+// 근린공원8 한 곳으로 ①→④를 끝까지 계산해 보이기
+function chainExample(){
+  if(!EN||!top5.length) return '';
+  const p = top5[0], r = RP(p), k = 1;
+  const rows = r.bands.map(b=>{const hh=b.pop/EN.persons_per_household, dA=Math.abs(b.dt)*EN.lst_to_air[k], dC=dA*EN.hot_days[k], kwh=hh*dC/100*EN.kwh_per_100cdd_month[k];
+    return {b,hh,dA,dC,kwh};});
+  const tot = rows.reduce((s,x)=>s+x.kwh,0);
+  return more(`상세보기 — ${p.name}으로 ①→④ 끝까지 계산해 보기 (기준값)`, `<table class="pz-t"><thead><tr><th>거리 구간</th><th class="r">① 지표온도</th><th class="r">주민 → 가구</th><th class="r">② 기온 (× ${EN.lst_to_air[k]})</th><th class="r">냉방도일 감소 (× ${EN.hot_days[k]}일)</th><th class="r">③ 전력 (÷100 × ${EN.kwh_per_100cdd_month[k]} kWh)</th></tr></thead><tbody>
+    ${rows.map(x=>`<tr><td>${x.b.from}~${x.b.to}m</td><td class="r">${sg(x.b.dt)}°C</td><td class="r">${nf(x.b.pop)}명 → ${fx(x.hh)}가구</td><td class="r">${sg(-x.dA,3)}°C</td><td class="r">${fx(x.dC,1)}</td><td class="r">${fx(x.kwh)} kWh</td></tr>`).join('')}
+    <tr><td colspan="5"><b>합계 → ④ 탄소 = ${fx(tot)} kWh ÷ 1,000 × ${RC.ef}</b></td><td class="r"><b>${fx(tot/1000*RC.ef,2)} tCO₂</b></td></tr></tbody></table>
+    <p class="pz-cap">가구 = 주민 ÷ ${EN.persons_per_household}명. 냉방도일 감소 = 기온 저감 × 여름 일평균 24°C 초과일수. 전력 = 가구 × 냉방도일 감소 ÷ 100 × 냉방도일 100당 세대 월 전력.</p>`);
+}
 const pCarbon = !D.R ? '' : `${head('carbon','③','에너지·탄소','상위 5곳을 조성하면 냉방 전력과 탄소를 얼마나 줄이는가?')}
 <section class="pz-block pz-why" style="--tc:var(--pz-prio)"><h3 class="pz-h3"><span class="n">1</span>분석 목적</h3><p>②에서 <b>열 핫스팟이면서 주민이 많은</b> 조성형 상위 5곳을 골랐습니다. 이 5곳을 공원으로 조성했을 때 <b>지표온도 → 기온 → 주민 냉방 전력 → 탄소</b>가 얼마나 줄어드는지를 계산합니다.</p>
   <ul><li>전국 조성 전·후 실측 계수</li><li>주민 냉방 전력</li><li>국가 전력 배출계수</li></ul></section>
@@ -372,7 +411,8 @@ ${sec(2,'계산 과정',`<div class="pz-flow" style="--cols:4">
   ${stepc('② 기온 저감','지표온도 → 기온 환산',EN?`위성 지표온도 변화는 기온 변화보다 크게 나타나므로 ${EN.lst_to_air[0]}~${EN.lst_to_air[2]}배(기준 ${EN.lst_to_air[1]})로 환산${EN.lst_to_air_src?' — '+EN.lst_to_air_src+', 문헌 주간값 0.08과 비슷':''}.`:'환산 비율 확보 후 산정.','기온 변화 (°C)',EN?cite(['kma','du2024']):'')}
   ${stepc('③ 주민 냉방 전력','냉방도일 감소 → 가구 전력',EN?`범위 안 가구(주민 ÷ ${EN.persons_per_household}명). 기온 저감 × 여름 일평균 24°C 초과일수(${EN.hot_days[0]}~${EN.hot_days[2]}일, ${EN.hot_days_src||'가정'}) = 냉방도일 감소. 냉방도일 100당 세대 월 전력 ${EN.kwh_per_100cdd_month[0]}~${EN.kwh_per_100cdd_month[2]} kWh(기준 ${EN.kwh_per_100cdd_month[1]})${EN.kwh_src?' — '+EN.kwh_src:''}.`:'민감도 확보 후 산정.','kWh/여름',EN?cite(EN.kwh_src?['bldhub','kma','hhsize']:['moon2026','kma','hhsize']):'')}
   ${stepc('④ 탄소','전력 배출계수',`전력 절감량 × 국가 전력 배출계수 ${RC.ef} tCO₂eq/MWh.`,'tCO₂/여름',cite(['ef2023']))}
-</div>`)}
+</div>
+<div style="margin-top:18px">${more('상세보기 — ① 지표온도 저감 계산 과정 (계수 표 · 상위 5곳 적용)', step1Detail())}${chainExample()}</div>`)}
 ${dash('carbon','색이 진할수록 열 노출 변화가 큼 · 공원을 누르면 오른쪽에 근거')}
 ${sec(4,'상위 5곳 적용 결과',`<table class="pz-t"><thead><tr><th>순위</th><th>공원</th><th class="r">주변 핫스팟</th><th class="r">공원 안</th><th class="r">경계 밖 0~100m</th><th class="r">범위 안 주민</th><th class="r">냉방 전력 절감<br><small>kWh/여름</small></th><th class="r">탄소 저감<br><small>tCO₂/여름</small></th></tr></thead><tbody>
   ${E5.map(({p,e})=>{const r=RP(p);return `<tr><td>${RR[p.id].rank}</td><td>${p.name}</td><td class="r">${pc(RH(p).hot2_share)}</td><td class="r">${r.t_in==null?'—':sg(r.t_in)+'°C'}</td><td class="r">${sg(r.t_edge)}°C</td><td class="r">${nf(r.pop_in_range)}명</td><td class="r">${e?fx(e.kwh[1])+'<br><small>'+rng(e.kwh)+'</small>':'산정 예정'}</td><td class="r">${e?fx(e.t[1],2)+'<br><small>'+rng(e.t,2)+'</small>':'산정 예정'}</td></tr>`;}).join('')}
@@ -390,7 +430,7 @@ ${refList()}`;
 
 
 // ---------- 페이지 넘기기 ----------
-const PAGES = D.R ? [['intro','주제·배경',pIntro+pPark],['frame','평가 기준',pFrame2],['type','① 현황·유형',pType],['rank','② 조성형 우선순위',pRank],['carbon','③ 에너지·탄소',pCarbon],['biz','④ 실행 (사업성)',pBiz],['use','부록 · 이용성',pUse],['heat','부록 · 열저감 1차',pHeat]]
+const PAGES = D.R ? [['intro','주제·배경',pIntro+pPark],['frame','평가 기준',pFrame2],['type','① 현황·유형',pType],['rank','② 조성형 우선순위',pRank],['carbon','③ 에너지·탄소',pCarbon]]   // 사업성·이용성·열저감 1차 페이지는 이 발표판에서 뺌(2026-11-26)
   : [['intro','주제·배경',pIntro+pPark],['frame','평가 기준',pFrame],['use','이용성',pUse],['heat','에너지저감',pHeat],['biz','사업성',pBiz]];
 const TC = {use:'var(--pz-use)',heat:'var(--pz-heat)',biz:'var(--pz-biz)',type:'var(--pz-prio)',rank:'var(--pz-prio)',carbon:'var(--pz-prio)'};
 // 페이지 → 지도 주제·색·높이 (우선순위 세 장은 같은 주제를 색만 바꿔 씀)

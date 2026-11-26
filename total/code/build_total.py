@@ -47,7 +47,8 @@ for s in PM['sites']:
                'reach': PM['geo'].get(sid, {}).get('reach')}   # 냉각 효과 범위(공원 경계 + range_m), 공원 상세 화면용
 for p in B['parks']:
     p['R'] = rv.get(str(p['id']), {'status': '미산정'})
-B['R'] = {'asof': PM['asof'], 'coef': PM['coef'], 'hot': HM['meta'], 'sens': HM.get('sens', []),
+PP = yaml.safe_load(open(f'{ROOT}/need/edc/code/params.yaml', encoding='utf-8'))['priority']
+B['R'] = {'asof': PM['asof'], 'coef': {**PM['coef'], 'build': PP['build']},   # 계수 표는 params 최신값(사례 수 n 포함) 'hot': HM['meta'], 'sens': HM.get('sens', []),
           'zones': [{k: v for k, v in z.items() if k != 'geo'} for z in HM['zones']],
           'refs': yaml.safe_load(open(RF, encoding='utf-8')) if os.path.exists(RF) else {},
           'evidence': yaml.safe_load(open(f'{ROOT}/need/edc/code/params.yaml', encoding='utf-8'))['priority'].get('evidence'),
