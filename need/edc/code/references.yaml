@@ -9,6 +9,10 @@ items:
     short: '강완모 외, 2018'
     cite: '강완모·송영근·성현찬·이동근, 2018. "생태네트워크와 접근성 분석에 의한 서울시 미집행 도시공원의 보전 우선순위 평가", 「한국환경복원기술학회지」, 21(2): 53-64. doi: 10.13087/kosert.2018.21.2.53.'
     verified: '원문'
+  moon2026:
+    short: '문소연 외, 2026'
+    cite: '문소연·장희선·조용성, 2026. "기후변화에 대한 가구 전력 소비 조정 행태와 적응 격차 분석", 「자원·환경경제연구」, 35(1): 51-80. doi: 10.15266/KEREA.2026.35.1.51.'
+    verified: '원문'
   park2016:
     short: '박종화·조기혁, 2016'
     cite: '박종화·조기혁, 2016. "공원 크기에 따른 공원의 온도저감 효과 분석 - 일산 신도시를 대상으로", 「국토계획」, 51(5): 247-261. doi: 10.17208/jkpa.2016.10.51.5.247.'
@@ -25,10 +29,22 @@ items:
     short: 'Brown et al., 2022'
     cite: 'Brown, C.F., Brumby, S.P., Guzder-Williams, B., Birch, T., Hyde, S.B., Mazzariello, J., Czerwinski, W., Pasquarella, V.J., Haertel, R., Ilyushchenko, S., Schwehr, K., Weisse, M., Stolle, F., Hanson, C., Guinan, O., Moore, R., and Tait, A.M., 2022. "Dynamic World, Near real-time global 10 m land use land cover mapping", Scientific Data, 9: 251. doi: 10.1038/s41597-022-01307-4.'
     verified: '서지'
+  du2024:
+    short: 'Du et al., 2024'
+    cite: 'Du, M., Li, N., Hu, T., Yang, Q., Chakraborty, T., Venter, Z., and Yao, R., 2024. "Daytime Cooling Efficiencies of Urban Trees Derived from Land Surface Temperature Are Much Higher than Those for Air Temperature", Environmental Research Letters, 19(4): 044037. doi: 10.1088/1748-9326/ad30a3.'
+    verified: '원문'
   gee:
     short: 'Gorelick et al., 2017'
     cite: 'Gorelick, N., Hancher, M., Dixon, M., Ilyushchenko, S., Thau, D., and Moore, R., 2017. "Google Earth Engine - Planetary-scale geospatial analysis for everyone", Remote Sensing of Environment, 202: 18-27. doi: 10.1016/j.rse.2017.06.031.'
     verified: '서지'
+  li2024:
+    short: 'Li et al., 2024'
+    cite: 'Li, Y., Svenning, J.-C., Zhou, W., Zhu, K., Abrams, J.F., Lenton, T.M., Ripple, W.J., Yu, Z., Teng, S.N., Dunn, R.R., and Xu, C., 2024. "Green Spaces Provide Substantial but Unequal Urban Cooling Globally", Nature Communications, 15(1): 7108. doi: 10.1038/s41467-024-51355-0.'
+    verified: '서지·초록'
+  liu2022:
+    short: 'Liu et al., 2022'
+    cite: 'Liu, W., Zhao, H., Sun, S., Xu, X., Huang, T., and Zhu, J., 2022. "Green Space Cooling Effect and Contribution to Mitigate Heat Island Effect of Surrounding Communities in Beijing Metropolitan Area", Frontiers in Public Health, 10: 870403. doi: 10.3389/fpubh.2022.870403.'
+    verified: '원문'
   norton2015:
     short: 'Norton et al., 2015'
     cite: 'Norton, B.A., Coutts, A.M., Livesley, S.J., Harris, R.J., Hunter, A.M., and Williams, N.S.G., 2015. "Planning for cooler cities - A framework to prioritise green infrastructure to mitigate high temperatures in urban landscapes", Landscape and Urban Planning, 134: 127-138. doi: 10.1016/j.landurbplan.2014.10.018.'
@@ -40,6 +56,10 @@ items:
   landsat:
     short: 'USGS EROS, 2020'
     cite: 'Earth Resources Observation and Science (EROS) Center, 2020. Landsat 8-9 Operational Land Imager / Thermal Infrared Sensor Level-2, Collection 2 [Data set], U.S. Geological Survey. doi: 10.5066/P9OGBGM6. (지표온도 = DN × 0.00341802 + 149.0 K, USGS, 2024. Landsat 8-9 Collection 2 Level 2 Science Product Guide, LSDS-1619 v6)'
+    verified: '원문'
+  venter2021:
+    short: 'Venter et al., 2021'
+    cite: 'Venter, Z.S., Chakraborty, T., and Lee, X., 2021. "Crowdsourced Air Temperatures Contrast Satellite Measures of the Urban Heat Island and Its Mechanisms", Science Advances, 7: eabb9569. doi: 10.1126/sciadv.abb9569.'
     verified: '원문'
   wu2025:
     short: 'Wu et al., 2025'
@@ -53,6 +73,14 @@ items:
     short: '기후에너지환경부, 2025'
     cite: '기후에너지환경부, 2025.12.18. "전력배출계수 갱신 주기 3년에서 1년으로 단축, 국제사회 기후공시 등 기업의 탄소규제 대응 강화"(보도자료, 2023년 전력배출계수 0.4173 tCO2eq/MWh), https://www.korea.kr/briefing/pressReleaseView.do?newsId=156735726'
     verified: '보도자료·기사(첨부 원문 미확인)'
+  kma:
+    short: '기상청, ASOS'
+    cite: '기상청, 2026.11.26. 읽음, "종관기상관측(ASOS) 시간자료 - 청주(131)·서청주(181), 2020~2024년 6~9월 기온·지면온도", 기상자료개방포털, https://data.kma.go.kr'
+    verified: '자료 직접 수령'
+  bldhub:
+    short: '국토교통부, 건축HUB'
+    cite: '국토교통부, 2026.11.26. 읽음, "건축HUB 건물에너지정보 서비스(지번별 월 전기사용량)·건축물대장정보 서비스(표제부)", 공공데이터포털, https://www.data.go.kr/data/15135963/openapi.do'
+    verified: '자료 직접 수령'
   egis:
     short: '기후에너지환경부, 토지피복지도'
     cite: '기후에너지환경부, 2026.11.26. 읽음, "토지피복지도(중분류, 2025)", 환경공간정보서비스, https://egis.mcee.go.kr'
@@ -68,6 +96,10 @@ items:
   sgis:
     short: '국가데이터처, SGIS'
     cite: '국가데이터처, 2026.11.18. 자료제공, "SGIS 격자통계(인구, 100m, 2024)", 통계지리정보서비스, https://sgis.mods.go.kr'
+    verified: '사이트'
+  hhsize:
+    short: '국가데이터처, 가구원수'
+    cite: '국가데이터처, 2026.11.26. 읽음, "평균 가구원수"(e-나라지표), https://www.index.go.kr/unify/idx-info.do?idxCd=4229'
     verified: '사이트'
   mois:
     short: '행정안전부, 주민등록 인구통계'

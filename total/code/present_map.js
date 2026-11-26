@@ -90,7 +90,8 @@ function cityLine(){
 
 // --- 도시 화면 레이어 ---
 cityLayers = function(){
-  const ps = D.parks.filter(p=>p.c);
+  // 우선순위 '조성형 순위' 보기에서는 조성형만 그린다(보전형·미산정은 순위가 없어 뺌)
+  const ps = D.parks.filter(p=>p.c && !(S.topic==='prio' && S.colorCity==='rank' && !(p.R&&p.R.kind==='조성형')));
   const up = S.d3 && S.heightCity!=='none';
   const h = p => up ? cityHeight(p)*ELEV : 0;
   const L = [cityFill(), bgLayer(), guLayer(), cityLine(), guLabels()];
@@ -208,16 +209,28 @@ function cityBgUnder(){
   if(S.bg==='none') return null; const m = S.bg==='base'?BM.cityBase:BM.citySat; if(!m) return null;
   return new deck.BitmapLayer({id:'bg-under-'+S.bg, image:asset('img/'+m.file), bounds:m.bounds, opacity:0.95});
 }
+// 우선순위 공원 화면: 공원(유형 색) + 냉각 효과 범위(점선, 옅은 색). 필지 이용상황은 쓰지 않는다
+const RPm = q => q.R||{};
+function prioParkLayers(p){
+  const r = RPm(p), ok = r.status==='산정', col = ok ? C[r.kind==='조성형'?'--own-ind':'--own-loc'] : C['--own-unk'];
+  const bg = (typeof vwTiles==='function' && window.VWORLD_KEY && S.bg!=='none') ? (S.bg==='sat'?[vwTiles('Satellite',1),vwTiles('Hybrid',1)]:[vwTiles('Base',1)]) : [cityBgUnder(), parkImg()];
+  return [...bg,
+    ok && r.reach ? new deck.PolygonLayer({id:'r-reach', data:r.reach, getPolygon:d=>d, filled:true, stroked:false, getFillColor:[...col,55], pickable:false}) : null,
+    ok && r.reach ? new deck.PathLayer({id:'r-reach-line', data:r.reach.map(pg=>pg[0]), getPath:d=>d, getColor:[...col,255], getWidth:2.5, widthUnits:'pixels', getDashArray:[7,5], dashJustified:true,
+      extensions:deck.PathStyleExtension?[new deck.PathStyleExtension({dash:true})]:[], pickable:false}) : null,
+    new deck.PolygonLayer({id:'r-park', data:p.poly, getPolygon:d=>d, filled:true, stroked:true, getFillColor:[...col,210], getLineColor:[255,255,255,255], lineWidthMinPixels:2, pickable:true})];
+}
 const _parkLayers = parkLayers;
 parkLayers = function(){
   const p = byId[S.sel]; if(!p||!p.poly) return _parkLayers();
   if(S.topic==='use' && PZU && PZU.buffer[String(p.id)]) return useParkLayers(p);
   if(S.topic==='heat') return heatParkLayers(p);
+  if(S.topic==='prio') return prioParkLayers(p);
   return _parkLayers();
 };
 // 이용성·에너지저감 공원 화면은 범위(이용 거리 500m·주변 300m)가 공원 둘레 지형 자료보다 넓다
 // → 3D 지형은 시 전체 지형을 쓰고(겉면 = 청주시 항공사진), 공원 고해상도 사진은 그 위에 덧입힌다. 건물·지형 배율 등 기존 3D는 그대로.
-const wide = () => S.view==='park' && (S.topic==='use'||S.topic==='heat');
+const wide = () => S.view==='park' && (S.topic==='use'||S.topic==='heat'||S.topic==='prio');
 const _demFor = demFor;
 demFor = function(){ return wide() ? (D.dem||{}).city : _demFor(); };
 // 지형 배율: 원래 공원 화면처럼 '높이차 × 배율 ≤ 화면 폭의 1/4' (높이차는 그 공원 둘레 지형 자료로)
@@ -235,6 +248,7 @@ viewPark = function(){
   let poly = null;
   if(S.topic==='use' && PZU && PZU.buffer[String(p.id)]) poly = PZU.buffer[String(p.id)];
   if(S.topic==='heat') poly = heatRing(p) ? [...p.poly, ...heatRing(p)] : p.poly;
+  if(S.topic==='prio') poly = RPm(p).reach || p.poly;
   if(!poly) return _viewPark();
   const b = bb(poly), el = document.getElementById('deck');
   const vp = new deck.WebMercatorViewport({width:el.clientWidth||800,height:el.clientHeight||500});
@@ -246,6 +260,7 @@ tip = function(info){
   const o = info.object, l = info.layer; if(!o||!l) return _tip(info);
   if(l.id==='park-black'){ const q=byId[S.sel], u=U(q); return {html:`<div class="tt"><b>${q.name}</b> · ${q.loc}<br>신규 수혜 ${Math.round(u.new_served_pop||0).toLocaleString('ko-KR')}명 · 주변 인구 ${Math.round(u.E1_pop||0).toLocaleString('ko-KR')}명</div>`, style:ttStyle()}; }
   if(l.id==='u-cells') return {html:`<div class="tt"><b>100m 격자 인구 ${Math.round(o.pop).toLocaleString('ko-KR')}명</b><br>${o.served?'기존 공원 이용권 안':'기존 공원 이용권 밖 → 이 공원으로 새로 혜택'}${o.vul!=null?`<br>아동·고령 ${Math.round(o.vul*100)}%`:''}</div>`, style:ttStyle()};
+  if(l.id==='r-park'){ const q=byId[S.sel], r=RPm(q); return {html:`<div class="tt"><b>${q.name}</b> · ${r.kind||'미산정'}<br>범위 ${r.range_m||'—'}m 안 주민 ${Math.round(r.pop_in_range||0).toLocaleString('ko-KR')}명</div>`, style:ttStyle()}; }
   if(l.id==='h-ring'){ const e=E(byId[S.sel]); return {html:`<div class="tt"><b>주변 ${D.E.ring_m||300}m</b> · −${f2(e.dlst_ring_base)}°C (범위 ${f2(e.dlst_ring_low)}~${f2(e.dlst_ring_high)})<br>특례사업지 실측 퍼짐 비율 적용</div>`, style:ttStyle()}; }
   if(l.id==='h-park'){ const e=E(byId[S.sel]); return {html:`<div class="tt"><b>공원 일대</b> · −${f2(e.dlst_cell_base)}°C (범위 ${f2(e.dlst_cell_low)}~${f2(e.dlst_cell_high)})<br>지금 녹지 ${f2(e.ndvi_now)} → 조성 후 목표</div>`, style:ttStyle()}; }
   return _tip(info);
@@ -256,7 +271,7 @@ const _legend2 = legend;
 legend = function(){
   _legend2();
   // 이용성·에너지저감 공원 화면에서는 필지용 색·높이 선택만 숨긴다(지형·건물·3D는 그대로)
-  const own = S.view==='park' && (S.topic==='use'||S.topic==='heat');
+  const own = S.view==='park' && (S.topic==='use'||S.topic==='heat'||S.topic==='prio');
   ['colorBy','heightBy'].forEach(id=>{ const n=document.getElementById(id); const w=n&&(n.closest('label')||n.closest('.seg')); if(w) w.style.display = own?'none':''; });
   if(S.view!=='park') return;
   const el = document.getElementById('legend'), p = byId[S.sel]; if(!p) return;
@@ -266,6 +281,12 @@ legend = function(){
       <div class="ramp" style="background:linear-gradient(90deg,rgb(${G0}),rgb(${G1}))"></div><div class="ramp-l"><span>적음</span><span>많음</span></div>
       <div class="row" style="margin-top:6px"><span class="k"><i class="sw" style="background:rgb(${G1})"></i>기존 공원 이용권 밖 = 새로 혜택</span><span class="k"><i class="sw" style="background:rgb(${GR})"></i>이미 공원 이용권 안</span><span class="k"><i class="sw" style="background:rgb(120,140,125)"></i>기존 공원</span></div>
       <div class="row" style="margin-top:4px"><span class="k"><i class="sw" style="background:rgb(${INK})"></i>공원 위치</span></div><div class="meta" style="margin-top:5px">점선 = 이용 거리 · 격자는 공원 밖만${S.d3?' · 높이 = 격자 인구(제곱근)':''}<br>${PZU.pop_source} 100m 격자 · 기존 공원 청주시 도시공원정보</div>`;
+  } else if(S.topic==='prio'){
+    const r = RPm(p), c = r.kind==='조성형'?'--own-ind':'--own-loc';
+    el.innerHTML = r.status!=='산정' ? `<div class="t">우선순위 미산정</div><div class="meta">${p.name}</div>` :
+      `<div class="t">${p.name} · ${r.kind}</div>
+      <div class="row"><span class="k"><i class="sw" style="background:var(${c})"></i>공원</span><span class="k"><i class="sw" style="background:var(${c});opacity:.35"></i>${r.kind==='조성형'?'냉각 효과':'개발 시 영향'} 범위 ${r.range_m}m</span></div>
+      <div class="meta" style="margin-top:5px">범위 안 주민 ${Math.round(r.pop_in_range||0).toLocaleString('ko-KR')}명 · 자세한 값은 오른쪽 카드</div>`;
   } else if(S.topic==='heat'){
     const e = E(p);
     el.innerHTML = e.status!=='산정' ? `<div class="t">에너지저감 미산정</div><div class="meta">${p.name}: 경계 없음 또는 하천 위주</div>` :

@@ -43,12 +43,29 @@ RF = f'{ROOT}/need/edc/code/references.yaml'
 rv = {}
 for s in PM['sites']:
     sid = s['site_id']
-    rv[sid] = {**{k: v for k, v in s.items() if k not in ('site_id', 'name', 'type')}, **{'hot': HM['sites'].get(sid, {})}}
+    rv[sid] = {**{k: v for k, v in s.items() if k not in ('site_id', 'name', 'type')}, 'hot': HM['sites'].get(sid, {}),
+               'reach': PM['geo'].get(sid, {}).get('reach')}   # 냉각 효과 범위(공원 경계 + range_m), 공원 상세 화면용
 for p in B['parks']:
     p['R'] = rv.get(str(p['id']), {'status': '미산정'})
 B['R'] = {'asof': PM['asof'], 'coef': PM['coef'], 'hot': HM['meta'], 'sens': HM.get('sens', []),
           'zones': [{k: v for k, v in z.items() if k != 'geo'} for z in HM['zones']],
-          'refs': yaml.safe_load(open(RF, encoding='utf-8')) if os.path.exists(RF) else {}}
+          'refs': yaml.safe_load(open(RF, encoding='utf-8')) if os.path.exists(RF) else {},
+          'evidence': yaml.safe_load(open(f'{ROOT}/need/edc/code/params.yaml', encoding='utf-8'))['priority'].get('evidence'),
+          'energy': yaml.safe_load(open(f'{ROOT}/need/edc/code/params.yaml', encoding='utf-8'))['priority'].get('energy')}   # 기온→가정 냉방 전력 계수(min/base/max), 없으면 산정 예정
+KS = f'{ROOT}/need/out/kma_summary.json'   # 청주 ASOS 실측 24°C 초과일수(kma_hotdays.py)가 있으면 가정값 대신 쓴다
+if B['R']['energy'] and os.path.exists(KS):
+    ks = json.load(open(KS, encoding='utf-8'))
+    B['R']['energy'] = {**B['R']['energy'], 'hot_days': ks['hot_days'], 'hot_days_src': f"청주 ASOS {min(ks['years'])}~{max(ks['years'])} 실측", 'hot_years': ks['years']}
+KL = f'{ROOT}/need/out/kma_lst_air.json'   # 청주 관측소 7곳 실측 지표온도→기온 비율(kma_lst_air.py): [장면 하위 사분위, 전체 기울기, 상위 사분위]
+if B['R']['energy'] and os.path.exists(KL):
+    kl = json.load(open(KL, encoding='utf-8'))
+    q = kl['ratio_scene_q']
+    B['R']['energy'] = {**B['R']['energy'], 'lst_to_air': [q[0], kl['ratio_pooled'], q[2]], 'lst_to_air_src': f"청주 관측소 실측(위성 {kl['scenes']}장면, {kl['pairs']}쌍)"}
+KB = f'{ROOT}/need/out/bld_energy_coef.json'   # 청주 아파트 단지 실측 세대당 냉방 전력(bld_energy.py): [단지 하위 사분위, 전체 기울기, 상위 사분위]
+if B['R']['energy'] and os.path.exists(KB):
+    kb = json.load(open(KB, encoding='utf-8')); q = kb['lot_q_per_100cdd']
+    B['R']['energy'] = {**B['R']['energy'], 'kwh_per_100cdd_month': [round(q[0], 1), round(kb['kwh_per_100cdd'], 1), round(q[2], 1)],
+                        'kwh_src': f"청주 아파트 {kb['lots']}개 단지 실측(200세대 이상, 공용 전기 포함)"}   # 조성 전·후 지표온도 변화 표
 B['asof'] = f"사업성 {B['asof']} · 열저감 {EN['asof']} · 이용성 {UM['asof']} · 우선순위 {PM['asof']}"
 assets = {}
 for sub in ('img', 'dem'):

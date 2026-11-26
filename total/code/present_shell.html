@@ -175,12 +175,16 @@ table.pz-t tr:hover td{background:var(--pz-soft)}
   .pz-r{grid-template-columns:18px 96px minmax(0,1fr) 92px}
   .pz-slot #app .main{grid-template-columns:1fr}
   .pz-slot #app .mapbox{aspect-ratio:4/3}
-  .pz-slot #app aside{height:auto;min-height:0;max-height:420px}
+  .pz-slot #app aside{height:auto;min-height:0;max-height:none}
   .pz-brand{display:none} .pz-main,.pz-top-in,.pz-nav-in{padding-left:16px;padding-right:16px}
 }
 @media print{.pz-top,.pz-nav{display:none}.pz-page{display:block!important;break-after:page}}
 .pz-refs{margin:8px 0 0 18px;padding:0;font-size:13px;line-height:1.65;color:var(--pz-ink2)}
 .pz-refs li{margin:0 0 4px}
+/* 우선순위 페이지(①②③): 3D·색·높이·지형 선택과 '배경 없음'은 숨기고 2D + 일반지도/항공사진만 */
+#app.pz-simple .seg[aria-label="2D 3D"], #app.pz-simple label[for="colorBy"], #app.pz-simple label[for="heightBy"], #app.pz-simple #terWrap, #app.pz-simple #bg-none{display:none!important}
+/* 공원 카드가 길면 잘리지 않고 카드 안에서 스크롤(넓은 화면: 오른쪽 칸 높이 = 지도 높이) */
+.pz-slot #app .card{overflow-y:auto;min-height:0;flex:0 1 auto}
 </style>
 
 <div class="pz-top"><div class="pz-top-in">
