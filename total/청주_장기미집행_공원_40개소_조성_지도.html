@@ -1079,7 +1079,10 @@ function cityFill(){
   return new deck.PolygonLayer({id:'city-fill', data:city().polys, getPolygon:d=>d, filled:true, stroked:false, getFillColor:[...C['--gu'],255], pickable:false, updateTriggers:{getFillColor:C['--gu']}});
 }
 function cityLine(){
-  return new deck.PathLayer({id:'city-line', data:city().polys.map(pg=>pg[0]), getPath:d=>d, getColor:[...C['--ink'],170], getWidth:1.6, widthUnits:'pixels', pickable:false, updateTriggers:{getColor:C['--ink']}});
+  // 청주시 경계선: 항공사진 위에서도 보이게 흰 테두리(halo) + 진한 선
+  const d = city().polys.map(pg=>pg[0]);
+  return [new deck.PathLayer({id:'city-line-halo', data:d, getPath:x=>x, getColor:[255,255,255,230], getWidth:6, widthUnits:'pixels', jointRounded:true, pickable:false}),
+          new deck.PathLayer({id:'city-line', data:d, getPath:x=>x, getColor:[...C['--ink'],255], getWidth:2.6, widthUnits:'pixels', jointRounded:true, pickable:false, updateTriggers:{getColor:C['--ink']}})];
 }
 
 // --- 도시 화면 레이어 ---
@@ -1101,7 +1104,7 @@ cityLayers = function(){
     pickable:true, onClick:i=>select(i.object.id,false),
     updateTriggers:{getPosition:[S.d3,S.topic,S.heightCity], getFillColor:[S.topic,S.colorCity,C['--own-nat']], getRadius:S.sel, getLineColor:[S.sel,C['--ink']], getLineWidth:S.sel},
     transitions:{getPosition:{duration:1100, easing:EASE}}}));
-  return L;
+  return L.flat().filter(Boolean);   // 경계선(흰 테두리+선)·배경 타일이 배열이라 펼친다(3D 지형 처리가 레이어 하나씩 봄)
 };
 
 // --- 처음 화면: 청주시 경계에 맞춤. 3D는 기울이며 살짝 확대 ---
